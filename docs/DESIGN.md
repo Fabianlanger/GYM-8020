@@ -1,6 +1,6 @@
 # Vormgeving — GYM-8020
 
-> Uitwerking van SPEC sectie 14. Bron: IBS-logo (`assets/branding/ibs-logo.webp`) en screenshots van i-b-s.nl (niet in de repo opgenomen), aangevuld met een art-deco-laag op verzoek van de eigenaar.
+> Uitwerking van SPEC sectie 14. Bron: IBS-logo (`assets/branding/ibs-logo.webp`) en screenshots van i-b-s.nl (materiaal van IBS, waar de eigenaar werkt; screenshots met personen worden niet in de repo opgenomen), aangevuld met een art-deco-laag op verzoek van de eigenaar.
 
 ## 1. Analyse IBS-huisstijl
 
@@ -43,6 +43,10 @@ Contrast: `text` op `bg` en `onPrimary` op `primary` ruim boven WCAG AA.
 ## 4. Art-deco-laag
 
 Eigen vectortekeningen (Compose Canvas / VectorDrawable), geen overgenomen afbeeldingen. Lijnwerk in `gold`, dun (1–1,5 dp), symmetrisch, op zwart — zoals het klassieke zwart-goud art deco.
+
+**Verhouding:** ongeveer **80 % strak** (dubbele lijnen, schuine knikken, getrapte vormen, lijnen die elkaar kruisen en voorbij de hoek doorlopen, ruiten, waaiers) en **20 % gebogen, floraal en speels** (krullen, bladvormen, bogen). Het mag rijk en uitbundig zijn. Op de trainingsschermen blijft het ondergeschikt aan de cijfers.
+
+Preview: https://claude.ai/artifact/3jfeGc8Sqtak3Zvh5so4WX
 
 | Ornament | Vorm | Waar |
 |---|---|---|
