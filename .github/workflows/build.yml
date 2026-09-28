@@ -7,6 +7,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -39,6 +42,29 @@ jobs:
           name: gym-8020-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Rolling "dev" release: always the newest build at a fixed link,
+      # https://github.com/<owner>/<repo>/releases/download/dev/gym-8020.apk
+      - name: Publish dev release
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') && hashFiles('app/build.gradle.kts') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/*.apk gym-8020.apk
+          gh release delete dev --yes --cleanup-tag || true
+          gh release create dev gym-8020.apk \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "GYM-8020 dev build ${GITHUB_RUN_NUMBER}" \
+            --notes "Newest development build (${GITHUB_SHA::7}, branch ${GITHUB_REF_NAME}). Installs over the previous build and keeps your data."
+
+      # Tagged versions (v0.1.0, ...) get their own release.
+      - name: Publish version release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/*.apk "gym-8020-${GITHUB_REF_NAME}.apk"
+          gh release create "$GITHUB_REF_NAME" "gym-8020-${GITHUB_REF_NAME}.apk" --title "GYM-8020 ${GITHUB_REF_NAME}" --generate-notes
 
       - name: Upload reports
         if: failure()

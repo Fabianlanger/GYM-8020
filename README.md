@@ -16,7 +16,7 @@ Android app for strength training with a fixed method: per exercise a **heavy** 
 
 ## Installing
 
-1. Download the APK from the latest build (GitHub Actions → *Build* → artifact `gym-8020-debug-apk`), later from GitHub Releases.
+1. Download the newest build: **https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk** (always the latest; tagged versions such as `v0.1.0` get their own release).
 2. On your phone, allow installing apps from unknown sources for your browser or file manager.
 3. Open the APK. Updates install over the previous version and keep your data.
 

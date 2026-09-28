@@ -13,8 +13,10 @@ android {
         applicationId = "nl.ibs.gym8020"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // CI build number, so every build is a real update and visible under "About".
+        val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = build
+        versionName = "0.1.0 (build $build)"
     }
 
     signingConfigs {
