@@ -487,6 +487,19 @@ Elke fase = een werkende, installeerbare APK.
 
 > Branding (thema, kleuren, lettertype) zit vanaf v0.1 in de app; logo/Over-scherm uiterlijk v0.5.
 
+**Voortgang**
+
+| Fase | Status |
+|---|---|
+| v0.1 — Kern | gebouwd (dev-builds 1–5) |
+| v0.2 — Materiaal | gebouwd: materiaalprofielen, schijvenvoorraad, schijven per kant, laadvolgorde zwaar → licht met minimale wissels, alleen haalbare gewichten, warm-up-gewicht uit het materiaal. Plus feedback v0.1: iconen, compacter trainingsscherm, swipe-lint. |
+
+| # | Besluit (na feedback v0.1) | Status |
+|---|---|---|
+| D-69 | Elke oefening heeft een **bewegingsicoon** (squat, hinge, duwen, trekken, …), zelf getekend in art-deco-lijnstijl; zelf te kiezen bij eigen oefeningen. Iconen ook op beginscherm, schema's, lijsten en knoppen voor snelle visuele herkenning. | [BESLOTEN] |
+| D-70 | Trainingsscherm compact: sets als één regel, alleen de actieve set open; "Volgende keer" ingeklapt tot je tikt. | [BESLOTEN] |
+| D-71 | Geanimeerd art-deco-lint aan de zijkant van het trainingsscherm dat laat zien dat je naar de volgende oefening kunt swipen (tikken kan ook). | [BESLOTEN] |
+
 ---
 
 ## 17. Buiten scope (voor nu)
