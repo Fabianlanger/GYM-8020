@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="gym_bg">#FF171717</color>
+    <color name="gym_yellow">#FFF9C852</color>
+    <style name="Theme.Gym8020" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/gym_bg</item>
+        <item name="android:statusBarColor">@color/gym_bg</item>
+        <item name="android:navigationBarColor">@color/gym_bg</item>
+    </style>
+</resources>

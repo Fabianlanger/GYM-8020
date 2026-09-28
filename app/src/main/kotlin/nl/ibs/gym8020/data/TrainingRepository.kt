@@ -1,0 +1,178 @@
+package nl.ibs.gym8020.data
+
+import androidx.room.withTransaction
+import nl.ibs.gym8020.core.logic.EffectiveWeight
+import nl.ibs.gym8020.core.logic.PlannedSet
+import nl.ibs.gym8020.core.logic.Strength
+import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.MethodSettings
+import nl.ibs.gym8020.core.model.Progression
+import nl.ibs.gym8020.core.model.SetRole
+import nl.ibs.gym8020.data.db.AppDatabase
+import nl.ibs.gym8020.data.db.ExerciseEntity
+import nl.ibs.gym8020.data.db.PlanEntity
+import nl.ibs.gym8020.data.db.PlanSetEntity
+import nl.ibs.gym8020.data.db.SessionEntity
+import nl.ibs.gym8020.data.db.SessionExerciseEntity
+import nl.ibs.gym8020.data.db.SetEntity
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+
+/** Default roles for a fresh exercise: heavy, light, and extra sets are heavy (D-10). */
+fun defaultRoles(count: Int): List<SetRole> = List(count.coerceAtLeast(1)) { i -> if (i == 1) SetRole.LIGHT else SetRole.HEAVY }
+
+fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDate()
+
+/** What was done last time for an exercise (reference and "vorige keer"). */
+data class LastPerformance(val date: LocalDate, val sets: List<SetEntity>)
+
+class TrainingRepository(private val db: AppDatabase, private val settings: SettingsStore) {
+
+    private val sessions get() = db.sessions()
+
+    suspend fun startSession(schemaId: Long, now: Long = System.currentTimeMillis()): Long = db.withTransaction {
+        val schema = requireNotNull(db.schemas().get(schemaId))
+        val method = settings.current().method
+        val bodyweight = db.bodyweights().latestOnOrBefore(now.toLocalDate().toEpochDay())?.kg
+        val sessionId = sessions.insert(SessionEntity(schemaId = schemaId, schemaName = schema.name, startedAt = now, bodyweightKg = bodyweight))
+        db.schemas().entries(schemaId).forEachIndexed { i, entry ->
+            val exercise = db.exercises().get(entry.exerciseId) ?: return@forEachIndexed
+            if (exercise.archived) return@forEachIndexed
+            addExerciseInternal(sessionId, exercise, i, entry.setCount, method, bodyweight)
+        }
+        sessionId
+    }
+
+    /** Adds an exercise during the training (D-35), at the end. */
+    suspend fun addExercise(sessionId: Long, exerciseId: Long) = db.withTransaction {
+        val exercise = requireNotNull(db.exercises().get(exerciseId))
+        val session = requireNotNull(sessions.get(sessionId))
+        val position = (sessions.exercises(sessionId).maxOfOrNull { it.position } ?: -1) + 1
+        addExerciseInternal(sessionId, exercise, position, null, settings.current().method, session.bodyweightKg)
+    }
+
+    private suspend fun addExerciseInternal(
+        sessionId: Long,
+        exercise: ExerciseEntity,
+        position: Int,
+        setCount: Int?,
+        method: MethodSettings,
+        bodyweight: Double?,
+    ) {
+        val seId = sessions.insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exercise.id, position = position))
+        val plan = db.plans().sets(exercise.id)
+        val planned: List<PlannedSet> = if (plan.isNotEmpty()) {
+            plan.map { PlannedSet(it.role, it.weightKg) }
+        } else {
+            val zero = if (exercise.loadType == LoadType.BODYWEIGHT) 0.0 else null
+            defaultRoles(setCount ?: method.defaultSetCount).map { PlannedSet(it, zero) }
+        }
+        val isReps = exercise.progression == Progression.REPS
+        sessions.insertSets(
+            planned.mapIndexed { i, p ->
+                val weight = if (p.role == SetRole.WARMUP) null else p.weightKg ?: if (isReps) 0.0 else null
+                SetEntity(
+                    sessionExerciseId = seId,
+                    position = i,
+                    role = p.role,
+                    weightKg = weight,
+                    bodyweightKg = if (exercise.loadType == LoadType.BODYWEIGHT) bodyweight else null,
+                    goalWeightKg = if (p.role.isWork && !isReps) p.weightKg else null,
+                )
+            },
+        )
+    }
+
+    // ---- timestamps (D-30, D-31, D-45a) ----
+
+    suspend fun markShown(seId: Long, now: Long = System.currentTimeMillis()) = updateSe(seId) { if (it.shownAt == null) it.copy(shownAt = now) else it }
+
+    suspend fun markWarmup(seId: Long, now: Long = System.currentTimeMillis()) = updateSe(seId) { if (it.warmupAt == null && it.goAt == null) it.copy(warmupAt = now) else it }
+
+    suspend fun markGo(seId: Long, now: Long = System.currentTimeMillis()) = updateSe(seId) { if (it.goAt == null) it.copy(goAt = now) else it }
+
+    suspend fun markFirstInput(seId: Long, now: Long = System.currentTimeMillis()) = updateSe(seId) { if (it.firstInputAt == null) it.copy(firstInputAt = now) else it }
+
+    /** Called when swiping away; only the first time counts, so correcting later does not spoil the times. */
+    suspend fun markDone(seId: Long, now: Long = System.currentTimeMillis()) = updateSe(seId) {
+        if (it.doneAt == null && it.firstInputAt != null) it.copy(doneAt = now) else it
+    }
+
+    suspend fun setSkipped(seId: Long, skipped: Boolean) = updateSe(seId) { it.copy(skipped = skipped) }
+
+    /** Moves an exercise to the end of the training (D-35). */
+    suspend fun moveToEnd(sessionId: Long, seId: Long) = db.withTransaction {
+        val list = sessions.exercises(sessionId)
+        val moved = list.filter { it.id != seId } + list.filter { it.id == seId }
+        sessions.updateExercises(moved.mapIndexed { i, e -> e.copy(position = i) })
+    }
+
+    private suspend fun updateSe(seId: Long, f: (SessionExerciseEntity) -> SessionExerciseEntity) {
+        val se = sessions.exercise(seId) ?: return
+        val next = f(se)
+        if (next != se) sessions.updateExercise(next)
+    }
+
+    // ---- sets ----
+
+    suspend fun updateSet(set: SetEntity) = sessions.updateSet(set)
+
+    suspend fun addSet(seId: Long, role: SetRole) = db.withTransaction {
+        val sets = sessions.setsOf(seId)
+        val se = requireNotNull(sessions.exercise(seId))
+        val session = requireNotNull(sessions.get(se.sessionId))
+        val exercise = requireNotNull(db.exercises().get(se.exerciseId))
+        val bw = if (exercise.loadType == LoadType.BODYWEIGHT) session.bodyweightKg else null
+        if (role == SetRole.WARMUP) {
+            // Warm-ups go before the work sets.
+            sessions.updateSets(sets.map { it.copy(position = it.position + 1) })
+            sessions.insertSet(SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.WARMUP, bodyweightKg = bw))
+        } else {
+            val lastWork = sets.lastOrNull { it.role.isWork }
+            val weight = lastWork?.weightKg ?: if (exercise.loadType == LoadType.BODYWEIGHT) 0.0 else null
+            sessions.insertSet(
+                SetEntity(sessionExerciseId = seId, position = (sets.maxOfOrNull { it.position } ?: -1) + 1, role = role, weightKg = weight, bodyweightKg = bw),
+            )
+        }
+    }
+
+    suspend fun deleteSet(setId: Long) = sessions.deleteSet(setId)
+
+    // ---- plan for next time ----
+
+    suspend fun savePlan(exerciseId: Long, sets: List<PlannedSet>, note: String?) {
+        db.plans().replace(
+            PlanEntity(exerciseId = exerciseId, note = note?.takeIf { it.isNotBlank() }, updatedAt = System.currentTimeMillis()),
+            sets.map { PlanSetEntity(exerciseId = exerciseId, position = 0, role = it.role, weightKg = if (it.role.isWork) it.weightKg else null) },
+        )
+    }
+
+    suspend fun planNote(exerciseId: Long): String? = db.plans().get(exerciseId)?.note
+
+    // ---- history ----
+
+    suspend fun lastPerformance(exerciseId: Long, excludeSession: Long): LastPerformance? {
+        val se = sessions.historyExercises(exerciseId, excludeSession).firstOrNull() ?: return null
+        val session = sessions.get(se.sessionId) ?: return null
+        return LastPerformance(session.startedAt.toLocalDate(), sessions.setsOf(se.id))
+    }
+
+    /** Best heavy-set e1RM (effective weight) in earlier sessions. */
+    suspend fun bestE1rm(exercise: ExerciseEntity, excludeSession: Long): Double? =
+        sessions.historySets(exercise.id, excludeSession)
+            .filter { it.role == SetRole.HEAVY && it.reps != null && it.weightKg != null }
+            .mapNotNull { s -> effective(exercise, s)?.let { Strength.e1rm(it, s.reps!!) } }
+            .maxOrNull()
+
+    fun effective(exercise: ExerciseEntity, set: SetEntity): Double? =
+        set.weightKg?.let { EffectiveWeight.of(exercise.loadType, it, set.bodyweightKg, exercise.bodyweightFactor) }
+
+    suspend fun finish(sessionId: Long, now: Long = System.currentTimeMillis()) = db.withTransaction {
+        val session = sessions.get(sessionId) ?: return@withTransaction
+        sessions.exercises(sessionId).forEach { se -> if (se.doneAt == null && se.firstInputAt != null) sessions.updateExercise(se.copy(doneAt = now)) }
+        sessions.update(session.copy(endedAt = now))
+    }
+
+    suspend fun discard(sessionId: Long) = sessions.delete(sessionId)
+}
