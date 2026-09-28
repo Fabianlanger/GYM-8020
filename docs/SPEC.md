@@ -65,7 +65,7 @@ Een Android-app (APK) die krachttraining bijhoudt volgens een vaste methode: per
 | D-07 | Standaard rep-targets: **Zwaar = 6**, **Licht = 16**. | [BESLOTEN] |
 | D-08 | Standaard 2 sets per oefening (zwaar, licht); knop **"+ Set"** om **tijdens de oefening, on the fly** extra sets toe te voegen (bijv. een klein extra setje als het gewenste gewicht niet lukte). | [BESLOTEN] |
 | D-09 | Rep-targets en standaard aantal sets zijn **globaal instelbaar** (voor andere gebruikers) en **per oefening te overschrijven** (bijv. crunches). | [VOORSTEL] |
-| D-10 | Een extra set krijgt standaard de rol **Licht** (target 16); de rol is per set om te zetten naar Zwaar. | [VOORSTEL] |
+| D-10 | Een extra set krijgt standaard de rol **Zwaar** (target 6); de rol is per set om te zetten naar Licht. | [BESLOTEN] |
 
 ---
 
@@ -73,12 +73,12 @@ Een Android-app (APK) die krachttraining bijhoudt volgens een vaste methode: per
 
 Elke oefening heeft precies één belastingstype:
 
+**Invoer bij *Lichaamsgewicht ±*:** één gewichtsveld met een **+/−-schakelaar** ervoor. Ondersteuning (assisted machine) is gewoon een negatief getal, extra gewicht een positief getal, 0 = puur lichaamsgewicht. Typ je een `-` terwijl de schakelaar op + staat, dan wordt het getal negatief (en springt de schakelaar om). Zo hoef je geen apart type te kiezen als je van assisted naar weighted doorgroeit: de progressie loopt als één doorlopende lijn van bijv. −30 kg naar +10 kg.
+
 | Type | Voorbeeld | Effectief gewicht | Wat je invult |
 |---|---|---|---|
 | **Extern** | Bench press, leg press, cable row | = ingevuld gewicht | gewicht, reps |
-| **Lichaamsgewicht** | Pull-up, dips, push-up | = lichaamsgewicht × factor | reps |
-| **Lichaamsgewicht − ondersteuning** | Assisted pull-up / assisted dip machine | = lichaamsgewicht × factor − ondersteuning | ondersteuning (kg), reps |
-| **Lichaamsgewicht + extra** | Weighted pull-up / dips met vest of dipriem | = lichaamsgewicht × factor + extra gewicht | extra gewicht (kg), reps |
+| **Lichaamsgewicht ±** | Pull-up, dips, push-up; assisted (−) of met dipriem/vest (+) | = lichaamsgewicht × factor **+ extra** (extra is positief, negatief of 0) | extra gewicht met teken (± kg), reps |
 | **Alleen reps** | Crunches, sit-ups | geen gewicht; progressie in reps | reps |
 
 **Lichaamsgewichtfactor** — het deel van je lichaamsgewicht dat je verplaatst. Voorgestelde standaardwaarden (per oefening aanpasbaar):
@@ -92,8 +92,8 @@ Elke oefening heeft precies één belastingstype:
 
 | # | Besluit | Status |
 |---|---|---|
-| D-11 | Vijf belastingstypes zoals in de tabel hierboven. | [VOORSTEL] |
-| D-12 | Buikspieroefeningen zonder gewicht zijn standaard type **Alleen reps**: het doel voor de volgende keer is een **aantal reps**, niet een gewicht. Gebruiker kan ze omzetten naar *Lichaamsgewicht* met eigen factor. | [VOORSTEL] |
+| D-11 | Drie belastingstypes: **Extern**, **Lichaamsgewicht ±** (ondersteuning/extra als één getal met teken, +/−-schakelaar), **Alleen reps**. | [BESLOTEN] |
+| D-12 | Buikspieroefeningen zonder gewicht zijn standaard type **Alleen reps**: het doel voor de volgende keer is een **aantal reps**, niet een gewicht. Gebruiker kan ze omzetten naar *Lichaamsgewicht ±* met eigen factor. | [VOORSTEL] |
 | D-13 | Eigen oefeningen aanmaken, bewerken, archiveren (niet verwijderen als er historie is). | [VOORSTEL] |
 
 ---
@@ -114,7 +114,7 @@ De app laat dus zien dat de *prestatie* is gedaald (of gelijk gebleven relatief)
 | D-14 | Lichaamsgewicht bijhouden met datum; grafiek op het dashboard. | [BESLOTEN] |
 | D-15 | Effectief gewicht wordt overal gebruikt voor statistiek (dashboard, heatmap, vooruitgang). | [BESLOTEN] |
 | D-16 | Bij het starten van een training, als de laatste meting ouder is dan **7 dagen**: een kleine, overslaanbare vraag "Wat weeg je vandaag?". | [VOORSTEL] |
-| D-17 | Eenheid: **kg**. (lbs eventueel later als instelling.) | [VOORSTEL] |
+| D-17 | Eenheid standaard **kg**; in **Instellingen** kan de gebruiker een andere eenheid kiezen (lbs). Intern wordt in kg opgeslagen en alleen de weergave omgerekend. | [BESLOTEN] |
 
 ---
 
