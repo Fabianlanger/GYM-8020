@@ -15,7 +15,9 @@ import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.SetRole
+import nl.ibs.gym8020.core.material.WeightCalculator
 import nl.ibs.gym8020.data.AppSettings
+import nl.ibs.gym8020.data.Calculators
 import nl.ibs.gym8020.data.LastPerformance
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.SessionEntity
@@ -36,6 +38,8 @@ data class TrainingItem(
     /** The plan for next time: the user's edited draft or the live suggestion. Null until reps are entered. */
     val plan: PlanDraft?,
     val note: String = "",
+    /** Achievable weights and plate plans from the exercise's material profile (v0.2). */
+    val calc: WeightCalculator? = null,
 ) {
     val hasInput: Boolean get() = sets.any { it.reps != null }
 }
@@ -64,16 +68,18 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         c.db.sessions().observe(sessionId),
         c.db.sessions().observeExercises(sessionId),
         c.db.sessions().observeSets(sessionId),
-        combine(c.db.exercises().observeAll(), c.settings.settings) { e, s -> e to s },
+        combine(c.db.exercises().observeAll(), c.settings.settings, c.db.materials().observeAll()) { e, s, m -> Triple(e, s, m) },
         combine(extras, drafts, notes) { e, d, n -> Triple(e, d, n) },
-    ) { session, ses, sets, (exercises, settings), (extraMap, draftMap, noteMap) ->
+    ) { session, ses, sets, (exercises, settings, materials), (extraMap, draftMap, noteMap) ->
         val byId = exercises.associateBy { it.id }
+        val profiles = materials.associateBy { it.id }
         val setsBySe = sets.groupBy { it.sessionExerciseId }
         val items = ses.mapNotNull { se ->
             val ex = byId[se.exerciseId] ?: return@mapNotNull null
             val list = setsBySe[se.id].orEmpty()
-            val plan = (draftMap[se.id] ?: suggestion(ex, list, settings.method))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
-            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: "")
+            val calc = Calculators.forExercise(ex, profiles, settings.plateStock)
+            val plan = (draftMap[se.id] ?: suggestion(ex, list, settings.method, calc))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
+            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: "", calc)
         }
         items.forEach { if (it.extra == null) loadExtra(it.exercise.id) }
         TrainingState(session, items, settings, exercises.filter { !it.archived }, loaded = true)
@@ -89,14 +95,14 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         }
     }
 
-    private fun suggestion(ex: ExerciseEntity, sets: List<SetEntity>, method: MethodSettings): PlanDraft? {
+    private fun suggestion(ex: ExerciseEntity, sets: List<SetEntity>, method: MethodSettings, calc: WeightCalculator?): PlanDraft? {
         if (sets.none { it.reps != null }) return null
         val performed = sets.map { PerformedSet(it.role, it.weightKg, it.reps) }
         val m = method.copy(
             heavyTarget = ex.heavyTarget ?: method.heavyTarget,
             lightTarget = ex.lightTarget ?: method.lightTarget,
         )
-        return PlanDraft(GoalAdvisor.planNext(performed, ex.loadType, ex.progression, m))
+        return PlanDraft(GoalAdvisor.planNext(performed, ex.loadType, ex.progression, m, calc))
     }
 
     // ---- timestamps ----

@@ -19,8 +19,8 @@ class AppContainer(app: Application) {
     val db: AppDatabase = AppDatabase.create(app)
     val settings = SettingsStore(app)
     val training = TrainingRepository(db, settings)
-    val backup = BackupService(db)
-    val seeder = Seeder(db, settings)
+    val backup = BackupService(db, settings)
+    val seeder = Seeder(db, settings, dutch = java.util.Locale.getDefault().language == "nl")
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }
 

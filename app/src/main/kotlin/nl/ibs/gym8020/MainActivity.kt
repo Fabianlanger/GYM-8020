@@ -64,6 +64,7 @@ import nl.ibs.gym8020.ui.home.HomeScreen
 import nl.ibs.gym8020.ui.schemas.SchemaEditScreen
 import nl.ibs.gym8020.ui.schemas.SchemaListScreen
 import nl.ibs.gym8020.ui.schemas.WeekPlanEditScreen
+import nl.ibs.gym8020.ui.settings.MaterialScreen
 import nl.ibs.gym8020.ui.settings.SettingsScreen
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.GymTheme
@@ -102,6 +103,7 @@ private object Routes {
     const val EXERCISE = "exercise/{id}"
     const val TRAINING = "training/{id}"
     const val SUMMARY = "summary/{id}"
+    const val MATERIAL = "material"
 }
 
 private data class Tab(val route: String, val label: Int, val icon: ImageVector)
@@ -165,7 +167,8 @@ private fun GymNavHost(container: AppContainer) {
             }
             composable(Routes.EXERCISES) { ExerciseListScreen(container, onOpen = { nav.navigate("exercise/$it") }) }
             composable(Routes.BODY) { BodyweightScreen(container) }
-            composable(Routes.SETTINGS) { SettingsScreen(container) }
+            composable(Routes.SETTINGS) { SettingsScreen(container, onOpenMaterial = { nav.navigate(Routes.MATERIAL) }) }
+            composable(Routes.MATERIAL) { Box(Modifier.systemBarsPadding().imePadding()) { MaterialScreen(container) } }
             composable(Routes.SCHEMA, idArg) { e ->
                 Box(Modifier.systemBarsPadding().imePadding()) {
                     SchemaEditScreen(

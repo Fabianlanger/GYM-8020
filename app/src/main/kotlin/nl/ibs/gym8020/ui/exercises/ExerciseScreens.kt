@@ -49,6 +49,7 @@ import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.model.Equipment
 import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.MuscleGroup
 import nl.ibs.gym8020.core.model.Progression
@@ -60,6 +61,15 @@ import nl.ibs.gym8020.ui.components.LineButton
 import nl.ibs.gym8020.ui.components.NumberStepper
 import nl.ibs.gym8020.ui.components.PlainCard
 import nl.ibs.gym8020.ui.deco.DecoDivider
+import nl.ibs.gym8020.ui.deco.MovementIcon
+import nl.ibs.gym8020.ui.settings.kindName
+import nl.ibs.gym8020.ui.settings.profileSummary
+import nl.ibs.gym8020.data.movementOrDefault
+import nl.ibs.gym8020.core.logic.WeightUnit
+import kotlinx.coroutines.flow.map
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import nl.ibs.gym8020.ui.theme.Gym
 
 @Composable
@@ -133,11 +143,14 @@ fun ExercisePickerDialog(exercises: List<ExerciseEntity>, onPick: (ExerciseEntit
                 SearchField(query, { query = it })
                 LazyColumn(Modifier.heightIn(max = 420.dp)) {
                     items(exercises.filter { !it.archived && it.name.contains(query.trim(), ignoreCase = true) }, key = { it.id }) { ex ->
-                        Text(
-                            ex.name,
-                            modifier = Modifier.fillMaxWidth().clickable { onPick(ex) }.padding(vertical = 12.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
+                        Row(
+                            Modifier.fillMaxWidth().clickable { onPick(ex) }.padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            ExerciseIcon(ex, size = 36)
+                            Text(ex.name, style = MaterialTheme.typography.bodyLarge)
+                        }
                     }
                 }
             }
@@ -181,6 +194,7 @@ fun ExerciseListScreen(container: AppContainer, onOpen: (Long) -> Unit) {
             }
             items(shown, key = { it.id }) { ex ->
                 PlainCard(onClick = { onOpen(ex.id) }) {
+                    ExerciseIcon(ex)
                     Column(Modifier.weight(1f)) {
                         Text(ex.name, style = MaterialTheme.typography.titleMedium, color = if (ex.archived) Gym.Muted else Gym.Cream)
                         Text(
@@ -232,12 +246,18 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
     var light by remember { mutableStateOf<Double?>(null) }
     var shares by remember { mutableStateOf<Map<Muscle, Int>>(emptyMap()) }
     var hasHistory by remember { mutableStateOf(false) }
+    var materialId by remember { mutableStateOf<Long?>(null) }
+    var movement by remember { mutableStateOf<Movement?>(null) }
+    val profiles by container.db.materials().observeActive().collectAsStateWithLifecycle(emptyList())
+    val unit by container.settings.settings.map { it.unit }.collectAsStateWithLifecycle(WeightUnit.KG)
 
     LaunchedEffect(exerciseId) {
         if (exerciseId != 0L) {
             val e = container.db.exercises().get(exerciseId)
             if (e != null) {
                 original = e
+                materialId = e.materialProfileId
+                movement = e.movementOrDefault
                 name = e.name; equipment = e.equipment; loadType = e.loadType; progression = e.progression
                 factor = e.bodyweightFactor; heavy = e.heavyTarget?.toDouble(); light = e.lightTarget?.toDouble()
                 shares = container.db.exercises().muscles(e.id).associate { it.muscle to it.percent }
@@ -253,6 +273,7 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
             name = name.trim(), equipment = equipment, loadType = loadType, progression = progression,
             bodyweightFactor = (factor ?: 1.0).coerceIn(0.0, 1.5),
             heavyTarget = heavy?.toInt()?.takeIf { it > 0 }, lightTarget = light?.toInt()?.takeIf { it > 0 },
+            materialProfileId = materialId, movement = movement,
         )
         val id = if (original == null) container.db.exercises().insert(entity) else entity.id.also { container.db.exercises().update(entity) }
         container.db.exercises().replaceMuscles(id, shares.map { (m, p) -> ExerciseMuscleEntity(id, m, p) })
@@ -265,6 +286,29 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
     ) {
         Text(stringResource(if (original == null) R.string.exercise_new else R.string.exercise_edit), style = MaterialTheme.typography.headlineMedium)
         OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.schema_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+
+        Eyebrow(stringResource(R.string.exercise_icon))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Movement.entries.forEach { m ->
+                val selected = movement == m
+                Box(
+                    Modifier.size(52.dp)
+                        .background(if (selected) Gym.SurfaceHigh else Gym.Surface, RoundedCornerShape(12.dp))
+                        .border(if (selected) 2.dp else 0.dp, if (selected) Gym.Yellow else Gym.Surface, RoundedCornerShape(12.dp))
+                        .clickable { movement = m }
+                        .padding(6.dp),
+                ) { MovementIcon(m, Modifier.fillMaxSize()) }
+            }
+        }
+
+        Eyebrow(stringResource(R.string.exercise_material))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FilterChip(materialId == null, { materialId = null }, label = { Text(stringResource(R.string.exercise_material_none)) })
+            profiles.forEach { p -> FilterChip(materialId == p.id, { materialId = p.id }, label = { Text(p.name) }) }
+        }
+        profiles.firstOrNull { it.id == materialId }?.let { p ->
+            Text(kindName(p.kind) + " · " + profileSummary(p, unit), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+        }
 
         Eyebrow(stringResource(R.string.exercise_equipment))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -358,5 +402,13 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
             }
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** The exercise's movement pictogram on a small dark tile. */
+@Composable
+fun ExerciseIcon(ex: ExerciseEntity, size: Int = 44) {
+    Box(Modifier.size(size.dp).background(Gym.SurfaceHigh, RoundedCornerShape((size / 4).dp)).padding((size / 9).dp)) {
+        MovementIcon(ex.movementOrDefault, Modifier.fillMaxSize(), figure = if (ex.archived) Gym.Muted else Gym.Cream)
     }
 }

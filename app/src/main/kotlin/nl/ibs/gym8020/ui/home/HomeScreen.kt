@@ -42,6 +42,9 @@ import nl.ibs.gym8020.core.logic.DoneTraining
 import nl.ibs.gym8020.core.logic.HomeAdvice
 import nl.ibs.gym8020.core.logic.HomeAdvisor
 import nl.ibs.gym8020.core.logic.PlanSlot
+import nl.ibs.gym8020.core.model.Movement
+import nl.ibs.gym8020.data.movementOrDefault
+import nl.ibs.gym8020.ui.deco.MovementStrip
 import nl.ibs.gym8020.data.db.BodyweightEntity
 import nl.ibs.gym8020.data.db.SchemaEntity
 import nl.ibs.gym8020.data.db.SessionEntity
@@ -69,6 +72,7 @@ data class HomeState(
     val advice: HomeAdvice? = null,
     val schemas: Map<Long, SchemaEntity> = emptyMap(),
     val entryCounts: Map<Long, Int> = emptyMap(),
+    val schemaIcons: Map<Long, List<Movement>> = emptyMap(),
     val planSchemaIds: List<Long> = emptyList(),
     val openSession: SessionEntity? = null,
     val lastBodyweightDate: LocalDate? = null,
@@ -80,10 +84,11 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     val state: StateFlow<HomeState> = combine(
         c.db.weekPlans().observeActive(),
         c.db.weekPlans().observeAllSlots(),
-        combine(c.db.schemas().observeActive(), c.db.schemas().observeAllEntries()) { s, e -> s to e },
+        combine(c.db.schemas().observeActive(), c.db.schemas().observeAllEntries(), c.db.exercises().observeAll()) { s, e, x -> Triple(s, e, x) },
         combine(finished, c.db.sessions().observeOpen()) { f, o -> f to o },
         c.db.bodyweights().observeAll(),
-    ) { plan, allSlots, (schemas, entries), (done, open), bodyweights ->
+    ) { plan, allSlots, (schemas, entries, exercises), (done, open), bodyweights ->
+        val exById = exercises.associateBy { it.id }
         val today = LocalDate.now()
         val schemaMap = schemas.associateBy { it.id }
         val slots = allSlots.filter { it.weekPlanId == plan?.id && it.schemaId in schemaMap }
@@ -101,6 +106,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             advice = advice,
             schemas = schemaMap,
             entryCounts = entries.groupingBy { it.schemaId }.eachCount(),
+            schemaIcons = entries.groupBy { it.schemaId }.mapValues { (_, l) -> l.mapNotNull { exById[it.exerciseId]?.movementOrDefault } },
             planSchemaIds = slots.map { it.schemaId }.distinct(),
             openSession = open,
             lastBodyweightDate = bodyweights.firstOrNull()?.epochDay?.let(LocalDate::ofEpochDay),
@@ -186,12 +192,9 @@ fun HomeScreen(container: AppContainer, onOpenTraining: (Long) -> Unit, onAllSch
                 state.schemas.values.filter { it.id !in state.planSchemaIds }.sortedBy { it.name }.take(3)
             others.forEach { schema ->
                 PlainCard(onClick = { if (state.openSession == null) requestStart(schema.id) else onOpenTraining(state.openSession!!.id) }) {
-                    Column(Modifier.weight(1f)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(schema.name, style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            stringResource(R.string.home_exercises_count, state.entryCounts[schema.id] ?: 0),
-                            style = MaterialTheme.typography.bodySmall, color = Gym.Muted,
-                        )
+                        MovementStrip(state.schemaIcons[schema.id].orEmpty())
                     }
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Gym.Yellow)
                 }
@@ -225,6 +228,7 @@ private fun AdviceCard(advice: HomeAdvice, state: HomeState, onStart: (Long) -> 
             } else if (schema != null) {
                 Text(schema.name, style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
                 Text(stringResource(R.string.home_exercises_count, state.entryCounts[schema.id] ?: 0), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+                MovementStrip(state.schemaIcons[schema.id].orEmpty())
             }
             Spacer(Modifier.height(4.dp))
             WeekPips(advice.doneThisWeek, advice.targetPerWeek)

@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -54,7 +59,7 @@ import java.time.LocalDate
 const val METHOD_URL = "https://github.com/Fabianlanger/GYM-8020/blob/main/docs/methode.md"
 
 @Composable
-fun SettingsScreen(container: AppContainer) {
+fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -107,10 +112,15 @@ fun SettingsScreen(container: AppContainer) {
         }
 
         DecoDivider(Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        Eyebrow(stringResource(R.string.mat_title))
+        Text(stringResource(R.string.mat_settings_help), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+        LineButton(stringResource(R.string.mat_open), onClick = onOpenMaterial, icon = Icons.Filled.FitnessCenter, modifier = Modifier.fillMaxWidth())
+
+        DecoDivider(Modifier.fillMaxWidth().padding(vertical = 8.dp))
         Eyebrow(stringResource(R.string.settings_data))
         Text(stringResource(R.string.settings_local_warning), style = MaterialTheme.typography.bodySmall, color = Gym.Gold)
-        LineButton(stringResource(R.string.settings_export), onClick = { exportLauncher.launch("gym-8020-${LocalDate.now()}.json") }, modifier = Modifier.fillMaxWidth())
-        LineButton(stringResource(R.string.settings_import), onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth())
+        LineButton(stringResource(R.string.settings_export), onClick = { exportLauncher.launch("gym-8020-${LocalDate.now()}.json") }, icon = Icons.Filled.Upload, modifier = Modifier.fillMaxWidth())
+        LineButton(stringResource(R.string.settings_import), onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, icon = Icons.Filled.Download, modifier = Modifier.fillMaxWidth())
         message?.let { Text(it, color = Gym.Yellow, style = MaterialTheme.typography.bodySmall) }
 
         DecoDivider(Modifier.fillMaxWidth().padding(vertical = 8.dp))
@@ -123,7 +133,7 @@ fun SettingsScreen(container: AppContainer) {
                 Text(stringResource(R.string.about_ibs), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.about_method_text), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
-                LineButton(stringResource(R.string.about_method), onClick = { runCatching { uriHandler.openUri(METHOD_URL) } })
+                LineButton(stringResource(R.string.about_method), onClick = { runCatching { uriHandler.openUri(METHOD_URL) } }, icon = Icons.AutoMirrored.Filled.MenuBook)
             }
         }
         Spacer(Modifier.height(24.dp))
@@ -143,6 +153,9 @@ fun SettingsScreen(container: AppContainer) {
                                 context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } ?: error("no stream")
                             }
                             container.backup.import(text)
+                            container.backup.importSettings(text)
+                            // Old (v1) backups have no materials: add the standard ones again.
+                            container.seeder.seedIfNeeded()
                             importDone
                         }.getOrElse { String.format(errorText, it.message ?: it.javaClass.simpleName) }
                     }

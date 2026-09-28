@@ -82,10 +82,11 @@ fun DecoCard(
             .drawBehind { drawDecoFrame() },
     ) {
         if (corners) {
-            CornerOrnament(Modifier.align(Alignment.TopStart).padding(5.dp).size(30.dp))
-            CornerOrnament(Modifier.align(Alignment.TopEnd).padding(5.dp).size(30.dp), flipX = true)
+            CornerOrnament(Modifier.align(Alignment.TopStart).padding(5.dp).size(26.dp))
+            CornerOrnament(Modifier.align(Alignment.TopEnd).padding(5.dp).size(26.dp), flipX = true)
         }
-        Column(Modifier.fillMaxWidth().padding(padding), content = content)
+        // With corners, content starts below them so labels are never covered.
+        Column(Modifier.fillMaxWidth().padding(start = padding, end = padding, bottom = padding, top = if (corners) maxOf(padding, 30.dp) else padding), content = content)
     }
 }
 
@@ -209,6 +210,9 @@ fun NumberStepper(
     buttonSize: Dp = 56.dp,
     /** Value the first tap on − or + jumps to when the field is still empty (e.g. the rep target). */
     startFrom: Double? = null,
+    /** Custom up/down (e.g. next achievable weight); defaults to ± [step]. */
+    next: ((Double) -> Double)? = null,
+    previous: ((Double) -> Double)? = null,
     onFirstInput: () -> Unit = {},
     formatter: (Double) -> String = { WeightFormat.format(it) },
     parser: (Double) -> Double = { it },
@@ -225,7 +229,7 @@ fun NumberStepper(
         text = clamped?.let(formatter) ?: ""
     }
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        RoundIconButton(Icons.Filled.Remove, minusLabel, { emit(if (value == null && startFrom != null) startFrom else (value ?: 0.0) - step) }, buttonSize)
+        RoundIconButton(Icons.Filled.Remove, minusLabel, { emit(if (value == null && startFrom != null) startFrom else previous?.invoke(value ?: 0.0) ?: ((value ?: 0.0) - step)) }, buttonSize)
         BasicTextField(
             value = text,
             onValueChange = { raw ->
@@ -255,7 +259,7 @@ fun NumberStepper(
                 }
             },
         )
-        RoundIconButton(Icons.Filled.Add, plusLabel, { emit(if (value == null && startFrom != null) startFrom else (value ?: 0.0) + step) }, buttonSize)
+        RoundIconButton(Icons.Filled.Add, plusLabel, { emit(if (value == null && startFrom != null) startFrom else next?.invoke(value ?: 0.0) ?: ((value ?: 0.0) + step)) }, buttonSize)
     }
 }
 

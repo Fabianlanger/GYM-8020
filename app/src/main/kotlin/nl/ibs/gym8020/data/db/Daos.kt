@@ -301,3 +301,39 @@ interface PlanDao {
         insertSets(sets.mapIndexed { i, s -> s.copy(id = 0, exerciseId = plan.exerciseId, position = i) })
     }
 }
+
+@Dao
+interface MaterialDao {
+    @Query("SELECT * FROM material_profiles WHERE archived = 0 ORDER BY name COLLATE NOCASE")
+    fun observeActive(): Flow<List<MaterialProfileEntity>>
+
+    @Query("SELECT * FROM material_profiles")
+    fun observeAll(): Flow<List<MaterialProfileEntity>>
+
+    @Query("SELECT * FROM material_profiles")
+    suspend fun all(): List<MaterialProfileEntity>
+
+    @Query("SELECT * FROM material_profiles WHERE id = :id")
+    suspend fun get(id: Long): MaterialProfileEntity?
+
+    @Query("SELECT COUNT(*) FROM material_profiles")
+    suspend fun count(): Int
+
+    @Insert
+    suspend fun insert(m: MaterialProfileEntity): Long
+
+    @Update
+    suspend fun update(m: MaterialProfileEntity)
+
+    @Query("UPDATE exercises SET materialProfileId = NULL WHERE materialProfileId = :id")
+    suspend fun detach(id: Long)
+
+    @Query("DELETE FROM material_profiles WHERE id = :id")
+    suspend fun deleteRow(id: Long)
+
+    @Transaction
+    suspend fun delete(id: Long) {
+        detach(id)
+        deleteRow(id)
+    }
+}

@@ -4,6 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -221,5 +223,13 @@ private fun DrawScope.drawPrim(p: Prim, s: Float, figure: Color) {
             poly(listOf(p.x - 3 to p.y2 + 3, p.x to p.y2, p.x + 3 to p.y2 + 3), s, Gym.Yellow, 1.8f)
         }
         Floor -> drawLine(Gym.Gold.copy(alpha = .45f), Offset(4 * s, 45 * s), Offset(44 * s, 45 * s), 1.2f * s)
+    }
+}
+
+/** A row of small movement icons, e.g. the exercises in a schema. */
+@Composable
+fun MovementStrip(movements: List<Movement>, modifier: Modifier = Modifier, max: Int = 9) {
+    androidx.compose.foundation.layout.Row(modifier, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)) {
+        movements.take(max).forEach { MovementIcon(it, androidx.compose.ui.Modifier.size(22.dp)) }
     }
 }

@@ -15,7 +15,11 @@ import nl.ibs.gym8020.core.backup.SessionExerciseDto
 import nl.ibs.gym8020.core.backup.SetDto
 import nl.ibs.gym8020.core.backup.WeekPlanDto
 import nl.ibs.gym8020.core.backup.WeekPlanSlotDto
+import nl.ibs.gym8020.core.backup.MaterialDto
+import nl.ibs.gym8020.core.material.MaterialKind
+import nl.ibs.gym8020.core.material.PlateStock
 import nl.ibs.gym8020.core.model.Equipment
+import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.Progression
@@ -24,6 +28,7 @@ import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.data.db.BodyweightEntity
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.ExerciseMuscleEntity
+import nl.ibs.gym8020.data.db.MaterialProfileEntity
 import nl.ibs.gym8020.data.db.PlanEntity
 import nl.ibs.gym8020.data.db.PlanSetEntity
 import nl.ibs.gym8020.data.db.SchemaEntity
@@ -35,7 +40,7 @@ import nl.ibs.gym8020.data.db.WeekPlanEntity
 import nl.ibs.gym8020.data.db.WeekPlanSlotEntity
 
 /** Export/import of all data as one JSON file (D-48). Import replaces everything. */
-class BackupService(private val db: AppDatabase) {
+class BackupService(private val db: AppDatabase, private val settings: SettingsStore) {
 
     suspend fun export(): String {
         val exercises = db.exercises().all()
@@ -53,6 +58,7 @@ class BackupService(private val db: AppDatabase) {
                     loadType = e.loadType.name, progression = e.progression.name, bodyweightFactor = e.bodyweightFactor,
                     heavyTarget = e.heavyTarget, lightTarget = e.lightTarget, archived = e.archived,
                     muscles = muscles[e.id].orEmpty().map { MuscleShareDto(it.muscle.name, it.percent) },
+                    materialId = e.materialProfileId, movement = e.movement?.name,
                 )
             },
             schemas = db.schemas().all().map { s ->
@@ -76,6 +82,10 @@ class BackupService(private val db: AppDatabase) {
                     },
                 )
             },
+            materials = db.materials().all().map { m ->
+                MaterialDto(m.id, m.libraryKey, m.name, m.kind.name, m.baseKg, m.loadingPoints, m.minKg, m.stepKg, m.maxKg)
+            },
+            plateStock = settings.current().plateStock.encode(),
             plans = db.plans().all().map { p ->
                 PlanDto(p.exerciseId, p.note, planSets[p.exerciseId].orEmpty().map { PlanSetDto(it.role.name, it.weightKg) })
             },
@@ -90,8 +100,17 @@ class BackupService(private val db: AppDatabase) {
             val sql = db.openHelper.writableDatabase
             listOf(
                 "sets", "session_exercises", "sessions", "plan_sets", "plans", "week_plan_slots", "week_plans",
-                "schema_entries", "schemas", "exercise_muscles", "exercises", "bodyweights",
+                "schema_entries", "schemas", "exercise_muscles", "exercises", "bodyweights", "material_profiles",
             ).forEach { sql.execSQL("DELETE FROM $it") }
+            val materialIds = HashMap<Long, Long>()
+            b.materials.forEach { m ->
+                materialIds[m.id] = db.materials().insert(
+                    MaterialProfileEntity(
+                        libraryKey = m.libraryKey, name = m.name, kind = enumOr(m.kind, MaterialKind.PLATES), baseKg = m.baseKg,
+                        loadingPoints = m.loadingPoints, minKg = m.minKg, stepKg = m.stepKg, maxKg = m.maxKg,
+                    ),
+                )
+            }
             val exIds = HashMap<Long, Long>()
             b.exercises.forEach { e ->
                 val id = db.exercises().insert(
@@ -99,6 +118,8 @@ class BackupService(private val db: AppDatabase) {
                         libraryKey = e.libraryKey, name = e.name, equipment = enumOr(e.equipment, Equipment.MACHINE),
                         loadType = enumOr(e.loadType, LoadType.EXTERNAL), progression = enumOr(e.progression, Progression.WEIGHT),
                         bodyweightFactor = e.bodyweightFactor, heavyTarget = e.heavyTarget, lightTarget = e.lightTarget, archived = e.archived,
+                        materialProfileId = e.materialId?.let { materialIds[it] },
+                        movement = e.movement?.let { runCatching { Movement.valueOf(it) }.getOrNull() },
                     ),
                 )
                 exIds[e.id] = id
@@ -153,6 +174,13 @@ class BackupService(private val db: AppDatabase) {
                 )
             }
         }
+    }
+
+    /** Called after [import]: the plate stock lives in the settings, not in the database. */
+    suspend fun importSettings(text: String) {
+        val b = BackupJson.decode(text)
+        // A backup without materials (v1) gets the standard profiles again via the seeder.
+        settings.update { it.copy(plateStock = b.plateStock?.let(PlateStock::decode) ?: it.plateStock, seededMaterials = b.materials.isNotEmpty()) }
     }
 
     private inline fun <reified T : Enum<T>> enumOr(name: String, fallback: T): T =

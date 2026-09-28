@@ -68,7 +68,7 @@ private fun g(kg: Double): Int = (kg * 1000).roundToInt()
 private fun kg(grams: Int): Double = grams / 1000.0
 
 /** Weight calculations for one profile with the gym's plate stock. */
-class WeightCalculator(private val profile: MaterialProfile, private val stock: PlateStock) : WeightSteps {
+class WeightCalculator(val profile: MaterialProfile, private val stock: PlateStock) : WeightSteps {
 
     private val sizes: List<Int> = stock.plates.keys.map(::g).sortedDescending()
 

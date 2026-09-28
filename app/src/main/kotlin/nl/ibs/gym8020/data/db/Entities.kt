@@ -4,8 +4,11 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import nl.ibs.gym8020.core.material.MaterialKind
+import nl.ibs.gym8020.core.material.MaterialProfile
 import nl.ibs.gym8020.core.model.Equipment
 import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
@@ -23,7 +26,28 @@ data class ExerciseEntity(
     val heavyTarget: Int? = null,
     val lightTarget: Int? = null,
     val archived: Boolean = false,
+    /** Material profile (v0.2); null = no rounding to achievable weights. */
+    val materialProfileId: Long? = null,
+    /** Movement pattern for the icon; null = derived from the library or equipment. */
+    val movement: Movement? = null,
 )
+
+/** Reusable material profile (D-27). Added in database version 2. */
+@Entity(tableName = "material_profiles")
+data class MaterialProfileEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val libraryKey: String? = null,
+    val name: String,
+    val kind: MaterialKind,
+    val baseKg: Double = 0.0,
+    val loadingPoints: Int = 2,
+    val minKg: Double = 0.0,
+    val stepKg: Double = 5.0,
+    val maxKg: Double = 100.0,
+    val archived: Boolean = false,
+) {
+    fun toProfile() = MaterialProfile(kind, baseKg, loadingPoints, minKg, stepKg, maxKg)
+}
 
 @Entity(
     tableName = "exercise_muscles",

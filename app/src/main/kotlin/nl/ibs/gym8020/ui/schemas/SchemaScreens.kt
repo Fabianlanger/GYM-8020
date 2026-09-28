@@ -59,6 +59,9 @@ import nl.ibs.gym8020.ui.components.NumberStepper
 import nl.ibs.gym8020.ui.components.PlainCard
 import nl.ibs.gym8020.ui.deco.DecoDivider
 import nl.ibs.gym8020.ui.exercises.ExercisePickerDialog
+import nl.ibs.gym8020.ui.exercises.ExerciseIcon
+import nl.ibs.gym8020.ui.deco.MovementStrip
+import nl.ibs.gym8020.data.movementOrDefault
 import nl.ibs.gym8020.ui.theme.Gym
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -69,7 +72,9 @@ fun SchemaListScreen(container: AppContainer, onOpenSchema: (Long) -> Unit, onOp
     val plans by container.db.weekPlans().observeAll().collectAsStateWithLifecycle(emptyList())
     val schemas by container.db.schemas().observeActive().collectAsStateWithLifecycle(emptyList())
     val entries by container.db.schemas().observeAllEntries().collectAsStateWithLifecycle(emptyList())
-    val counts = entries.groupingBy { it.schemaId }.eachCount()
+    val exercises by container.db.exercises().observeAll().collectAsStateWithLifecycle(emptyList())
+    val exById = exercises.associateBy { it.id }
+    val icons = entries.groupBy { it.schemaId }.mapValues { (_, l) -> l.mapNotNull { exById[it.exerciseId]?.movementOrDefault } }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 18.dp),
@@ -92,9 +97,9 @@ fun SchemaListScreen(container: AppContainer, onOpenSchema: (Long) -> Unit, onOp
         item { Text(stringResource(R.string.schemas_title), style = MaterialTheme.typography.headlineMedium) }
         items(schemas, key = { "s${it.id}" }) { s ->
             PlainCard(onClick = { onOpenSchema(s.id) }) {
-                Column(Modifier.weight(1f)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(s.name, style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.home_exercises_count, counts[s.id] ?: 0), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+                    MovementStrip(icons[s.id].orEmpty())
                 }
             }
         }
@@ -153,7 +158,8 @@ fun SchemaEditScreen(container: AppContainer, schemaId: Long, onDone: () -> Unit
                 Modifier.fillMaxWidth().background(Gym.Surface, RoundedCornerShape(16.dp)).padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(Modifier.weight(1f)) {
+                if (ex != null) ExerciseIcon(ex, size = 36)
+                Column(Modifier.weight(1f).padding(start = 10.dp)) {
                     Text("${i + 1}. ${ex?.name ?: "?"}", style = MaterialTheme.typography.bodyLarge)
                     Text(
                         stringResource(R.string.schema_sets, entry.setCount ?: 0).takeIf { entry.setCount != null } ?: stringResource(R.string.schema_sets_default),

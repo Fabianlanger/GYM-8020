@@ -16,7 +16,7 @@ android {
         // CI build number, so every build is a real update and visible under "About".
         val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionCode = build
-        versionName = "0.1.0 (build $build)"
+        versionName = "0.2.0 (build $build)"
     }
 
     signingConfigs {
@@ -53,6 +53,13 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
+    // Room schema history, used by the migration test.
+    sourceSets.getByName("test").assets.srcDir("$projectDir/schemas")
+
     lint {
         abortOnError = false
         checkReleaseBuilds = false
@@ -85,4 +92,10 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
+
+    testImplementation(libs.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
 }
