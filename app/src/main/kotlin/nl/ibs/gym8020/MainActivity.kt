@@ -23,7 +23,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -110,7 +110,7 @@ private data class Tab(val route: String, val label: Int, val icon: ImageVector)
 
 private val tabs = listOf(
     Tab(Routes.HOME, R.string.nav_home, Icons.Filled.Home),
-    Tab(Routes.SCHEMAS, R.string.nav_schemas, Icons.Filled.ViewList),
+    Tab(Routes.SCHEMAS, R.string.nav_schemas, Icons.AutoMirrored.Filled.ViewList),
     Tab(Routes.EXERCISES, R.string.nav_exercises, Icons.Filled.FitnessCenter),
     Tab(Routes.BODY, R.string.nav_body, Icons.Filled.MonitorWeight),
     Tab(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),

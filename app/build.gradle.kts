@@ -57,8 +57,8 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
 
-    // Room schema history, used by the migration test.
-    sourceSets.getByName("test").assets.srcDir("$projectDir/schemas")
+    // Room schema history, used by the migration test (Robolectric reads the debug variant's assets).
+    sourceSets.getByName("debug").assets.srcDir("$projectDir/schemas")
 
     lint {
         abortOnError = false
