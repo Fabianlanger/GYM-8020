@@ -445,6 +445,8 @@ Afgeleid uit het IBS-logo en de website (i-b-s.nl), aangevuld met een eigen **ar
 - GitHub Actions bouwt bij elke tag `v*` een **ondertekende release-APK** en zet die in **GitHub Releases**.
 - De ondertekeningssleutel staat in **GitHub Secrets**, nooit in de repo.
 - Belangrijk: updates installeren over de oude app (met behoud van data) kan **alleen als de APK met dezelfde sleutel is ondertekend**. De sleutel moet dus bewaard blijven.
+- **Tijdens ontwikkeling** wordt elke CI-build ondertekend met een vaste debug-sleutel (`app/debug.keystore`, in de repo). Zo installeert elke nieuwe build over de vorige zonder dataverlies. Voor de publieke release (v0.5) komt er een aparte release-sleutel in GitHub Secrets; die installeert niet over de debug-versie heen (eenmalig export → import).
+- Omdat de ontwikkelomgeving geen toegang heeft tot de Android SDK-downloads, wordt de logica in een aparte module `core/` (puur Kotlin) lokaal getest en bouwt GitHub Actions de APK.
 - README: wat de app doet, screenshots, installatie-instructies ("installeren van onbekende bronnen"), link naar `docs/methode.md`, IBS-vermelding.
 - Licentie: **MIT**.
 

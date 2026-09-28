@@ -157,9 +157,6 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
         LaunchedEffect(Unit) { onExit() }
         return
     }
-    if (session != null && session.endedAt != null) {
-        LaunchedEffect(Unit) { onFinished(session.id) }
-    }
 
     Box(Modifier.fillMaxSize().background(Gym.Bg)) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
@@ -288,7 +285,9 @@ private fun ExercisePage(
             SetRow(
                 set = set, ex = ex, unit = unit, step = step, target = targetOf(set.role), goodMargin = goodMargin,
                 previousReps = item.extra?.last?.sets?.filter { it.role == set.role }?.maxOfOrNull { it.reps ?: 0 },
-                onChange = vm::updateSet, onFirstInput = firstInput,
+                onChange = vm::updateSet,
+                // Warm-up reps may be entered before GO; only work sets end the exercise timer.
+                onFirstInput = if (set.role.isWork) firstInput else ({}),
                 onToggleRole = { vm.toggleRole(set) }, onDelete = { vm.deleteSet(set.id) }, isReps = isReps,
             )
         }
