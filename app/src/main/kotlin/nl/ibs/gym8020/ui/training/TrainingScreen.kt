@@ -742,9 +742,11 @@ private fun NextTimePlanner(item: TrainingItem, plan: PlanDraft, unit: WeightUni
         Row(Modifier.fillMaxWidth().clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Eyebrow(stringResource(R.string.tr_next_time), color = Gym.Gold)
+                val letters = SetRole.entries.associateWith { roleLabel(it).take(1) }
                 val summary = plan.sets.filter { it.role.isWork }.joinToString("  ·  ") { p ->
-                    val role = p.role.name.take(1)
-                    if (isReps || p.weightKg == null) role else "$role ${WeightFormat.format(p.weightKg, unit, signed)}"
+                    val role = letters.getValue(p.role)
+                    val w = p.weightKg
+                    if (isReps || w == null) role else "$role ${WeightFormat.format(w, unit, signed)}"
                 }
                 if (!open) Text(summary, style = MaterialTheme.typography.titleMedium, color = Gym.Yellow)
             }
