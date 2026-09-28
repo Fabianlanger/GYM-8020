@@ -1,6 +1,6 @@
 # Specificatie — GYM-8020
 
-> Status: **v0.4 — vrijwel goedgekeurd** (zie sectie 18 voor wat nog openstaat) — nog niet goedgekeurd. Er wordt niets gebouwd voordat de eigenaar dit document heeft goedgekeurd.
+> Status: **v0.5 — goedgekeurd** (zie sectie 18 voor wat nog openstaat) — nog niet goedgekeurd. Er wordt niets gebouwd voordat de eigenaar dit document heeft goedgekeurd.
 > Datum: 2026-09-28
 > Eigenaar: Fabian Langer · ontwikkeld onder de vlag van Isatis Business Solutions (IBS)
 
@@ -315,7 +315,7 @@ Zo zie je ook of je later in de training trager wordt.
 | D-38 | Dashboard met lichaamsgewicht. | [BESLOTEN] |
 | D-39 | Overige onderdelen zoals in de tabel. | [BESLOTEN] |
 | D-66 | Statistiek wordt apart bijgehouden en getoond op drie niveaus: **oefening**, **spier** en **spiergroep** (zie sectie 11). | [BESLOTEN] |
-| D-68 | **Kruisverwijzing tussen oefeningen:** doe je een oefening voor het eerst, dan stelt de app een startgewicht voor op basis van je prestaties bij oefeningen die **dezelfde spieren** trainen (via e1RM en een omrekenfactor per oefening in de bibliotheek, bijv. incline bench ≈ 0,8 × bench press). Indicatief, altijd aanpasbaar. Fase v0.3. | [VOORSTEL] |
+| D-68 | **Vergelijkbare oefeningen (nice to have, v0.3 of later):** doe je een oefening voor het eerst, dan toont de app als hint wat je het laatst deed bij oefeningen die **dezelfde spieren** trainen (bijv. bij incline bench: je bench press en military press). Geen omrekenfactor, geen berekend voorstel — puur ter referentie, zodat je zelf een gevoel krijgt. | [BESLOTEN] |
 | D-67 | Per spier/spiergroep: volume én **aantal werksets per week** (warm-up telt niet mee; secundair telt voorlopig als ½ set, zie R-1). | [BESLOTEN] |
 
 ---
@@ -401,15 +401,16 @@ Een warm-up is niets anders dan **reps doen van dezelfde oefening, zonder (extra
 
 ## 14. Vormgeving (IBS-huisstijl)
 
-Afgeleid uit de IBS-logo's en de *IBS Update Bulletin*-afbeelding.
+Afgeleid uit het IBS-logo en de website (i-b-s.nl), aangevuld met een eigen **art-deco-laag**. Volledige uitwerking (kleurtokens, typografie, ornamenten, icoon): **`docs/DESIGN.md`**.
 
 | Element | Waarde |
 |---|---|
-| Primaire kleur | **IBS-geel `#FCC62A`** |
-| Tekst/achtergrond | zwart `#111111` / bijna-zwart, wit |
-| Stijl | strak, veel contrast, grote vetgedrukte cijfers |
-| Lettertype | geometrisch schreefloos, vet voor koppen/cijfers (bijv. **Poppins** — open licentie, lijkt op het logo) |
-| Thema | **donker thema standaard** (gym, fel licht, batterij), geel als accent; licht thema optioneel |
+| Primaire kleur | **IBS-geel `#F9C852`** (gemeten uit het logo) |
+| Tekst/achtergrond | crème `#FEF9ED` op bijna-zwart `#171717`; kaarten `#232323` / `#3A3A3A` |
+| Stijl | strak, donker, grote kaarten met ronde hoeken, zachte amber gloed; koppen licht, **cijfers groot en vet** |
+| Lettertype | **Poppins** (open licentie) |
+| Thema | **donker thema standaard**; licht thema optioneel |
+| Art deco | eigen vector-ornamenten in gedempt goud `#C9A24A`: dubbele scheidingslijnen, zonnewaaier, getrapte hoeken, ruitenpatroon. Terughoudend op trainingsschermen. |
 
 - **Grote cijfers**: doelgewichten en timers zijn het grootste element op het scherm, leesbaar op armlengte.
 - **Grote tikvlakken**: bedienbaar met bezwete handen / tussen de sets door.
@@ -422,6 +423,7 @@ Afgeleid uit de IBS-logo's en de *IBS Update Bulletin*-afbeelding.
 | D-51 | IBS-logo in de app, met vermelding dat de app onder IBS-vlag is ontwikkeld. | [BESLOTEN] |
 | D-52 | Donker thema standaard in IBS-huisstijl, Poppins, grote cijfers, logo op opstart- en Over-scherm. Eigenaar levert logo + huisstijlafbeeldingen aan (`assets/branding/`). | [BESLOTEN] |
 | D-53 | IBS-logo mag in de (publieke) repo en de app. | [BESLOTEN] |
+| D-54a | Art-deco-ornamenten als eigen vectoren, uitgewerkt in `docs/DESIGN.md`. | [BESLOTEN] |
 | D-54 | Naam van de app: **GYM-8020**. Repo: `Fabianlanger/GYM-8020` (tijdens ontwikkeling privé, later publiek). | [BESLOTEN] |
 
 ---
@@ -499,9 +501,6 @@ Elke fase = een werkende, installeerbare APK.
 
 | # | Onderwerp | Wat nodig is |
 |---|---|---|
-| D-11/D-17 | Bevestigen dat eerdere reactie "D12"/"D19" bedoeld was als D-11 (± gewicht) en D-17 (eenheid) | bevestiging |
-| D-68 | Kruisverwijzing tussen oefeningen (startgewicht voorstellen) | akkoord of aanpassing |
-| D-52 | IBS-logo en huisstijlafbeeldingen | bestanden van eigenaar |
 | — | `docs/methode.md` | tekst van eigenaar |
 | R-1 | Onderzoek spierpercentages | later |
 
