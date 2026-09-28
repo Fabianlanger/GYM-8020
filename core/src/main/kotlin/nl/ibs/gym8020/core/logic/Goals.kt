@@ -6,6 +6,12 @@ import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
 import nl.ibs.gym8020.core.model.Signal
 
+/** One achievable step up or down (from a material profile, D-28). */
+interface WeightSteps {
+    fun up(weightKg: Double): Double
+    fun down(weightKg: Double): Double
+}
+
 /** A performed set as needed for planning. [weightKg] is the entered value (signed extra for bodyweight). */
 data class PerformedSet(val role: SetRole, val weightKg: Double?, val reps: Int?)
 
@@ -30,11 +36,11 @@ object GoalAdvisor {
      * Suggested weight for next time. [stepKg] is one achievable step; for bodyweight exercises
      * "heavier" means more extra weight / less assistance, which is the same direction on the signed value.
      */
-    fun suggestWeight(current: Double, signal: Signal, stepKg: Double, loadType: LoadType): Double {
+    fun suggestWeight(current: Double, signal: Signal, stepKg: Double, loadType: LoadType, steps: WeightSteps? = null): Double {
         val next = when (signal) {
-            Signal.TOO_LIGHT -> current + stepKg
+            Signal.TOO_LIGHT -> steps?.up(current) ?: (current + stepKg)
             Signal.GOOD -> current
-            Signal.TOO_HEAVY -> current - stepKg
+            Signal.TOO_HEAVY -> steps?.down(current) ?: (current - stepKg)
         }
         return if (loadType == LoadType.EXTERNAL) next.coerceAtLeast(0.0) else next
     }
@@ -48,6 +54,7 @@ object GoalAdvisor {
         loadType: LoadType,
         progression: Progression,
         settings: MethodSettings,
+        steps: WeightSteps? = null,
     ): List<PlannedSet> = performed.map { set ->
         val target = settings.targetFor(set.role)
         when {
@@ -56,7 +63,7 @@ object GoalAdvisor {
             set.reps == null || target == null -> PlannedSet(set.role, set.weightKg)
             else -> PlannedSet(
                 set.role,
-                suggestWeight(set.weightKg, signal(set.reps, target, settings.goodMargin), settings.weightStepKg, loadType),
+                suggestWeight(set.weightKg, signal(set.reps, target, settings.goodMargin), settings.weightStepKg, loadType, steps),
             )
         }
     }

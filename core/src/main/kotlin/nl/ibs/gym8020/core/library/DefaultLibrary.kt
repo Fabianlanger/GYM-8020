@@ -1,7 +1,10 @@
 package nl.ibs.gym8020.core.library
 
+import nl.ibs.gym8020.core.material.MaterialKind
+import nl.ibs.gym8020.core.material.MaterialProfile
 import nl.ibs.gym8020.core.model.Equipment
 import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.Muscle.*
 import nl.ibs.gym8020.core.model.MuscleShare
@@ -20,6 +23,9 @@ data class LibraryExercise(
     val bodyweightFactor: Double = 1.0,
     val muscles: List<MuscleShare>,
 )
+
+/** A standard material profile (D-27). Names in English and Dutch; the app picks by language. */
+data class LibraryMaterial(val key: String, val nameEn: String, val nameNl: String, val profile: MaterialProfile)
 
 data class LibrarySchema(val key: String, val name: String, val exerciseKeys: List<String>)
 
@@ -131,6 +137,51 @@ object DefaultLibrary {
         LibraryWeekPlan("ppl", "Push / Pull / Legs", 3, listOf("push" to MONDAY, "pull" to WEDNESDAY, "legs" to FRIDAY)),
         LibraryWeekPlan("upper_lower", "Upper / Lower", 4, listOf("upper_a" to MONDAY, "lower_a" to TUESDAY, "upper_b" to THURSDAY, "lower_b" to FRIDAY)),
     )
+
+    val materials: List<LibraryMaterial> = listOf(
+        LibraryMaterial("olympic_bar", "Olympic bar 20 kg", "Olympische stang 20 kg", MaterialProfile(MaterialKind.PLATES, baseKg = 20.0, loadingPoints = 2)),
+        LibraryMaterial("ez_bar", "EZ bar 10 kg", "EZ-stang 10 kg", MaterialProfile(MaterialKind.PLATES, baseKg = 10.0, loadingPoints = 2)),
+        LibraryMaterial("plate_machine", "Plate-loaded machine", "Plate-loaded machine", MaterialProfile(MaterialKind.PLATES, baseKg = 0.0, loadingPoints = 2)),
+        LibraryMaterial("pin_stack", "Pin stack 5 kg steps", "Pin-stack per 5 kg", MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0, maxKg = 120.0)),
+        LibraryMaterial("cable", "Cable 2.5 kg steps", "Kabel per 2,5 kg", MaterialProfile(MaterialKind.STACK, minKg = 2.5, stepKg = 2.5, maxKg = 80.0)),
+        LibraryMaterial("dumbbells", "Dumbbells 2–40 kg", "Dumbbells 2–40 kg", MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0, maxKg = 40.0)),
+        LibraryMaterial("bodyweight", "Assisted machine + dip belt", "Assisted machine + dipriem", MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0, maxKg = 60.0)),
+    )
+
+    /** Movement pattern per library exercise (for the icon). */
+    fun movementFor(key: String): Movement = when (key) {
+        "back_squat", "front_squat", "hack_squat" -> Movement.SQUAT
+        "deadlift", "romanian_deadlift", "hip_thrust", "back_extension" -> Movement.HINGE
+        "bulgarian_split_squat", "walking_lunge" -> Movement.LUNGE
+        "leg_press", "leg_extension", "lying_leg_curl", "seated_leg_curl", "adductor_machine", "abductor_machine" -> Movement.LEG_MACHINE
+        "standing_calf_raise", "seated_calf_raise" -> Movement.CALF
+        "bench_press", "incline_bench_press", "dumbbell_bench_press", "incline_dumbbell_press", "chest_press_machine",
+        "push_up", "close_grip_bench_press" -> Movement.HORIZONTAL_PUSH
+        "overhead_press", "dumbbell_shoulder_press", "shoulder_press_machine" -> Movement.VERTICAL_PUSH
+        "pec_deck", "cable_crossover" -> Movement.FLY
+        "dips" -> Movement.DIP
+        "lateral_raise", "cable_lateral_raise", "reverse_pec_deck", "face_pull" -> Movement.RAISE
+        "pull_up", "chin_up", "lat_pulldown" -> Movement.VERTICAL_PULL
+        "barbell_row", "seated_cable_row", "dumbbell_row", "t_bar_row" -> Movement.HORIZONTAL_PULL
+        "barbell_curl", "dumbbell_curl", "hammer_curl", "cable_biceps_curl", "preacher_curl", "wrist_curl" -> Movement.CURL
+        "cable_triceps_pushdown", "overhead_cable_triceps_extension", "skull_crusher" -> Movement.TRICEPS
+        "shrug" -> Movement.SHRUG
+        else -> Movement.CORE
+    }
+
+    /** Default material per library exercise; null = no rounding (e.g. crunches). */
+    fun materialFor(exercise: LibraryExercise): String? = when (exercise.key) {
+        "skull_crusher", "barbell_curl" -> "ez_bar"
+        "leg_press", "hack_squat" -> "plate_machine"
+        "crunch", "decline_crunch", "hanging_leg_raise", "russian_twist" -> null
+        else -> when (exercise.equipment) {
+            Equipment.BARBELL -> "olympic_bar"
+            Equipment.DUMBBELL -> "dumbbells"
+            Equipment.MACHINE -> "pin_stack"
+            Equipment.CABLE -> "cable"
+            Equipment.BODYWEIGHT -> "bodyweight"
+        }
+    }
 
     /** The week plan that is active on first start. */
     const val DEFAULT_ACTIVE_WEEK_PLAN = "full_body_3x"

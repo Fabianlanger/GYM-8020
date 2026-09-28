@@ -52,3 +52,18 @@ class LibraryAndBackupTest {
         assertFailsWith<IllegalArgumentException> { BackupJson.decode("""{"format":"other","exportedAt":1}""") }
     }
 }
+
+class LibraryMaterialTest {
+    @Test
+    fun `every material reference exists`() {
+        val keys = DefaultLibrary.materials.map { it.key }.toSet()
+        DefaultLibrary.exercises.forEach { ex -> DefaultLibrary.materialFor(ex)?.let { assertTrue(it in keys, "${ex.key} → $it") } }
+        assertEquals(keys.size, DefaultLibrary.materials.size)
+    }
+
+    @Test
+    fun `only core exercises fall back to the core icon`() {
+        DefaultLibrary.exercises.filter { DefaultLibrary.movementFor(it.key) == nl.ibs.gym8020.core.model.Movement.CORE }
+            .forEach { assertTrue(it.muscles.any { m -> m.muscle.group == nl.ibs.gym8020.core.model.MuscleGroup.CORE }, it.key) }
+    }
+}

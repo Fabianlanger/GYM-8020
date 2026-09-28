@@ -41,6 +41,13 @@ enum class Progression { WEIGHT, REPS }
 /** Where the weight comes from; used for the warm-up hint (and material profiles in v0.2). */
 enum class Equipment { BARBELL, DUMBBELL, MACHINE, CABLE, BODYWEIGHT }
 
+/** Movement pattern; drives the exercise icon. */
+enum class Movement {
+    SQUAT, HINGE, LUNGE, LEG_MACHINE, CALF,
+    HORIZONTAL_PUSH, VERTICAL_PUSH, FLY, DIP, RAISE,
+    VERTICAL_PULL, HORIZONTAL_PULL, CURL, TRICEPS, SHRUG, CORE,
+}
+
 enum class SetRole { HEAVY, LIGHT, WARMUP;
 
     val isWork: Boolean get() = this != WARMUP

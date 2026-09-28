@@ -18,10 +18,12 @@ data class Backup(
     val bodyweights: List<BodyweightDto> = emptyList(),
     val sessions: List<SessionDto> = emptyList(),
     val plans: List<PlanDto> = emptyList(),
+    val materials: List<MaterialDto> = emptyList(),
+    val plateStock: String? = null,
 ) {
     companion object {
         const val FORMAT = "gym-8020-backup"
-        const val VERSION = 1
+        const val VERSION = 2
     }
 }
 
@@ -38,6 +40,21 @@ data class ExerciseDto(
     val lightTarget: Int? = null,
     val archived: Boolean = false,
     val muscles: List<MuscleShareDto> = emptyList(),
+    val materialId: Long? = null,
+    val movement: String? = null,
+)
+
+@Serializable
+data class MaterialDto(
+    val id: Long,
+    val libraryKey: String? = null,
+    val name: String,
+    val kind: String,
+    val baseKg: Double,
+    val loadingPoints: Int,
+    val minKg: Double,
+    val stepKg: Double,
+    val maxKg: Double,
 )
 
 @Serializable
