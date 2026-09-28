@@ -71,7 +71,7 @@ Een Android-app (APK) die krachttraining bijhoudt volgens een vaste methode: per
 
 ## 4. Oefeningen en belastingstypes
 
-Elke oefening heeft precies één belastingstype:
+Elke oefening heeft precies één belastingstype, en daarnaast een instelling **progressie op gewicht of op reps**:
 
 **Invoer bij *Lichaamsgewicht ±*:** één gewichtsveld met een **+/−-schakelaar** ervoor. Ondersteuning (assisted machine) is gewoon een negatief getal, extra gewicht een positief getal, 0 = puur lichaamsgewicht. Typ je een `-` terwijl de schakelaar op + staat, dan wordt het getal negatief (en springt de schakelaar om). Zo hoef je geen apart type te kiezen als je van assisted naar weighted doorgroeit: de progressie loopt als één doorlopende lijn van bijv. −30 kg naar +10 kg.
 
@@ -79,21 +79,23 @@ Elke oefening heeft precies één belastingstype:
 |---|---|---|---|
 | **Extern** | Bench press, leg press, cable row | = ingevuld gewicht | gewicht, reps |
 | **Lichaamsgewicht ±** | Pull-up, dips, push-up; assisted (−) of met dipriem/vest (+) | = lichaamsgewicht × factor **+ extra** (extra is positief, negatief of 0) | extra gewicht met teken (± kg), reps |
-| **Alleen reps** | Crunches, sit-ups | geen gewicht; progressie in reps | reps |
 
 **Lichaamsgewichtfactor** — het deel van je lichaamsgewicht dat je verplaatst. Voorgestelde standaardwaarden (per oefening aanpasbaar):
+
+**Progressie op reps (variant van *Lichaamsgewicht ±*):** voor oefeningen die je typisch zonder gewicht doet (crunches, leg raises, planks-achtigen). Het ±-veld staat dan op 0 en is **ingeklapt**; je vult alleen reps in. Tik je het veld open en vul je toch gewicht in, dan kan dat gewoon. Zolang het extra gewicht 0 is, gaan doel, slim voorstel en vooruitgang over **reps**; zodra je gewicht toevoegt, over gewicht.
 
 | Oefening | Factor | Toelichting |
 |---|---|---|
 | Pull-up / chin-up / (assisted) | 1,00 | je hangt volledig |
 | Dips / (assisted) | 0,95 | onderarmen/handen dragen niet mee |
 | Push-up | 0,65 | literatuurwaarde ~64% |
-| Crunch / sit-up | — | type *Alleen reps* |
+| Crunch / sit-up / leg raise | 0,30 | ruwe schatting (bovenlichaam), alleen voor volume in heatmap/dashboard; instelbaar |
 
 | # | Besluit | Status |
 |---|---|---|
-| D-11 | Drie belastingstypes: **Extern**, **Lichaamsgewicht ±** (ondersteuning/extra als één getal met teken, +/−-schakelaar), **Alleen reps**. | [BESLOTEN] |
-| D-12 | Buikspieroefeningen zonder gewicht zijn standaard type **Alleen reps**: het doel voor de volgende keer is een **aantal reps**, niet een gewicht. Gebruiker kan ze omzetten naar *Lichaamsgewicht ±* met eigen factor. | [VOORSTEL] |
+| D-11 | Twee belastingstypes: **Extern** en **Lichaamsgewicht ±** (ondersteuning/extra als één getal met teken, +/−-schakelaar; 0 = puur lichaamsgewicht). "Alleen reps" is geen apart type meer maar een variant. | [BESLOTEN] |
+| D-12 | Buikspieroefeningen zijn *Lichaamsgewicht ±* met **progressie op reps** (±-veld ingeklapt, 0 kg). Extra gewicht blijft mogelijk. | [BESLOTEN] |
+| D-12a | Standaardfactor buikspieroefeningen 0,30 (schatting, alleen voor volume). | [VOORSTEL] |
 | D-13 | Eigen oefeningen aanmaken, bewerken, archiveren (niet verwijderen als er historie is). | [VOORSTEL] |
 
 ---
@@ -123,7 +125,7 @@ De app laat dus zien dat de *prestatie* is gedaald (of gelijk gebleven relatief)
 Kern van de app: na elke oefening zet je een doel; de volgende keer zie je dat doel als eerste.
 
 **Vorm van het doel**
-- **Per set**: zwaar-set doelgewicht, licht-set doelgewicht (bij *Alleen reps*: doel-reps per set).
+- **Per set**: zwaar-set doelgewicht, licht-set doelgewicht (bij progressie op reps: doel-reps per set).
 - De rep-target (6 / 16) staat er altijd bij; die volgt uit de rol, die hoef je niet in te vullen.
 - Optionele korte **notitie** (bijv. "had energie over").
 
@@ -135,7 +137,7 @@ Kern van de app: na elke oefening zet je een doel; de volgende keer zie je dat d
 | target − 1 … target + 1 | **Goed** | gelijk houden |
 | ≤ target − 2 reps | **Te zwaar** | één stap lichter |
 
-"Eén stap" = het volgende gewicht dat met het materiaalprofiel haalbaar is (sectie 7). Bij *Alleen reps*: doel = behaalde reps + 1.
+"Eén stap" = het volgende gewicht dat met het materiaalprofiel haalbaar is (sectie 7). Bij progressie op reps: doel = behaalde reps + 1.
 
 **Doel vs. resultaat**
 - Tijdens de oefening zie je per set het doel.
@@ -146,7 +148,7 @@ Kern van de app: na elke oefening zet je een doel; de volgende keer zie je dat d
 |---|---|---|
 | D-18 | Doel wordt vastgelegd **na elke oefening** en getoond **bij de volgende keer dezelfde oefening** (ongeacht schema). | [BESLOTEN] |
 | D-18a | Bij het plannen van de volgende keer kun je **sets toevoegen en weghalen** (+ / −). **Standaard** neemt het plan de sets over die je **net gedaan hebt** (zelfde aantal, rollen en warm-up), met het slimme gewichtsvoorstel. | [BESLOTEN] |
-| D-19 | Doel is **per set** (gewicht; of reps bij *Alleen reps*) + optionele notitie. | [VOORSTEL] |
+| D-19 | Doel is **per set** (gewicht; of reps bij progressie op reps) + optionele notitie. | [VOORSTEL] |
 | D-20 | Geen RPE/zwaarte-score (je gaat altijd tot failure; reps t.o.v. target zegt genoeg). | [VOORSTEL] |
 | D-21 | Slim voorstel volgens de tabel hierboven; eigenaar beslist altijd zelf. Marge (±1 / ±2) instelbaar. | [VOORSTEL] |
 | D-22 | Indicator gehaald / niet gehaald + signaal per set; overzicht op dashboard. | [VOORSTEL] |
@@ -291,7 +293,9 @@ Zo zie je ook of je later in de training trager wordt.
 | Onderdeel | Inhoud |
 |---|---|
 | **Lichaamsgewicht** | lijngrafiek over tijd, met trendlijn (voortschrijdend gemiddelde) |
-| **Vooruitgang per oefening** | effectief gewicht zware set + geschatte 1RM over tijd; bij *Alleen reps*: reps over tijd |
+| **Vooruitgang per oefening** | effectief gewicht zware set + geschatte 1RM over tijd; bij progressie op reps: reps over tijd |
+| **Per spier** | volume en aantal werksets per week per spier, trend over tijd; welke oefeningen eraan bijdragen |
+| **Per spiergroep** | hetzelfde, opgeteld per spiergroep (bijv. *Rug* = lats + trapezius + midden rug + onderrug); balans tussen groepen (bijv. duwen vs. trekken, boven- vs. onderlichaam) |
 | **Frequentie** | trainingen per week |
 | **Duur** | trainingsduur per training; gemiddelde oefentijd per positie in de training (vermoeidheid) |
 | **Doelen** | % gehaalde doelen over tijd |
@@ -301,12 +305,14 @@ Zo zie je ook of je later in de training trager wordt.
 |---|---|---|
 | D-38 | Dashboard met lichaamsgewicht. | [BESLOTEN] |
 | D-39 | Overige onderdelen zoals in de tabel. | [VOORSTEL] |
+| D-66 | Statistiek wordt apart bijgehouden en getoond op drie niveaus: **oefening**, **spier** en **spiergroep** (zie sectie 11). | [BESLOTEN] |
+| D-67 | Per spier/spiergroep: volume én **aantal werksets per week** (warm-up telt niet mee; secundair telt als ½ set). | [VOORSTEL] |
 
 ---
 
 ## 11. Spierheatmap (na de training)
 
-Na afronden van een training: een figuur van het lichaam, **voorkant en achterkant als losse kaarten**, met kleur per spiergroep. Twee weergaven:
+Na afronden van een training: een figuur van het lichaam, **voorkant en achterkant als losse kaarten**, met kleur per **spier** (optioneel samengevoegd per spiergroep). Twee weergaven:
 
 1. **Totaal** — hoeveel je deze training per spiergroep hebt verplaatst.
 2. **T.o.v. vorige keer** — waar je vooruit of achteruit ging.
@@ -320,21 +326,20 @@ Na afronden van een training: een figuur van het lichaam, **voorkant en achterka
   `e1RM = gewicht × (1 + reps / 30)`
   vergeleken met **de vorige keer dat díe oefening gedaan is**, als % verschil; per spiergroep gewogen gemiddeld (primair 100%, secundair 50%). Kleur: groen = vooruit, grijs = gelijk, rood = achteruit.
 - Waarom niet overal 1RM: Epley is betrouwbaar tot ~10–12 reps; voor de lichte set (~16) wordt het onnauwkeurig. Daarom e1RM alleen op de zware set, volume voor de totaal-kaart.
-- *Alleen reps*-oefeningen tellen in de vooruitgang-kaart mee als % verschil in reps.
+- Oefeningen met progressie op reps tellen in de vooruitgang-kaart mee als % verschil in reps.
 
-**Spiergroepen**
+**Spieren en spiergroepen**
 
-| Voorkant | Achterkant |
-|---|---|
-| Borst | Trapezius |
-| Voorkant schouder | Achterkant schouder |
-| Zijkant schouder | Brede rugspier (lats) |
-| Biceps | Midden rug (rhomboïden) |
-| Onderarmen | Triceps |
-| Buikspieren | Onderrug |
-| Schuine buikspieren | Bilspieren |
-| Quadriceps | Hamstrings |
-| Adductoren | Kuiten |
+Oefeningen worden gekoppeld aan **spieren** (primair/secundair). Spieren horen bij één **spiergroep**. Statistiek en heatmap rekenen op spierniveau en tellen op naar spiergroep. Dit staat los van oefeningen: dezelfde spier kan door veel oefeningen geraakt worden.
+
+| Spiergroep | Spieren | Kant |
+|---|---|---|
+| **Borst** | Borst | voor |
+| **Schouders** | Voorkant schouder · Zijkant schouder · Achterkant schouder | voor / voor / achter |
+| **Rug** | Brede rugspier (lats) · Trapezius · Midden rug (rhomboïden) · Onderrug | achter |
+| **Armen** | Biceps · Triceps · Onderarmen | voor / achter / voor |
+| **Core** | Buikspieren · Schuine buikspieren | voor |
+| **Benen** | Quadriceps · Hamstrings · Bilspieren · Adductoren · Kuiten | voor / achter / achter / voor / achter |
 
 | # | Besluit | Status |
 |---|---|---|
@@ -514,7 +519,7 @@ Standaard 2 sets per oefening (zwaar 6 / licht 16) tenzij anders vermeld. Oefeni
 4. Calf raise — **A-1 [OPEN]:** staand (machine) of zittend?
 5. Military press (overhead press, barbell)
 6. Row — **A-2 [OPEN]:** barbell row of seated cable row?
-7. Decline crunch *(alleen reps)*
+7. Decline crunch *(progressie op reps)*
 8. Cable biceps curl
 9. Cable triceps pushdown
 
