@@ -493,12 +493,15 @@ Elke fase = een werkende, installeerbare APK.
 |---|---|
 | v0.1 — Kern | gebouwd (dev-builds 1–5) |
 | v0.2 — Materiaal | gebouwd: materiaalprofielen, schijvenvoorraad, schijven per kant, laadvolgorde zwaar → licht met minimale wissels, alleen haalbare gewichten, warm-up-gewicht uit het materiaal. Plus feedback v0.1: iconen, compacter trainingsscherm, swipe-lint. |
+| v0.3 — Dashboard | gebouwd: vooruitgang per oefening / spier / spiergroep, balans duwen-trekken en boven-benen, frequentie t.o.v. weekdoel, duur en tijd per positie, doelen gehaald, lichaamsgewicht met trendlijn, records; vergelijkbare oefeningen (D-68). Plus feedback v0.2: elegant swipe-lint, achtergrondpatroon per gedeelte (D-72). |
 
 | # | Besluit (na feedback v0.1) | Status |
 |---|---|---|
 | D-69 | Elke oefening heeft een **bewegingsicoon** (squat, hinge, duwen, trekken, …), zelf getekend in art-deco-lijnstijl; zelf te kiezen bij eigen oefeningen. Iconen ook op beginscherm, schema's, lijsten en knoppen voor snelle visuele herkenning. | [BESLOTEN] |
 | D-70 | Trainingsscherm compact: sets als één regel, alleen de actieve set open; "Volgende keer" ingeklapt tot je tikt. | [BESLOTEN] |
 | D-71 | Geanimeerd art-deco-lint aan de zijkant van het trainingsscherm dat laat zien dat je naar de volgende oefening kunt swipen (tikken kan ook). | [BESLOTEN] |
+| D-72 | Elk gedeelte van de app heeft een eigen, vervagend art-deco-achtergrondpatroon: ruitjes met waaiers (home), waaierschubben (training en samenvatting), bogen (overige schermen). | [BESLOTEN] |
+| D-73 | Het tabblad Lichaam wordt Dashboard; lichaamsgewicht staat als onderdeel in het dashboard met een knop naar de metingen. | [BESLOTEN] |
 
 ---
 
