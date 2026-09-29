@@ -158,6 +158,26 @@ class TrainingRepository(private val db: AppDatabase, private val settings: Sett
         return LastPerformance(session.startedAt.toLocalDate(), sessions.setsOf(se.id))
     }
 
+    /**
+     * Similar exercises (D-68): when an exercise has no history, the latest performance of other exercises
+     * that train the same primary muscles, as a reference to find a starting weight. No conversion.
+     */
+    suspend fun similarPerformances(exerciseId: Long, excludeSession: Long, limit: Int = 2): List<Pair<ExerciseEntity, LastPerformance>> {
+        val all = db.exercises().allMuscles()
+        val primary = all.filter { it.exerciseId == exerciseId && it.percent >= 100 }.map { it.muscle }.toSet()
+        if (primary.isEmpty()) return emptyList()
+        val candidates = all.filter { it.exerciseId != exerciseId && it.percent >= 100 && it.muscle in primary }
+            .groupBy { it.exerciseId }.entries.sortedByDescending { it.value.size }.map { it.key }
+        val out = mutableListOf<Pair<ExerciseEntity, LastPerformance>>()
+        for (id in candidates) {
+            val ex = db.exercises().get(id) ?: continue
+            val last = lastPerformance(id, excludeSession) ?: continue
+            out += ex to last
+            if (out.size >= limit) break
+        }
+        return out.sortedByDescending { it.second.date }
+    }
+
     /** Best heavy-set e1RM (effective weight) in earlier sessions. */
     suspend fun bestE1rm(exercise: ExerciseEntity, excludeSession: Long): Double? =
         sessions.historySets(exercise.id, excludeSession)

@@ -25,7 +25,12 @@ import nl.ibs.gym8020.data.db.SessionExerciseEntity
 import nl.ibs.gym8020.data.db.SetEntity
 
 /** Per-exercise data that is loaded once (history). */
-data class ExerciseExtra(val last: LastPerformance?, val lastNote: String?)
+data class ExerciseExtra(
+    val last: LastPerformance?,
+    val lastNote: String?,
+    /** Only when there is no history: similar exercises as a reference (D-68). */
+    val similar: List<Pair<ExerciseEntity, LastPerformance>> = emptyList(),
+)
 
 /** The plan for next time as edited on the training screen. */
 data class PlanDraft(val sets: List<PlannedSet>, val note: String = "", val edited: Boolean = false)
@@ -90,7 +95,9 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     private fun loadExtra(exerciseId: Long) {
         if (!loading.add(exerciseId)) return
         viewModelScope.launch {
-            val extra = ExerciseExtra(repo.lastPerformance(exerciseId, sessionId), repo.planNote(exerciseId))
+            val last = repo.lastPerformance(exerciseId, sessionId)
+            val similar = if (last == null) repo.similarPerformances(exerciseId, sessionId) else emptyList()
+            val extra = ExerciseExtra(last, repo.planNote(exerciseId), similar)
             extras.update { it + (exerciseId to extra) }
         }
     }

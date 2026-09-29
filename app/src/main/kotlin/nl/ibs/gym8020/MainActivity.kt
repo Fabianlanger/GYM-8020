@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material3.Icon
@@ -53,8 +53,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.delay
 import nl.ibs.gym8020.ui.body.BodyweightScreen
+import nl.ibs.gym8020.ui.dashboard.DashboardScreen
 import nl.ibs.gym8020.ui.components.Eyebrow
+import nl.ibs.gym8020.ui.deco.DecoBackground
 import nl.ibs.gym8020.ui.deco.DecoDivider
+import nl.ibs.gym8020.ui.deco.DecoPattern
 import nl.ibs.gym8020.ui.deco.IbsMark
 import nl.ibs.gym8020.ui.deco.Lattice
 import nl.ibs.gym8020.ui.deco.Sunburst
@@ -97,6 +100,7 @@ private object Routes {
     const val SCHEMAS = "schemas"
     const val EXERCISES = "exercises"
     const val BODY = "body"
+    const val DASHBOARD = "dashboard"
     const val SETTINGS = "settings"
     const val SCHEMA = "schema/{id}"
     const val WEEK_PLAN = "weekplan/{id}"
@@ -112,7 +116,7 @@ private val tabs = listOf(
     Tab(Routes.HOME, R.string.nav_home, Icons.Filled.Home),
     Tab(Routes.SCHEMAS, R.string.nav_schemas, Icons.AutoMirrored.Filled.ViewList),
     Tab(Routes.EXERCISES, R.string.nav_exercises, Icons.Filled.FitnessCenter),
-    Tab(Routes.BODY, R.string.nav_body, Icons.Filled.MonitorWeight),
+    Tab(Routes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.Insights),
     Tab(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
 )
 
@@ -150,6 +154,14 @@ private fun GymNavHost(container: AppContainer) {
         },
     ) { padding ->
         val idArg = listOf(navArgument("id") { type = NavType.LongType })
+        // Each area has its own art deco pattern: lattice at home, fan scales while training, arches elsewhere.
+        val pattern = when {
+            route == Routes.HOME -> DecoPattern.LATTICE
+            route == Routes.TRAINING || route == Routes.SUMMARY -> DecoPattern.FANS
+            else -> DecoPattern.ARCHES
+        }
+        Box(Modifier.fillMaxSize()) {
+        DecoBackground(pattern, Modifier.fillMaxSize())
         NavHost(
             navController = nav,
             startDestination = Routes.HOME,
@@ -166,7 +178,8 @@ private fun GymNavHost(container: AppContainer) {
                 SchemaListScreen(container, onOpenSchema = { nav.navigate("schema/$it") }, onOpenWeekPlan = { nav.navigate("weekplan/$it") })
             }
             composable(Routes.EXERCISES) { ExerciseListScreen(container, onOpen = { nav.navigate("exercise/$it") }) }
-            composable(Routes.BODY) { BodyweightScreen(container) }
+            composable(Routes.DASHBOARD) { DashboardScreen(container, onOpenBodyweight = { nav.navigate(Routes.BODY) }) }
+            composable(Routes.BODY) { Box(Modifier.systemBarsPadding().imePadding()) { BodyweightScreen(container) } }
             composable(Routes.SETTINGS) { SettingsScreen(container, onOpenMaterial = { nav.navigate(Routes.MATERIAL) }) }
             composable(Routes.MATERIAL) { Box(Modifier.systemBarsPadding().imePadding()) { MaterialScreen(container) } }
             composable(Routes.SCHEMA, idArg) { e ->
@@ -195,6 +208,7 @@ private fun GymNavHost(container: AppContainer) {
             composable(Routes.SUMMARY, idArg) { e ->
                 SummaryScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { nav.popBackStack(Routes.HOME, inclusive = false) })
             }
+        }
         }
     }
 }

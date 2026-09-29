@@ -111,7 +111,7 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit) 
     val s = summary
 
     Column(
-        Modifier.fillMaxSize().background(Gym.Bg).statusBarsPadding().navigationBarsPadding()
+        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()
             .verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

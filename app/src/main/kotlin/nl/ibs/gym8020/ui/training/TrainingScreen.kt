@@ -8,6 +8,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -117,6 +118,7 @@ import nl.ibs.gym8020.ui.components.WeightText
 import nl.ibs.gym8020.ui.deco.DecoDivider
 import nl.ibs.gym8020.ui.deco.MovementIcon
 import nl.ibs.gym8020.ui.deco.Sunburst
+import nl.ibs.gym8020.ui.deco.drawRibbon
 import nl.ibs.gym8020.ui.exercises.ExercisePickerDialog
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
@@ -195,7 +197,7 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
         return
     }
 
-    Box(Modifier.fillMaxSize().background(Gym.Bg)) {
+    Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onExit) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
@@ -265,62 +267,21 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
     }
 }
 
-/**
- * A slim vertical art deco ribbon at the screen edge that gently slides in and out,
- * suggesting you can pull the page. The next ribbon is bright, the previous one subtle.
- */
+/** The art deco swipe ribbon at the screen edge (D-71); tap or swipe to change exercise. */
 @Composable
 private fun SwipeRibbon(pointsRight: Boolean, description: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "ribbon")
-    val shift by transition.animateFloat(
+    val phase by transition.animateFloat(
         initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1400), RepeatMode.Reverse), label = "shift",
+        animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart), label = "phase",
     )
-    val alpha = if (pointsRight) 1f else .45f
     Canvas(
         modifier
-            .offset(x = ((if (pointsRight) -1 else 1) * 6 * shift).dp)
-            .width(22.dp).height(150.dp)
-            .alpha(alpha)
+            .width(30.dp).height(176.dp)
+            .alpha(if (pointsRight) 1f else .45f)
             .semantics { contentDescription = description }
             .clickable(onClick = onClick),
-    ) {
-        scale(if (pointsRight) 1f else -1f, 1f) {
-            val w = size.width
-            val h = size.height
-            val sw = 1.2.dp.toPx()
-            val gold = Gym.Gold
-            // Double vertical lines hugging the edge, ending in diagonal kinks.
-            val outer = w - 3.dp.toPx()
-            val inner = w - 8.dp.toPx()
-            drawLine(gold, Offset(outer, 0f), Offset(outer, h), sw)
-            drawLine(gold, Offset(inner, h * .12f), Offset(inner, h * .88f), sw)
-            drawLine(gold, Offset(inner, h * .12f), Offset(outer, 0f), sw)
-            drawLine(gold, Offset(inner, h * .88f), Offset(outer, h), sw)
-            // Chevrons pointing into the screen, with a diamond in the middle.
-            val cy = h / 2
-            listOf(-26f, 26f).forEach { d ->
-                val y = cy + d.dp.toPx()
-                val p = Path().apply {
-                    moveTo(inner - 2.dp.toPx(), y - 6.dp.toPx()); lineTo(inner - 9.dp.toPx(), y); lineTo(inner - 2.dp.toPx(), y + 6.dp.toPx())
-                }
-                drawPath(p, gold, style = Stroke(sw))
-            }
-            val dm = Path().apply {
-                moveTo(inner - 5.dp.toPx(), cy - 8.dp.toPx()); lineTo(inner + 2.dp.toPx(), cy)
-                lineTo(inner - 5.dp.toPx(), cy + 8.dp.toPx()); lineTo(inner - 12.dp.toPx(), cy); close()
-            }
-            drawPath(dm, Gym.Yellow)
-            // A small curl (the floral touch).
-            val curl = Path().apply {
-                moveTo(inner, cy - 40.dp.toPx())
-                cubicTo(inner - 12.dp.toPx(), cy - 44.dp.toPx(), inner - 12.dp.toPx(), cy - 32.dp.toPx(), inner - 5.dp.toPx(), cy - 33.dp.toPx())
-                moveTo(inner, cy + 40.dp.toPx())
-                cubicTo(inner - 12.dp.toPx(), cy + 44.dp.toPx(), inner - 12.dp.toPx(), cy + 32.dp.toPx(), inner - 5.dp.toPx(), cy + 33.dp.toPx())
-            }
-            drawPath(curl, gold, style = Stroke(sw))
-        }
-    }
+    ) { drawRibbon(phase, mirror = !pointsRight) }
 }
 
 @Composable
@@ -454,6 +415,16 @@ private fun LastTimeLine(item: TrainingItem, unit: WeightUnit) {
         if (summary.isNotEmpty()) Text(stringResource(R.string.tr_last_time, summary), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
     }
     item.extra?.lastNote?.let { Text(stringResource(R.string.tr_note_last, it), color = Gym.Gold, style = MaterialTheme.typography.bodySmall) }
+    // No history yet: show similar exercises as a reference (D-68).
+    item.extra?.similar?.takeIf { last == null && it.isNotEmpty() }?.let { list ->
+        val text = list.joinToString("  ·  ") { (ex, perf) ->
+            val sets = perf.sets.filter { it.role.isWork && it.reps != null }
+            val best = sets.maxByOrNull { it.weightKg ?: 0.0 }
+            val w = best?.weightKg?.let { WeightFormat.format(it, unit, ex.loadType == LoadType.BODYWEIGHT) }
+            ex.name + (if (best != null) " ${w ?: "—"} × ${best.reps}" else "")
+        }
+        Text(stringResource(R.string.tr_similar, text), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
+    }
 }
 
 /** Human text for how to set up a weight with the material (D-23, D-26). */

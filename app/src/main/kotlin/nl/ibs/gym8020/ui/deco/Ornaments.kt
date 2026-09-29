@@ -9,6 +9,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -222,4 +224,162 @@ fun DrawScope.drawDecoFrame(color: Color = Gym.GoldSoft, chamfer: Float = 12f * 
     }
     drawPath(frame(sw), color, style = Stroke(sw))
     drawPath(frame(sw + gap), color, style = Stroke(sw))
+}
+
+/**
+ * Swipe ribbon (D-71): a slim art deco spire at the screen edge. Triple spine with stepped caps,
+ * an inward-facing fan with a yellow diamond, chevrons that shimmer in the swipe direction ([phase] 0..1),
+ * and a curl with a leaf at both ends. Drawn for the right edge; [mirror] for the left.
+ * Virtual box 34 × 200.
+ */
+fun DrawScope.drawRibbon(phase: Float, mirror: Boolean, color: Color = Gym.Gold, accent: Color = Gym.Yellow) {
+    val w = 34f
+    val h = 200f
+    val s = min(size.width / w, size.height / h)
+    withTransform({
+        if (mirror) scale(-1f, 1f)
+        translate((size.width - w * s) / 2, (size.height - h * s) / 2)
+        scale(s, s, Offset.Zero)
+    }) {
+        val sw = 1.1f * density / 2f / s
+        val st = Stroke(width = sw)
+        val cy = h / 2
+        val a = w - 2.5f
+        val b = w - 7f
+        val c = w - 11f
+        drawLine(color, Offset(a, 0f), Offset(a, h), sw * 1.1f)
+        drawPath(path {
+            moveTo(a, 6f); cubicTo(b, 20f, b, 30f, b, 46f); lineTo(b, h - 46f); cubicTo(b, h - 30f, b, h - 20f, a, h - 6f)
+        }, color, style = st)
+        drawPath(path { moveTo(c, cy - 58f); lineTo(c, cy - 30f); moveTo(c, cy + 30f); lineTo(c, cy + 58f) }, color.copy(alpha = color.alpha * .55f), style = st)
+        for (sgn in listOf(-1f, 1f)) {
+            val y0 = cy + sgn * 58f
+            for (k in 0..2) {
+                val y = y0 + sgn * k * 3.5f
+                drawLine(color.copy(alpha = color.alpha * (0.8f - k * 0.2f)), Offset(c - (k + 1) * 2.2f, y), Offset(b, y), sw * .8f)
+            }
+        }
+        // Fan pointing into the screen.
+        var i = 0
+        var deg = 95.0
+        while (deg <= 265.0) {
+            val rad = deg * PI / 180
+            val r = if (i % 2 == 0) 18f else 13f
+            drawLine(color, Offset(b + 5f * cos(rad).toFloat(), cy - 5f * sin(rad).toFloat()), Offset(b + r * cos(rad).toFloat(), cy - r * sin(rad).toFloat()), sw * .85f)
+            deg += 17.0; i++
+        }
+        listOf(21f to 1f, 24f to .6f).forEach { (rr, op) ->
+            drawArc(color.copy(alpha = color.alpha * op), 90f, 180f, false, Offset(b - rr, cy - rr), Size(rr * 2, rr * 2), style = Stroke(sw * .85f))
+        }
+        drawPath(path { moveTo(b + 1f, cy - 6f); lineTo(b - 4f, cy); lineTo(b + 1f, cy + 6f); lineTo(b + 4f, cy); close() }, accent)
+        // Chevrons: a light travels outward-to-inward, suggesting the pull direction.
+        for (sgn in listOf(-1f, 1f)) {
+            for (k in 0..2) {
+                val y = cy + sgn * (33f + k * 8f)
+                val wave = ((phase * 3f - k).let { it - kotlin.math.floor(it) })
+                val alpha = 0.3f + 0.7f * (1f - wave)
+                val z = 3.8f
+                drawPath(
+                    path { moveTo(b - 3f, y - z); lineTo(b - 3f - z, y); lineTo(b - 3f, y + z) },
+                    (if (k == 0) accent else color).copy(alpha = alpha),
+                    style = Stroke(width = sw * 1.1f, cap = StrokeCap.Round, join = StrokeJoin.Round),
+                )
+            }
+        }
+        // Curls and leaves: the floral touch.
+        for (sgn in listOf(-1f, 1f)) {
+            val y = cy + sgn * 74f
+            drawPath(path { moveTo(b, y); cubicTo(b - 10f, y - sgn * 2f, b - 9f, y + sgn * 9f, b - 4f, y + sgn * 7f) }, color, style = Stroke(sw * .85f))
+            val leaf = path { moveTo(b, y + sgn * 10f); quadraticTo(b - 8f, y + sgn * 15f, b - 2f, y + sgn * 24f); quadraticTo(b + 1f, y + sgn * 16f, b, y + sgn * 10f); close() }
+            drawPath(leaf, color.copy(alpha = .28f))
+            drawPath(leaf, color, style = Stroke(sw * .7f))
+        }
+    }
+}
+
+/** Background patterns: each area of the app has its own (home, training, everything else). */
+enum class DecoPattern { LATTICE, FANS, ARCHES }
+
+/**
+ * Art deco pattern at the top of a screen, fading out towards [fadeHeight] so content stays readable.
+ */
+@Composable
+fun DecoBackground(pattern: DecoPattern, modifier: Modifier = Modifier, fadeHeight: Float = 300f, color: Color = Gym.Gold) {
+    Canvas(modifier) {
+        val fadePx = fadeHeight * density
+        val sw = 1f * density / 2.2f
+        fun fade(y: Float) = (1f - y / fadePx).coerceIn(0f, 1f)
+        when (pattern) {
+            DecoPattern.LATTICE -> {
+                val t = 40f * density / 2f
+                var y = 0f
+                while (y < fadePx) {
+                    val c = color.copy(alpha = .10f * fade(y))
+                    var x = 0f
+                    while (x < size.width) {
+                        val u = t / 40f
+                        drawPath(path { moveTo(x, y + 20 * u); lineTo(x + 20 * u, y); lineTo(x + 40 * u, y + 20 * u); lineTo(x + 20 * u, y + 40 * u); close() }, c, style = Stroke(sw))
+                        drawArc(c, 180f, 180f, false, Offset(x + 8 * u, y + 26 * u), Size(24 * u, 24 * u), style = Stroke(sw))
+                        for (k in 1..5) {
+                            val rad = (k * 30.0) * PI / 180
+                            drawLine(c, Offset(x + 20 * u, y + 38 * u), Offset(x + 20 * u + 12 * u * cos(rad).toFloat(), y + 38 * u - 12 * u * sin(rad).toFloat()), sw)
+                        }
+                        x += t
+                    }
+                    y += t
+                }
+            }
+            DecoPattern.FANS -> {
+                // Overlapping fan scales.
+                val t = 36f * density / 2.2f
+                var row = 0
+                var y = 0f
+                while (y < fadePx) {
+                    val op = .22f * fade(y)
+                    val off = if (row % 2 == 1) t / 2 else 0f
+                    var x = -t + off
+                    while (x < size.width + t) {
+                        val cx = x + t / 2
+                        val cy = y + t / 2
+                        drawArc(color.copy(alpha = op), 180f, 180f, false, Offset(x, cy - t / 2), Size(t, t), style = Stroke(sw))
+                        val r2 = t / 2 - t * .14f
+                        drawArc(color.copy(alpha = op * .7f), 180f, 180f, false, Offset(cx - r2, cy - r2), Size(r2 * 2, r2 * 2), style = Stroke(sw * .8f))
+                        for (k in 1..5) {
+                            val rad = (k * 30.0) * PI / 180
+                            val rr = t / 2 - t * .17f
+                            drawLine(color.copy(alpha = op * .6f), Offset(cx, cy), Offset(cx + rr * cos(rad).toFloat(), cy - rr * sin(rad).toFloat()), sw * .7f)
+                        }
+                        x += t
+                    }
+                    y += t / 2; row++
+                }
+            }
+            DecoPattern.ARCHES -> {
+                // Rows of double arches with a dot: calm, architectural.
+                val t = 30f * density / 2.2f
+                var y = 0f
+                while (y < fadePx) {
+                    val op = .2f * fade(y)
+                    var x = 0f
+                    while (x < size.width) {
+                        val m = t * .13f
+                        drawPath(path {
+                            moveTo(x + m, y + t); lineTo(x + m, y + t * .4f)
+                            arcTo(androidx.compose.ui.geometry.Rect(x + m, y + t * .4f - (t / 2 - m), x + t - m, y + t * .4f + (t / 2 - m)), 180f, 180f, false)
+                            lineTo(x + t - m, y + t)
+                        }, color.copy(alpha = op), style = Stroke(sw))
+                        val m2 = t * .3f
+                        drawPath(path {
+                            moveTo(x + m2, y + t); lineTo(x + m2, y + t * .47f)
+                            arcTo(androidx.compose.ui.geometry.Rect(x + m2, y + t * .47f - (t / 2 - m2), x + t - m2, y + t * .47f + (t / 2 - m2)), 180f, 180f, false)
+                            lineTo(x + t - m2, y + t)
+                        }, color.copy(alpha = op * .7f), style = Stroke(sw * .8f))
+                        drawCircle(color.copy(alpha = (op * 1.3f).coerceAtMost(1f)), 1.3f * density / 2.2f, Offset(x + t / 2, y + t * .3f))
+                        x += t
+                    }
+                    y += t
+                }
+            }
+        }
+    }
 }

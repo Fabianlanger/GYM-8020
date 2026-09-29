@@ -152,7 +152,6 @@ fun HomeScreen(container: AppContainer, onOpenTraining: (Long) -> Unit, onAllSch
     }
 
     Box(Modifier.fillMaxSize()) {
-        Lattice(Modifier.fillMaxWidth().height(260.dp), alpha = .06f)
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

@@ -127,13 +127,14 @@ fun LineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
         modifier = modifier.height(48.dp),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(2.dp, if (enabled) Gym.Cream else Gym.Muted),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = Gym.Cream),
     ) {
         if (icon != null) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
             Box(Modifier.width(8.dp))
         }
-        Text(text, style = MaterialTheme.typography.labelLarge)
+        Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }
 
