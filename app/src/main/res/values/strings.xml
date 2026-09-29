@@ -243,4 +243,17 @@
     <string name="dash_volume_per_week">Volume per week (weight × reps)</string>
     <string name="nav_dashboard">Dashboard</string>
     <string name="tr_similar">First time. Similar: %s</string>
+    <string name="heat_back">Back</string>
+    <string name="heat_better">Better</string>
+    <string name="heat_front">Front</string>
+    <string name="heat_less">Less</string>
+    <string name="heat_more">More</string>
+    <string name="heat_no_data">No data</string>
+    <string name="heat_progress">Vs. last time</string>
+    <string name="heat_same">Same</string>
+    <string name="heat_sets_title">Work sets per week (last 4 weeks)</string>
+    <string name="heat_tap">Tap a muscle for details</string>
+    <string name="heat_title">Muscles this training</string>
+    <string name="heat_total">Total</string>
+    <string name="heat_worse">Worse</string>
 </resources>

@@ -223,6 +223,10 @@ private fun MuscleSection(d: DashboardData, kg: (Double) -> String) {
     var selected by rememberSaveable { mutableStateOf<Muscle?>(null) }
     val avg = d.setsPerMuscle.mapValues { (_, l) -> l.takeLast(4).map { it.value }.average().takeIf { !it.isNaN() } ?: 0.0 }
     val max = avg.values.maxOrNull() ?: 0.0
+    nl.ibs.gym8020.ui.training.HeatmapCard(
+        total = avg.filterValues { it > 0 }, progress = null, unit = d.unit,
+        title = stringResource(R.string.heat_sets_title), totalFormat = { "%.1f".format(it).replace('.', ',') + " " + "sets" },
+    )
     Text(stringResource(R.string.dash_sets_per_week_help), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
     MuscleGroup.entries.forEach { g ->
         val ms = Muscle.entries.filter { it.group == g }

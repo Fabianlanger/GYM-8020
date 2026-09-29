@@ -60,6 +60,8 @@ data class Summary(
     val records: List<RecordLine>,
     val times: List<ExerciseTime>,
     val unit: WeightUnit,
+    val heatTotal: Map<nl.ibs.gym8020.core.model.Muscle, Double> = emptyMap(),
+    val heatProgress: Map<nl.ibs.gym8020.core.model.Muscle, Double> = emptyMap(),
 )
 
 suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
@@ -101,7 +103,18 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
             if (se.shownAt != null && se.goAt != null) se.goAt - se.shownAt else null,
         )
     }
-    return Summary(session, work, reached, total, records, times, unit)
+    // Heatmap (D-40..42): volume of this training, and progress vs. the previous time of each exercise.
+    val stats = nl.ibs.gym8020.data.loadStats(c.db)
+    val current = stats.sets.filter { it.sessionId == sessionId }
+    val startedAt = session.startedAt
+    val earlier = stats.sessions.filter { it.startedAt < startedAt }.sortedByDescending { it.startedAt }
+    val previous = current.map { it.exerciseId }.distinct().mapNotNull { exId ->
+        earlier.firstNotNullOfOrNull { prev -> stats.sets.filter { it.sessionId == prev.id && it.exerciseId == exId }.takeIf { it.isNotEmpty() } }
+            ?.let { exId to it }
+    }.toMap()
+    val heatTotal = nl.ibs.gym8020.core.stats.Heatmap.volume(current, stats.muscles)
+    val heatProgress = nl.ibs.gym8020.core.stats.Heatmap.progress(nl.ibs.gym8020.core.stats.Heatmap.exerciseChange(current, previous), stats.muscles)
+    return Summary(session, work, reached, total, records, times, unit, heatTotal, heatProgress)
 }
 
 @Composable
@@ -137,6 +150,9 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit) 
                         WeightText(r.weightKg, s.unit, size = 40.sp, signed = r.exercise.loadType == nl.ibs.gym8020.core.model.LoadType.BODYWEIGHT, suffix = "${s.unit.name.lowercase()} × ${r.reps}")
                     }
                 }
+            }
+            if (s.heatTotal.isNotEmpty()) {
+                HeatmapCard(s.heatTotal, s.heatProgress, s.unit)
             }
             if (s.times.isNotEmpty()) {
                 Eyebrow(stringResource(R.string.sum_times))
