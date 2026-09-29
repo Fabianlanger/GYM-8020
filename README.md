@@ -4,15 +4,18 @@ Android app for strength training with a fixed method: per exercise a **heavy** 
 
 *Ontwikkeld onder de vlag van Isatis Business Solutions.*
 
-## Features (v0.1)
+## Features
 
-- Standard library of ~55 exercises with muscles, plus your own exercises
-- Schemas and week plans (Full body, Push/Pull/Legs, Upper/Lower) with day recognition on the home screen
-- Training flow: optional warm-up, **GO** → 3-2-1 → exercise timer, swipe to the next exercise
-- Smart goal for next time (too light / good / too heavy), plan sets for next time
-- Body weight log and effective weight for bodyweight exercises (assisted = negative extra)
-- Export and import of all data as one JSON file
-- English and Dutch
+- **Training**: optional warm-up, **GO** → 3-2-1 → exercise timer, swipe to the next exercise; add, skip or move exercises on the fly
+- **Goal for next time** per set (too light / good / too heavy), planned on weight only
+- **Material**: bars, plates, pin stacks, cables and dumbbells; the app only suggests weights you can actually load and shows which plates to put on or take off
+- **Schemas and week plans** (Full body, Push/Pull/Legs, Upper/Lower) with day recognition on the home screen
+- **Library** of ~55 exercises with muscles and movement icons, plus your own exercises
+- **Dashboard**: progress per exercise, muscle and muscle group, push/pull and upper/legs balance, frequency, durations, records, body weight trend
+- **Heatmap**: an art deco body figure (front and back) with volume and progress per muscle
+- **Bodyweight exercises** with extra weight or assistance
+- Introduction for new users and an in-app explanation of the method
+- Export and import of all data as one JSON file; English and Dutch
 
 ## Installing
 
@@ -27,9 +30,9 @@ Android app for strength training with a fixed method: per exercise a **heavy** 
 - Kotlin, Jetpack Compose (Material 3), Room, DataStore. Min. Android 8.0.
 - `core/` holds the pure-Kotlin logic (goals, effective weight, e1RM, day recognition, library, backup format) with unit tests: `./gradlew :core:test` (add `-PcoreOnly` to build without the Android SDK).
 - `app/` is the Android app. `./gradlew :app:assembleDebug`
-- The debug build is signed with the committed `app/debug.keystore`, so every build installs over the previous one. Release signing (v0.5) uses a key from GitHub Secrets.
+- The debug build is signed with the committed `app/debug.keystore`, so every build installs over the previous one. Version releases can be signed with your own key from GitHub Secrets: see [`docs/RELEASE.md`](docs/RELEASE.md).
 
-Docs: [`docs/SPEC.md`](docs/SPEC.md) (specification and decisions), [`docs/DESIGN.md`](docs/DESIGN.md) (visual style), `docs/methode.md` (the method, coming).
+Docs: [`docs/SPEC.md`](docs/SPEC.md) (specification and decisions), [`docs/DESIGN.md`](docs/DESIGN.md) (visual style), [`docs/methode.md`](docs/methode.md) (the method, in Dutch; also in the app under Settings → About the method), [`docs/RELEASE.md`](docs/RELEASE.md) (releases and signing).
 
 ## License
 

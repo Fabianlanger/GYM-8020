@@ -180,7 +180,7 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
     suspend fun importSettings(text: String) {
         val b = BackupJson.decode(text)
         // A backup without materials (v1) gets the standard profiles again via the seeder.
-        settings.update { it.copy(plateStock = b.plateStock?.let(PlateStock::decode) ?: it.plateStock, seededMaterials = b.materials.isNotEmpty()) }
+        settings.update { it.copy(plateStock = b.plateStock?.let(PlateStock::decode) ?: it.plateStock, seededMaterials = b.materials.isNotEmpty(), onboarded = true) }
     }
 
     private inline fun <reified T : Enum<T>> enumOr(name: String, fallback: T): T =

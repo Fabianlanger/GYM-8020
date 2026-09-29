@@ -23,6 +23,8 @@ data class AppSettings(
     val seeded: Boolean = false,
     val seededMaterials: Boolean = false,
     val plateStock: PlateStock = PlateStock.DEFAULT,
+    /** Introduction for new users was finished or skipped (G-2). */
+    val onboarded: Boolean = false,
 )
 
 class SettingsStore(private val context: Context) {
@@ -36,6 +38,7 @@ class SettingsStore(private val context: Context) {
         val seeded = booleanPreferencesKey("seeded")
         val seededMaterials = booleanPreferencesKey("seeded_materials")
         val plates = stringPreferencesKey("plate_stock")
+        val onboarded = booleanPreferencesKey("onboarded")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
@@ -56,6 +59,7 @@ class SettingsStore(private val context: Context) {
             seeded = this[Keys.seeded] ?: false,
             seededMaterials = this[Keys.seededMaterials] ?: false,
             plateStock = PlateStock.decode(this[Keys.plates]),
+            onboarded = this[Keys.onboarded] ?: false,
         )
     }
 
@@ -71,6 +75,7 @@ class SettingsStore(private val context: Context) {
             prefs[Keys.seeded] = next.seeded
             prefs[Keys.seededMaterials] = next.seededMaterials
             prefs[Keys.plates] = next.plateStock.encode()
+            prefs[Keys.onboarded] = next.onboarded
         }
     }
 }

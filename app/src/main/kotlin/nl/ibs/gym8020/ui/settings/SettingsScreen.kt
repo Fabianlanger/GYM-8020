@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
@@ -32,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -56,13 +56,10 @@ import nl.ibs.gym8020.ui.deco.IbsMark
 import nl.ibs.gym8020.ui.theme.Gym
 import java.time.LocalDate
 
-const val METHOD_URL = "https://github.com/Fabianlanger/GYM-8020/blob/main/docs/methode.md"
-
 @Composable
-fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit) {
+fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMethod: () -> Unit, onOpenIntro: () -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
     val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
     var message by remember { mutableStateOf<String?>(null) }
     var pendingImport by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -133,7 +130,8 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit) {
                 Text(stringResource(R.string.about_ibs), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.about_method_text), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
-                LineButton(stringResource(R.string.about_method), onClick = { runCatching { uriHandler.openUri(METHOD_URL) } }, icon = Icons.AutoMirrored.Filled.MenuBook)
+                LineButton(stringResource(R.string.about_method), onClick = onOpenMethod, icon = Icons.AutoMirrored.Filled.MenuBook)
+                LineButton(stringResource(R.string.intro_again), onClick = onOpenIntro, icon = Icons.Filled.School)
             }
         }
         Spacer(Modifier.height(24.dp))

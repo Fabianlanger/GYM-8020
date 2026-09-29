@@ -52,6 +52,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import nl.ibs.gym8020.ui.body.BodyweightScreen
 import nl.ibs.gym8020.ui.dashboard.DashboardScreen
 import nl.ibs.gym8020.ui.components.Eyebrow
@@ -64,6 +65,8 @@ import nl.ibs.gym8020.ui.deco.Sunburst
 import nl.ibs.gym8020.ui.exercises.ExerciseEditScreen
 import nl.ibs.gym8020.ui.exercises.ExerciseListScreen
 import nl.ibs.gym8020.ui.home.HomeScreen
+import nl.ibs.gym8020.ui.intro.MethodScreen
+import nl.ibs.gym8020.ui.intro.OnboardingScreen
 import nl.ibs.gym8020.ui.schemas.SchemaEditScreen
 import nl.ibs.gym8020.ui.schemas.SchemaListScreen
 import nl.ibs.gym8020.ui.schemas.WeekPlanEditScreen
@@ -108,6 +111,8 @@ private object Routes {
     const val TRAINING = "training/{id}"
     const val SUMMARY = "summary/{id}"
     const val MATERIAL = "material"
+    const val METHOD = "method"
+    const val INTRO = "intro"
 }
 
 private data class Tab(val route: String, val label: Int, val icon: ImageVector)
@@ -126,6 +131,19 @@ private fun GymNavHost(container: AppContainer) {
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val showBar = route in tabs.map { it.route }
+
+    // Introduction for new users (G-2); existing users with trainings skip it silently.
+    LaunchedEffect(Unit) {
+        val settings = container.settings.current()
+        if (!settings.onboarded) {
+            nav.currentBackStackEntryFlow.first() // wait until the graph is set
+            if (container.db.sessions().all().isEmpty()) {
+                nav.navigate(Routes.INTRO)
+            } else {
+                container.settings.update { it.copy(onboarded = true) }
+            }
+        }
+    }
 
     Scaffold(
         containerColor = Gym.Bg,
@@ -157,7 +175,7 @@ private fun GymNavHost(container: AppContainer) {
         // Each area has its own art deco pattern: lattice at home, fan scales while training, arches elsewhere.
         val pattern = when {
             route == Routes.HOME -> DecoPattern.LATTICE
-            route == Routes.TRAINING || route == Routes.SUMMARY -> DecoPattern.FANS
+            route == Routes.TRAINING || route == Routes.SUMMARY || route == Routes.INTRO -> DecoPattern.FANS
             else -> DecoPattern.ARCHES
         }
         Box(Modifier.fillMaxSize()) {
@@ -180,7 +198,20 @@ private fun GymNavHost(container: AppContainer) {
             composable(Routes.EXERCISES) { ExerciseListScreen(container, onOpen = { nav.navigate("exercise/$it") }) }
             composable(Routes.DASHBOARD) { DashboardScreen(container, onOpenBodyweight = { nav.navigate(Routes.BODY) }) }
             composable(Routes.BODY) { Box(Modifier.systemBarsPadding().imePadding()) { BodyweightScreen(container) } }
-            composable(Routes.SETTINGS) { SettingsScreen(container, onOpenMaterial = { nav.navigate(Routes.MATERIAL) }) }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
+                    container,
+                    onOpenMaterial = { nav.navigate(Routes.MATERIAL) },
+                    onOpenMethod = { nav.navigate(Routes.METHOD) },
+                    onOpenIntro = { nav.navigate(Routes.INTRO) },
+                )
+            }
+            composable(Routes.METHOD) { Box(Modifier.systemBarsPadding()) { MethodScreen(onBack = { if (nav.currentDestination?.route == Routes.METHOD) nav.popBackStack() }) } }
+            composable(Routes.INTRO) {
+                Box(Modifier.systemBarsPadding()) {
+                    OnboardingScreen(container, onOpenMethod = { nav.navigate(Routes.METHOD) }, onDone = { if (nav.currentDestination?.route == Routes.INTRO) nav.popBackStack() })
+                }
+            }
             composable(Routes.MATERIAL) { Box(Modifier.systemBarsPadding().imePadding()) { MaterialScreen(container) } }
             composable(Routes.SCHEMA, idArg) { e ->
                 Box(Modifier.systemBarsPadding().imePadding()) {
@@ -192,10 +223,10 @@ private fun GymNavHost(container: AppContainer) {
                 }
             }
             composable(Routes.WEEK_PLAN, idArg) { e ->
-                Box(Modifier.systemBarsPadding().imePadding()) { WeekPlanEditScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { nav.popBackStack() }) }
+                Box(Modifier.systemBarsPadding().imePadding()) { WeekPlanEditScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { if (nav.currentDestination?.route == Routes.INTRO) nav.popBackStack() }) }
             }
             composable(Routes.EXERCISE, idArg) { e ->
-                Box(Modifier.systemBarsPadding().imePadding()) { ExerciseEditScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { nav.popBackStack() }) }
+                Box(Modifier.systemBarsPadding().imePadding()) { ExerciseEditScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { if (nav.currentDestination?.route == Routes.INTRO) nav.popBackStack() }) }
             }
             composable(Routes.TRAINING, idArg) { e ->
                 val id = e.arguments?.getLong("id") ?: 0L
