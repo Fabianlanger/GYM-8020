@@ -49,6 +49,9 @@ git push origin v0.5.0
 
 CI builds, tests and publishes the release with `gym-8020-v0.5.0.apk`.
 
+Without pushing a tag: **Actions → Build → Run workflow**, fill in the release tag (e.g. `v0.5.0`).
+The release then creates the tag itself on the chosen commit.
+
 ## Switching from a dev build to a signed release
 
 Android only installs an update when it is signed with the same key. The dev builds use the debug key,
