@@ -494,6 +494,7 @@ Elke fase = een werkende, installeerbare APK.
 | v0.1 — Kern | gebouwd (dev-builds 1–5) |
 | v0.2 — Materiaal | gebouwd: materiaalprofielen, schijvenvoorraad, schijven per kant, laadvolgorde zwaar → licht met minimale wissels, alleen haalbare gewichten, warm-up-gewicht uit het materiaal. Plus feedback v0.1: iconen, compacter trainingsscherm, swipe-lint. |
 | v0.3 — Dashboard | gebouwd: vooruitgang per oefening / spier / spiergroep, balans duwen-trekken en boven-benen, frequentie t.o.v. weekdoel, duur en tijd per positie, doelen gehaald, lichaamsgewicht met trendlijn, records; vergelijkbare oefeningen (D-68). Plus feedback v0.2: elegant swipe-lint, achtergrondpatroon per gedeelte (D-72). |
+| v0.4 — Heatmap | gebouwd: eigen lichaamsfiguur (art-deco-mozaïek) voor/achter, in de samenvatting met Totaal (volume) en T.o.v. vorige keer (e1RM zware set / reps), tik op een spier voor de waarde; ook in het dashboard (werksets per week). |
 
 | # | Besluit (na feedback v0.1) | Status |
 |---|---|---|
