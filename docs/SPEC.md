@@ -509,6 +509,8 @@ Elke fase = een werkende, installeerbare APK.
 | D-75 | Na bewerken: is dit de **laatste training** van een gewijzigde oefening, dan vraagt de app of het doel voor volgende keer opnieuw berekend moet worden (notitie blijft). Bij oudere trainingen blijft het doel staan. | [BESLOTEN] |
 | D-76 | **Herinneringen** (D-65 uitgewerkt), alleen lokaal, standaard uit, per soort aan te zetten: trainingsdag (schema op die dag in het weekplan), weekdoel (als de rest van de week krap wordt: resterende trainingen ≥ resterende dagen − 1), training staat nog open (3 uur na de start), lichaamsgewicht (wekelijks, alleen bij oefeningen met eigen gewicht in de laatste 30 dagen). Eén dagelijkse tijd (standaard 18:00), ongeveer op tijd (geen exacte-alarm-toestemming). Niets als je die dag al getraind hebt. | [BESLOTEN] |
 | D-77 | **Back-up** (D-03 uitgewerkt): (1) Android-back-up via het Google-account staat aan (database + instellingen); (2) optionele automatische back-up na elke training naar een zelfgekozen map (bijv. Google Drive), de nieuwste 7 blijven bewaard. Geen eigen server of accounts; echte cloud-sync blijft buiten scope. | [BESLOTEN] |
+| D-78 | **Teststrategie** (zie `docs/TESTING.md`): elke bug krijgt eerst een test die hem nabootst, dan de fix; regels (property-tests) naast voorbeelden; een risicolijst met kritieke flows in plaats van code coverage, aangevuld met mutatietesten; UI- en screenshottests in CI. End-to-end op een emulator later. | [BESLOTEN] |
+| D-79 | **Materiaal ondersteunt, maar beperkt nooit**: profielen helpen met haalbare gewichten en schijven, maar zelf invoeren kan altijd en + / − gaan nooit de verkeerde kant op. Uitwerking: backlog O-2. | [BESLOTEN] |
 
 ---
 

@@ -7,25 +7,29 @@ Status: **B** = bug, **V** = verbetering, **O** = onderzoek nodig.
 
 ---
 
-## B-1 · "Volgende keer": + bij zwaar gaat van 85 naar 80
+## O-2 · Materiaal ondersteunt, maar mag niet beperken (was B-1)
 
-**Wat:** bij de zware set in "Volgende keer" op + tikken zet het gewicht lager in plaats van hoger.
+**Wat:** bij "Volgende keer" ging + van 85 naar 80. Het was een kabeloefening.
 
-**Oorzaak (gevonden):** + vraagt het materiaal om "het volgende haalbare gewicht boven 85". Bestaat dat niet,
-omdat 85 boven het maximum van het materiaal ligt, dan geeft de rekenregel het **maximum** terug, en dat is
-lager (`WeightCalculator.up`, `core/.../material/Material.kt`). Voorbeelden waar dat kan gebeuren:
-- Kabel: standaardprofiel "Kabel per 2,5 kg" heeft een maximum van **80 kg**. Dit past precies bij 85 → 80.
-- Pin-stack: maximum 120 kg. Dumbbells: maximum 40 kg.
-- Te weinig schijven aangevinkt in de introductie of onder Materiaal.
+**Oorzaak (bevestigd):** het standaardprofiel "Kabel per 2,5 kg" heeft een maximum van 80 kg. Boven het
+maximum geeft + het maximum terug. Volgens de regels van de app is dat logisch, maar **de kabel in jouw gym
+gaat verder dan 80**. Het profiel klopt dus niet met de werkelijkheid, en de app gaat dan in de weg zitten.
 
-**Voorstel:**
-1. + en − gaan nooit de verkeerde kant op. Boven het maximum blijft + staan.
-2. Staat het gewicht boven wat het materiaal kan, dan toont de app dat: *"Boven het maximum van Kabel (80 kg).
-   Pas het materiaal aan?"*, met een link naar het profiel.
-3. Unittest voor precies dit geval.
+**Uitgangspunt (afgesproken):** de app is ondersteunend. Materiaalprofielen helpen met haalbare gewichten
+en schijven, maar **mogen je nooit tegenhouden**. Niemand weet vooraf welke apparatuur er in elke gym staat.
 
-**Te checken met jou:** welke oefening was het, en welk materiaal staat erbij? Dan weten we zeker dat dit de
-oorzaak is.
+**Uit te zoeken:** hoe we dat vormgeven. Richtingen:
+1. **+ en − gaan nooit de verkeerde kant op.** Boven het maximum gaat + door in dezelfde stap (80 → 82,5 → 85).
+2. **Zelf typen mag altijd**, ook buiten het profiel. De app corrigeert niets stilletjes.
+3. **Het profiel leert mee:** gebruik je een gewicht boven het maximum, dan vraagt de app één keer
+   *"Kabel gaat verder dan 80 kg? Maximum ophogen naar 85?"*. Eén tik, of negeren.
+4. **Ruimere standaardprofielen**, of profielen zonder maximum ("onbekend") totdat je iets invult.
+5. **Buiten bereik subtiel tonen** in plaats van blokkeren, bijv. een klein label "buiten profiel".
+
+**Test (volgens TESTING.md):** regel "+ geeft nooit een lager gewicht" als property-test, plus een test
+met precies dit geval (kabel, max 80, + vanaf 85).
+
+**Te besluiten:** welke combinatie van 1–5. Mijn voorlopige advies is 1 + 2 + 3.
 
 ---
 
@@ -163,8 +167,20 @@ aantal kilo's dat je per oefening instelt?
 | D-20 | Optioneel "gestopt vóór falen" per set; doel en volume rekenen daarmee | idem |
 | – | Screenshots voor de README; repo publiek maken | – |
 
+## Testen (zie `TESTING.md`)
+
+| # | Wat | Status |
+|---|---|---|
+| T-1 | Regel "eerst een rode test, dan de fix" toepassen op alle B-punten hierboven | afgesproken, vanaf de volgende fix |
+| T-2 | Property-tests op de rekenlogica (regels uit TESTING.md §2) | gepland |
+| T-3 | Mutatietesten (PIT) op `core/`: eerst meten, dan per release verbeteren | gepland |
+| T-4 | UI-tests met Compose via Robolectric voor de kritieke flows F-1, F-2, F-3, F-9 | gepland |
+| T-5 | Screenshottests met Roborazzi: referentie-screenshots, verschil maakt de build rood, screenshots als download | gepland |
+| T-6 | End-to-end op een emulator (Maestro), 2–3 rooktests bij een versierelease | later |
+
 ## Voorgestelde volgorde
 
-1. **v0.6.1 (snelle fixes):** B-1, B-2, B-3, B-4, V-1. Kleine wijzigingen, direct merkbaar in de gym.
+1. **v0.6.1 (snelle fixes):** B-2, B-3, B-4, V-1, plus O-2 zodra besloten. Samen met T-2, T-4 en T-5, zodat
+   de fixes meteen volgens de nieuwe teststrategie gaan.
 2. **v0.7 (kracht):** V-2, O-1, V-3, samen met R-1 en D-20. Die raken allemaal hoe de app kracht en
-   vooruitgang rekent, dus die ontwerp je in één keer.
+   vooruitgang rekent, dus die ontwerp je in één keer. T-3 erbij.
