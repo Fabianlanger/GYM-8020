@@ -511,6 +511,8 @@ Elke fase = een werkende, installeerbare APK.
 | D-77 | **Back-up** (D-03 uitgewerkt): (1) Android-back-up via het Google-account staat aan (database + instellingen); (2) optionele automatische back-up na elke training naar een zelfgekozen map (bijv. Google Drive), de nieuwste 7 blijven bewaard. Geen eigen server of accounts; echte cloud-sync blijft buiten scope. | [BESLOTEN] |
 | D-78 | **Teststrategie** (zie `docs/TESTING.md`): elke bug krijgt eerst een test die hem nabootst, dan de fix; regels (property-tests) naast voorbeelden; een risicolijst met kritieke flows in plaats van code coverage, aangevuld met mutatietesten; UI- en screenshottests in CI. End-to-end op een emulator later. | [BESLOTEN] |
 | D-79 | **Materiaal ondersteunt, maar beperkt nooit**: profielen helpen met haalbare gewichten en schijven, maar zelf invoeren kan altijd en + / − gaan nooit de verkeerde kant op. Uitwerking: backlog O-2. | [BESLOTEN] |
+| D-80 | **Training achteraf invoeren** (uitwerking: backlog V-4). In het dashboard, bij Trainingen, een knop **"+ Training toevoegen"**. Voor als je je telefoon niet bij je had, of voor oude trainingen uit aantekeningen. Onvolledige gegevens mogen: wat je weet vul je in, de rest blijft leeg. | [BESLOTEN] |
+| D-81 | **Importeren uit aantekeningen** (tekst of bestand, met een vaste schrijfwijze) staat los van D-80 en komt later. Eerst handmatig invoeren. | [LATER] |
 
 ---
 

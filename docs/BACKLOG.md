@@ -159,6 +159,66 @@ aantal kilo's dat je per oefening instelt?
 
 ---
 
+## V-4 · Training achteraf invoeren (D-80)
+
+**Wat:** een training toevoegen die je niet live in de app hebt bijgehouden. Bijv. telefoon vergeten, of oude
+trainingen uit aantekeningen. Je weet niet alle getallen meer precies, maar je wilt wel de aanknopingspunten
+vastleggen.
+
+**Voorstel voor de flow:**
+1. Dashboard → Trainingen → **"+ Training toevoegen"**.
+2. Kies **datum en tijd** (standaard vandaag) en een **schema**, of "leeg" om zelf oefeningen te kiezen.
+3. De app maakt een afgeronde training met de oefeningen van het schema. Per oefening staan de sets klaar,
+   **voorgevuld met het gewicht van toen**: je laatste gewicht op of vóór die datum, zodat je alleen hoeft
+   te corrigeren.
+4. Dat opent het bestaande bewerkscherm (D-74): sets aanpassen, oefeningen toevoegen of verwijderen, duur
+   invullen als je die weet.
+
+**Onvolledig mag:**
+- Een set zonder reps telt niet mee in statistieken, maar blijft staan als aantekening.
+- Geen duur ingevuld: de training telt niet mee in de gemiddelde duur en de tijden per oefening.
+- Handmatig ingevoerde sets krijgen **geen doel**, dus "doelen gehaald" verandert niet achteraf.
+
+**Hoe het meetelt:**
+- Telt mee voor het weekdoel, de dagherkenning, records, grafieken en de heatmap, op de ingevulde datum.
+- Lichaamsgewicht: de meting op of vóór die datum.
+- Is het je **nieuwste** training van een oefening, dan vraagt de app of het doel voor volgende keer opnieuw
+  berekend moet worden (D-75). Bij een oudere datum blijft het doel staan.
+- In het logboek krijgt hij een klein label **"achteraf ingevoerd"**. Daarvoor komt er een veld bij de
+  training, een kleine database-migratie. Die kan mee met de migratie van V-3.
+
+**Te besluiten:**
+- Voorvullen met het gewicht van toen, of liever lege sets?
+- Handmatige trainingen apart tonen in statistieken, of gewoon meetellen zoals hierboven?
+
+**Tests (volgens TESTING.md):** nieuwe flow F-10 "training achteraf invoeren → telt mee op de juiste datum",
+plus een test dat een oudere datum het doel niet verandert.
+
+---
+
+## V-5 · Importeren uit aantekeningen (D-81, later)
+
+**Wat:** oude trainingen uit je aantekeningen in één keer inlezen in plaats van ze één voor één in te voeren.
+
+**Richting:** plakken of een bestand kiezen met een eenvoudige schrijfwijze die je met de hand kunt typen.
+Bijvoorbeeld:
+
+```
+2026-08-14 Full body
+Squat 80x6, 60x16
+Incline bench 50x7, 35x15
+Pull-up +10x5, -20x12
+```
+
+De app toont eerst een **voorbeeld** van wat hij herkend heeft (oefeningen, sets, onbekende regels in rood).
+Pas daarna importeer je. Oefeningsnamen worden gematcht op de bibliotheek, ook in het Nederlands en met
+kleine typefouten.
+
+**Eerst nodig:** een paar van je echte aantekeningen als voorbeeld. Die blijven buiten de repo, alleen om de
+schrijfwijze op af te stemmen.
+
+---
+
 ## Nog open uit eerder
 
 | # | Onderwerp | Stuk |
@@ -182,5 +242,6 @@ aantal kilo's dat je per oefening instelt?
 
 1. **v0.6.1 (snelle fixes):** B-2, B-3, B-4, V-1, plus O-2 zodra besloten. Samen met T-2, T-4 en T-5, zodat
    de fixes meteen volgens de nieuwe teststrategie gaan.
-2. **v0.7 (kracht):** V-2, O-1, V-3, samen met R-1 en D-20. Die raken allemaal hoe de app kracht en
+2. **V-4 (achteraf invoeren)** kan los daarna of samen met v0.7. De database-migratie deelt hij met V-3.
+3. **v0.7 (kracht):** V-2, O-1, V-3, samen met R-1 en D-20. Die raken allemaal hoe de app kracht en
    vooruitgang rekent, dus die ontwerp je in één keer. T-3 erbij.
