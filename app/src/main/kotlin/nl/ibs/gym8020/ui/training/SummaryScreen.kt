@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +45,7 @@ import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.ui.components.DecoCard
 import nl.ibs.gym8020.ui.components.Eyebrow
 import nl.ibs.gym8020.ui.components.GoButton
+import nl.ibs.gym8020.ui.components.LineButton
 import nl.ibs.gym8020.ui.components.WeightText
 import nl.ibs.gym8020.ui.deco.FlourishDivider
 import nl.ibs.gym8020.ui.deco.Sunburst
@@ -118,7 +121,7 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
 }
 
 @Composable
-fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit) {
+fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, onEdit: () -> Unit) {
     var summary by remember { mutableStateOf<Summary?>(null) }
     LaunchedEffect(sessionId) { summary = buildSummary(container, sessionId) }
     val s = summary
@@ -172,6 +175,7 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit) 
         }
         Spacer(Modifier.height(4.dp))
         GoButton(stringResource(R.string.sum_back_home), onClick = onDone)
+        LineButton(stringResource(R.string.log_edit_title), onClick = onEdit, icon = Icons.Filled.Edit, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
     }
 }

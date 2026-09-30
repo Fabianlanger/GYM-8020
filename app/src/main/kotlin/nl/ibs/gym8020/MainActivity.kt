@@ -66,6 +66,8 @@ import nl.ibs.gym8020.ui.exercises.ExerciseEditScreen
 import nl.ibs.gym8020.ui.exercises.ExerciseListScreen
 import nl.ibs.gym8020.ui.home.HomeScreen
 import nl.ibs.gym8020.ui.intro.MethodScreen
+import nl.ibs.gym8020.ui.log.LogScreen
+import nl.ibs.gym8020.ui.log.SessionEditScreen
 import nl.ibs.gym8020.ui.intro.OnboardingScreen
 import nl.ibs.gym8020.ui.schemas.SchemaEditScreen
 import nl.ibs.gym8020.ui.schemas.SchemaListScreen
@@ -113,6 +115,8 @@ private object Routes {
     const val MATERIAL = "material"
     const val METHOD = "method"
     const val INTRO = "intro"
+    const val LOG = "log"
+    const val SESSION = "session/{id}"
 }
 
 private data class Tab(val route: String, val label: Int, val icon: ImageVector)
@@ -196,7 +200,28 @@ private fun GymNavHost(container: AppContainer) {
                 SchemaListScreen(container, onOpenSchema = { nav.navigate("schema/$it") }, onOpenWeekPlan = { nav.navigate("weekplan/$it") })
             }
             composable(Routes.EXERCISES) { ExerciseListScreen(container, onOpen = { nav.navigate("exercise/$it") }) }
-            composable(Routes.DASHBOARD) { DashboardScreen(container, onOpenBodyweight = { nav.navigate(Routes.BODY) }) }
+            composable(Routes.DASHBOARD) {
+                DashboardScreen(
+                    container,
+                    onOpenBodyweight = { nav.navigate(Routes.BODY) },
+                    onOpenLog = { nav.navigate(Routes.LOG) },
+                    onOpenSession = { nav.navigate("session/$it") },
+                )
+            }
+            composable(Routes.LOG) { Box(Modifier.systemBarsPadding()) { LogScreen(container, onOpen = { nav.navigate("session/$it") }) } }
+            composable(Routes.SESSION, idArg) { e ->
+                Box(Modifier.systemBarsPadding().imePadding()) {
+                    SessionEditScreen(
+                        container, e.arguments?.getLong("id") ?: 0L,
+                        onDone = { if (nav.currentDestination?.route == Routes.SESSION) nav.popBackStack() },
+                        onDeleted = {
+                            // The summary of a deleted training has nothing left to show.
+                            nav.popBackStack()
+                            if (nav.currentDestination?.route == Routes.SUMMARY) nav.popBackStack()
+                        },
+                    )
+                }
+            }
             composable(Routes.BODY) { Box(Modifier.systemBarsPadding().imePadding()) { BodyweightScreen(container) } }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
@@ -237,7 +262,8 @@ private fun GymNavHost(container: AppContainer) {
                 )
             }
             composable(Routes.SUMMARY, idArg) { e ->
-                SummaryScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { nav.popBackStack(Routes.HOME, inclusive = false) })
+                val id = e.arguments?.getLong("id") ?: 0L
+                SummaryScreen(container, id, onDone = { nav.popBackStack(Routes.HOME, inclusive = false) }, onEdit = { nav.navigate("session/$id") })
             }
         }
         }

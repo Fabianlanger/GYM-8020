@@ -10,6 +10,7 @@ lifecycle = "2.8.7"
 navigation = "2.8.9"
 room = "2.7.1"
 datastore = "1.1.1"
+work = "2.10.0"
 junit = "5.11.4"
 junit4 = "4.13.2"
 robolectric = "4.14.1"
@@ -34,6 +35,7 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }

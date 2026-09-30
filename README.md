@@ -14,6 +14,9 @@ Android app for strength training with a fixed method: per exercise a **heavy** 
 - **Dashboard**: progress per exercise, muscle and muscle group, push/pull and upper/legs balance, frequency, durations, records, body weight trend
 - **Heatmap**: an art deco body figure (front and back) with volume and progress per muscle
 - **Bodyweight exercises** with extra weight or assistance
+- **Log**: all finished trainings; correct sets, exercises, date and duration afterwards
+- **Reminders** (optional, local): training day, week target, training still open, body weight
+- **Backup**: Android backup via your Google account, plus an automatic backup after each training to a folder you choose (e.g. Google Drive)
 - Introduction for new users and an in-app explanation of the method
 - Export and import of all data as one JSON file; English and Dutch
 

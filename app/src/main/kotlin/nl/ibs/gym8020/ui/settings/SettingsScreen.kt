@@ -1,5 +1,16 @@
 package nl.ibs.gym8020.ui.settings
 
+import android.Manifest
+import android.app.TimePickerDialog
+import android.os.Build
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import nl.ibs.gym8020.data.AutoBackup
+import nl.ibs.gym8020.notify.Reminders
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -79,6 +90,11 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
         }
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> pendingImport = uri }
+    val folderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) scope.launch { runCatching { container.autoBackup.setFolder(uri) } }
+    }
+    var notifyAllowed by remember { mutableStateOf(Reminders.canNotify(context)) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { notifyAllowed = Reminders.canNotify(context) }
 
     fun update(f: (AppSettings) -> AppSettings) = scope.launch { container.settings.update(f) }
 
@@ -114,11 +130,60 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
         LineButton(stringResource(R.string.mat_open), onClick = onOpenMaterial, icon = Icons.Filled.FitnessCenter, modifier = Modifier.fillMaxWidth())
 
         DecoDivider(Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        Eyebrow(stringResource(R.string.rem_title))
+        Text(stringResource(R.string.rem_help), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+        fun reminder(on: Boolean, f: (AppSettings) -> AppSettings) {
+            if (on && !Reminders.canNotify(context) && Build.VERSION.SDK_INT >= 33) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            update(f)
+        }
+        val r = settings.reminders
+        SwitchRow(stringResource(R.string.rem_day), stringResource(R.string.rem_day_help), r.trainingDay) { on -> reminder(on) { it.copy(reminders = it.reminders.copy(trainingDay = on)) } }
+        SwitchRow(stringResource(R.string.rem_behind), stringResource(R.string.rem_behind_help), r.behind) { on -> reminder(on) { it.copy(reminders = it.reminders.copy(behind = on)) } }
+        SwitchRow(stringResource(R.string.rem_open), stringResource(R.string.rem_open_help), settings.reminderOpenSession) { on -> reminder(on) { it.copy(reminderOpenSession = on) } }
+        SwitchRow(stringResource(R.string.rem_bw), stringResource(R.string.rem_bw_help), r.bodyweight) { on -> reminder(on) { it.copy(reminders = it.reminders.copy(bodyweight = on)) } }
+        if (r.any) {
+            val time = "%02d:%02d".format(settings.reminderMinutes / 60, settings.reminderMinutes % 60)
+            LineButton(
+                stringResource(R.string.rem_time, time),
+                onClick = {
+                    TimePickerDialog(context, { _, h, m -> update { it.copy(reminderMinutes = h * 60 + m) } }, settings.reminderMinutes / 60, settings.reminderMinutes % 60, true).show()
+                },
+                icon = Icons.Filled.Schedule, modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if ((r.any || settings.reminderOpenSession) && !notifyAllowed) {
+            Text(stringResource(R.string.rem_no_permission), style = MaterialTheme.typography.bodySmall, color = Gym.Negative)
+        }
+
+        DecoDivider(Modifier.fillMaxWidth().padding(vertical = 8.dp))
         Eyebrow(stringResource(R.string.settings_data))
         Text(stringResource(R.string.settings_local_warning), style = MaterialTheme.typography.bodySmall, color = Gym.Gold)
         LineButton(stringResource(R.string.settings_export), onClick = { exportLauncher.launch("gym-8020-${LocalDate.now()}.json") }, icon = Icons.Filled.Upload, modifier = Modifier.fillMaxWidth())
         LineButton(stringResource(R.string.settings_import), onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, icon = Icons.Filled.Download, modifier = Modifier.fillMaxWidth())
         message?.let { Text(it, color = Gym.Yellow, style = MaterialTheme.typography.bodySmall) }
+
+        Eyebrow(stringResource(R.string.bk_title), Modifier.padding(top = 8.dp))
+        Text(stringResource(R.string.bk_help, AutoBackup.KEEP), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+        val folder = settings.backupFolder
+        if (folder == null) {
+            LineButton(stringResource(R.string.bk_choose), onClick = { folderLauncher.launch(null) }, icon = Icons.Filled.Folder, modifier = Modifier.fillMaxWidth())
+        } else {
+            Text(stringResource(R.string.bk_folder, AutoBackup.folderLabel(folder)), style = MaterialTheme.typography.bodyMedium)
+            val last = settings.lastBackupAt?.let {
+                java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault())
+                    .format(java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.SHORT))
+            }
+            Text(
+                if (settings.backupFailed) stringResource(R.string.bk_failed) else stringResource(R.string.bk_last, last ?: "—"),
+                style = MaterialTheme.typography.bodySmall, color = if (settings.backupFailed) Gym.Negative else Gym.Muted,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LineButton(stringResource(R.string.bk_now), onClick = { scope.launch { container.autoBackup.runNow() } }, icon = Icons.Filled.Backup, modifier = Modifier.weight(1f))
+                LineButton(stringResource(R.string.bk_change), onClick = { folderLauncher.launch(null) }, icon = Icons.Filled.Folder, modifier = Modifier.weight(1f))
+            }
+            TextButton(onClick = { scope.launch { container.autoBackup.clearFolder() } }) { Text(stringResource(R.string.bk_off), color = Gym.Muted) }
+        }
+        Text(stringResource(R.string.bk_android), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
 
         DecoDivider(Modifier.fillMaxWidth().padding(vertical = 8.dp))
         DecoCard(corners = true, padding = 22.dp) {
@@ -160,6 +225,20 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
                 }) { Text(stringResource(R.string.settings_import)) }
             },
             dismissButton = { TextButton(onClick = { pendingImport = null }) { Text(stringResource(R.string.action_cancel)) } },
+        )
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, help: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { onChange(!checked) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(help, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+        }
+        Switch(
+            checked = checked, onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(checkedThumbColor = Gym.OnYellow, checkedTrackColor = Gym.Yellow),
         )
     }
 }

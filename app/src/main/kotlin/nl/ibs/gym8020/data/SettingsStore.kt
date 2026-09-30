@@ -6,11 +6,13 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import nl.ibs.gym8020.core.logic.ReminderFlags
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.PlateStock
 import nl.ibs.gym8020.core.model.MethodSettings
@@ -25,6 +27,15 @@ data class AppSettings(
     val plateStock: PlateStock = PlateStock.DEFAULT,
     /** Introduction for new users was finished or skipped (G-2). */
     val onboarded: Boolean = false,
+    /** Reminders (D-65), all off by default. */
+    val reminders: ReminderFlags = ReminderFlags(),
+    val reminderOpenSession: Boolean = false,
+    /** Time of the daily reminder, minutes after midnight. */
+    val reminderMinutes: Int = 18 * 60,
+    /** Folder (document tree URI) for the automatic backup after each training (D-03). */
+    val backupFolder: String? = null,
+    val lastBackupAt: Long? = null,
+    val backupFailed: Boolean = false,
 )
 
 class SettingsStore(private val context: Context) {
@@ -39,6 +50,14 @@ class SettingsStore(private val context: Context) {
         val seededMaterials = booleanPreferencesKey("seeded_materials")
         val plates = stringPreferencesKey("plate_stock")
         val onboarded = booleanPreferencesKey("onboarded")
+        val remindDay = booleanPreferencesKey("remind_training_day")
+        val remindBehind = booleanPreferencesKey("remind_behind")
+        val remindBodyweight = booleanPreferencesKey("remind_bodyweight")
+        val remindOpen = booleanPreferencesKey("remind_open_session")
+        val remindMinutes = intPreferencesKey("remind_minutes")
+        val backupFolder = stringPreferencesKey("backup_folder")
+        val lastBackup = longPreferencesKey("last_backup_at")
+        val backupFailed = booleanPreferencesKey("backup_failed")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
@@ -60,6 +79,16 @@ class SettingsStore(private val context: Context) {
             seededMaterials = this[Keys.seededMaterials] ?: false,
             plateStock = PlateStock.decode(this[Keys.plates]),
             onboarded = this[Keys.onboarded] ?: false,
+            reminders = ReminderFlags(
+                trainingDay = this[Keys.remindDay] ?: false,
+                behind = this[Keys.remindBehind] ?: false,
+                bodyweight = this[Keys.remindBodyweight] ?: false,
+            ),
+            reminderOpenSession = this[Keys.remindOpen] ?: false,
+            reminderMinutes = this[Keys.remindMinutes] ?: (18 * 60),
+            backupFolder = this[Keys.backupFolder],
+            lastBackupAt = this[Keys.lastBackup],
+            backupFailed = this[Keys.backupFailed] ?: false,
         )
     }
 
@@ -76,6 +105,14 @@ class SettingsStore(private val context: Context) {
             prefs[Keys.seededMaterials] = next.seededMaterials
             prefs[Keys.plates] = next.plateStock.encode()
             prefs[Keys.onboarded] = next.onboarded
+            prefs[Keys.remindDay] = next.reminders.trainingDay
+            prefs[Keys.remindBehind] = next.reminders.behind
+            prefs[Keys.remindBodyweight] = next.reminders.bodyweight
+            prefs[Keys.remindOpen] = next.reminderOpenSession
+            prefs[Keys.remindMinutes] = next.reminderMinutes
+            if (next.backupFolder != null) prefs[Keys.backupFolder] = next.backupFolder else prefs.remove(Keys.backupFolder)
+            if (next.lastBackupAt != null) prefs[Keys.lastBackup] = next.lastBackupAt else prefs.remove(Keys.lastBackup)
+            prefs[Keys.backupFailed] = next.backupFailed
         }
     }
 }

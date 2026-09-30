@@ -2,8 +2,11 @@ package nl.ibs.gym8020.data
 
 import androidx.room.withTransaction
 import nl.ibs.gym8020.core.logic.EffectiveWeight
+import nl.ibs.gym8020.core.logic.GoalAdvisor
+import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.Strength
+import nl.ibs.gym8020.core.logic.WeightSteps
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.Progression
@@ -27,7 +30,12 @@ fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneId.sys
 /** What was done last time for an exercise (reference and "vorige keer"). */
 data class LastPerformance(val date: LocalDate, val sets: List<SetEntity>)
 
-class TrainingRepository(private val db: AppDatabase, private val settings: SettingsStore) {
+class TrainingRepository(
+    private val db: AppDatabase,
+    private val settings: SettingsStore,
+    /** Called after a training is finished (automatic backup). */
+    private val onFinished: () -> Unit = {},
+) {
 
     private val sessions get() = db.sessions()
 
@@ -44,12 +52,24 @@ class TrainingRepository(private val db: AppDatabase, private val settings: Sett
         sessionId
     }
 
-    /** Adds an exercise during the training (D-35), at the end. */
-    suspend fun addExercise(sessionId: Long, exerciseId: Long) = db.withTransaction {
+    /**
+     * Adds an exercise during the training (D-35), at the end. When correcting a finished training
+     * ([withGoals] = false) the sets get no goal, so "goals reached" is not affected afterwards.
+     */
+    suspend fun addExercise(sessionId: Long, exerciseId: Long, withGoals: Boolean = true) = db.withTransaction {
         val exercise = requireNotNull(db.exercises().get(exerciseId))
         val session = requireNotNull(sessions.get(sessionId))
         val position = (sessions.exercises(sessionId).maxOfOrNull { it.position } ?: -1) + 1
-        addExerciseInternal(sessionId, exercise, position, null, settings.current().method, session.bodyweightKg)
+        addExerciseInternal(sessionId, exercise, position, null, settings.current().method, session.bodyweightKg, withGoals)
+    }
+
+    /** Removes an exercise (with its sets) from a training. */
+    suspend fun removeExercise(seId: Long) = sessions.deleteExercise(seId)
+
+    /** Corrects start and end of a finished training. */
+    suspend fun updateTimes(sessionId: Long, startedAt: Long, endedAt: Long) {
+        val session = sessions.get(sessionId) ?: return
+        sessions.update(session.copy(startedAt = startedAt, endedAt = endedAt.coerceAtLeast(startedAt)))
     }
 
     private suspend fun addExerciseInternal(
@@ -59,6 +79,7 @@ class TrainingRepository(private val db: AppDatabase, private val settings: Sett
         setCount: Int?,
         method: MethodSettings,
         bodyweight: Double?,
+        withGoals: Boolean = true,
     ) {
         val seId = sessions.insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exercise.id, position = position))
         val plan = db.plans().sets(exercise.id)
@@ -78,7 +99,7 @@ class TrainingRepository(private val db: AppDatabase, private val settings: Sett
                     role = p.role,
                     weightKg = weight,
                     bodyweightKg = if (exercise.loadType == LoadType.BODYWEIGHT) bodyweight else null,
-                    goalWeightKg = if (p.role.isWork && !isReps) p.weightKg else null,
+                    goalWeightKg = if (withGoals && p.role.isWork && !isReps) p.weightKg else null,
                 )
             },
         )
@@ -150,6 +171,28 @@ class TrainingRepository(private val db: AppDatabase, private val settings: Sett
 
     suspend fun planNote(exerciseId: Long): String? = db.plans().get(exerciseId)?.note
 
+    /** Whether [sessionId] is the most recent finished training with this exercise (then it drives the plan). */
+    suspend fun isLatestFor(exerciseId: Long, sessionId: Long): Boolean =
+        sessions.historyExercises(exerciseId, excludeSession = -1).firstOrNull()?.sessionId == sessionId
+
+    /**
+     * Plan for next time again from the (corrected) sets of a training, keeping the note.
+     * [steps] are the achievable weights of the exercise's material.
+     */
+    suspend fun recomputePlan(exercise: ExerciseEntity, sessionId: Long, steps: WeightSteps?) {
+        val se = sessions.exercises(sessionId).firstOrNull { it.exerciseId == exercise.id && !it.skipped } ?: return
+        val sets = sessions.setsOf(se.id)
+        if (sets.none { it.reps != null }) return
+        val method = settings.current().method.let {
+            it.copy(heavyTarget = exercise.heavyTarget ?: it.heavyTarget, lightTarget = exercise.lightTarget ?: it.lightTarget)
+        }
+        val plan = GoalAdvisor.planNext(
+            sets.map { PerformedSet(it.role, it.weightKg, it.reps) },
+            exercise.loadType, exercise.progression, method, steps,
+        )
+        savePlan(exercise.id, plan, planNote(exercise.id))
+    }
+
     // ---- history ----
 
     suspend fun lastPerformance(exerciseId: Long, excludeSession: Long): LastPerformance? {
@@ -192,7 +235,7 @@ class TrainingRepository(private val db: AppDatabase, private val settings: Sett
         val session = sessions.get(sessionId) ?: return@withTransaction
         sessions.exercises(sessionId).forEach { se -> if (se.doneAt == null && se.firstInputAt != null) sessions.updateExercise(se.copy(doneAt = now)) }
         sessions.update(session.copy(endedAt = now))
-    }
+    }.also { onFinished() }
 
     suspend fun discard(sessionId: Long) = sessions.delete(sessionId)
 }

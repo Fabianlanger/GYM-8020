@@ -173,6 +173,9 @@ interface BodyweightDao {
     suspend fun delete(id: Long)
 }
 
+/** Row of [SessionDao.observeWorkSetCounts]. */
+data class SessionSetCount(val sessionId: Long, val workSets: Int)
+
 @Dao
 interface SessionDao {
     @Query("SELECT * FROM sessions WHERE endedAt IS NULL ORDER BY startedAt DESC LIMIT 1")
@@ -219,6 +222,16 @@ interface SessionDao {
 
     @Update
     suspend fun updateExercises(list: List<SessionExerciseEntity>)
+
+    @Query("DELETE FROM session_exercises WHERE id = :id")
+    suspend fun deleteExercise(id: Long)
+
+    /** Number of performed work sets per training, for the log. */
+    @Query(
+        "SELECT se.sessionId AS sessionId, COUNT(s.id) AS workSets FROM sets s JOIN session_exercises se ON s.sessionExerciseId = se.id " +
+            "WHERE s.reps IS NOT NULL AND s.role != 'WARMUP' AND se.skipped = 0 GROUP BY se.sessionId",
+    )
+    fun observeWorkSetCounts(): Flow<List<SessionSetCount>>
 
     @Query(
         "SELECT s.* FROM sets s JOIN session_exercises se ON s.sessionExerciseId = se.id " +

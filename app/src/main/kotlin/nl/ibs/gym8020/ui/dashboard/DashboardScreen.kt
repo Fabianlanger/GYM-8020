@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.ui.log.SessionRow
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.MuscleGroup
@@ -62,7 +64,7 @@ private fun sign(v: Double) = (if (v >= 0) "+" else "−") + "${(kotlin.math.abs
 
 /** Dashboard (v0.3, D-38/39, D-66/67): progress per exercise, muscle and muscle group, plus body weight, frequency, time and goals. */
 @Composable
-fun DashboardScreen(container: AppContainer, onOpenBodyweight: () -> Unit) {
+fun DashboardScreen(container: AppContainer, onOpenBodyweight: () -> Unit, onOpenLog: () -> Unit, onOpenSession: (Long) -> Unit) {
     val vm: DashboardViewModel = viewModel { DashboardViewModel(container) }
     val d by vm.data.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { vm.refresh() }
@@ -84,6 +86,18 @@ fun DashboardScreen(container: AppContainer, onOpenBodyweight: () -> Unit) {
             StatTile(if (d.targetPerWeek != null) "$thisWeek/${d.targetPerWeek}" else "$thisWeek", stringResource(R.string.dash_this_week), Modifier.weight(1f))
             StatTile("$last4", stringResource(R.string.dash_last_4_weeks), Modifier.weight(1f))
             StatTile(avgDuration?.let(::formatDuration) ?: "—", stringResource(R.string.dash_avg_duration), Modifier.weight(1f))
+        }
+
+        // Latest trainings, to look back and correct (log).
+        val recent by container.db.sessions().observeFinished().collectAsStateWithLifecycle(emptyList())
+        val counts by container.db.sessions().observeWorkSetCounts().collectAsStateWithLifecycle(emptyList())
+        if (recent.isNotEmpty()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Eyebrow(stringResource(R.string.log_title), Modifier.weight(1f))
+                TextButton(onClick = onOpenLog) { Text(stringResource(R.string.log_all), color = Gym.Yellow) }
+            }
+            val setCount = counts.associate { it.sessionId to it.workSets }
+            recent.take(3).forEach { s -> SessionRow(s, setCount[s.id] ?: 0) { onOpenSession(s.id) } }
         }
 
         if (d.loaded && d.exercises.isEmpty()) {

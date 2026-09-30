@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.notify.Reminders
 import nl.ibs.gym8020.core.logic.DoneTraining
 import nl.ibs.gym8020.core.logic.HomeAdvice
 import nl.ibs.gym8020.core.logic.HomeAdvisor
@@ -119,7 +120,9 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             if (bodyweightKg != null) {
                 c.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = bodyweightKg))
             }
-            onStarted(c.training.startSession(schemaId))
+            val id = c.training.startSession(schemaId)
+            Reminders.onTrainingStarted(c.app, id, c.settings.current())
+            onStarted(id)
         }
     }
 

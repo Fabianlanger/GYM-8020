@@ -567,7 +567,7 @@ private fun SetLine(
 }
 
 @Composable
-private fun RoleBadge(role: SetRole) {
+internal fun RoleBadge(role: SetRole) {
     val (bg, fg) = when (role) {
         SetRole.HEAVY -> Gym.Yellow to Gym.OnYellow
         SetRole.LIGHT -> Gym.SurfaceHigh to Gym.Cream
