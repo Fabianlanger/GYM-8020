@@ -249,6 +249,46 @@ horloge-app (W-9).
 
 ---
 
+## B-5 · Timer kwijt na draaien van het scherm
+
+**Wat:** GO geklikt, telefoon kantelt, scherm draait naar liggend en terug, en de timer is weg.
+
+**Oorzaak (vrijwel zeker):** bij draaien bouwt Android het scherm opnieuw op. De aftelling na GO wordt niet
+onthouden, en de oefening start officieel (tijdstempel GO) pas aan het einde van de aftelling. Draai je
+tijdens die 3 seconden, dan verdwijnt de aftelling en start de timer nooit. Na de aftelling overleeft de timer
+een draai wel, want die rekent vanuit de database.
+
+**Voorstel:**
+1. App **altijd staand**. Liggend heeft in de gym geen nut, en dan kan het ook niet per ongeluk gebeuren.
+2. Aftelling bewaren bij een herbouw (rememberSaveable), voor het geval Android het scherm om een andere reden
+   herbouwt (bijv. donkere modus of taal wisselen).
+
+**Test:** UI-test "draaien tijdens aftelling → timer start toch" (komt met T-4). Tot die tijd handmatig.
+
+---
+
+## V-6 · Schijven per materiaal of per gym
+
+**Wat:** eenmalig instellen welke schijven er zijn (bijv. geen 25 kg). Daarna aanpassen in de instellingen,
+of per oefening een uitzondering.
+
+**Wat er al is:** Instellingen → Materiaal → Schijven, en stap 3 van de introductie. Daar zet je per gewicht
+aan hoeveel schijven je gym heeft; 25 kg uit betekent dat de app er nooit mee rekent.
+
+**Nieuw:**
+1. **Per materiaalprofiel een eigen schijvenset** als uitzondering op de standaard van de gym. Bijv. een
+   machine met eigen kleine schijfjes van 1, 2 en 5 kg. Per oefening kies je het profiel (dat kan al), zodat de
+   uitzondering vanzelf meegaat.
+2. **Meerdere gyms** (optioneel, later): per gym eigen schijven en materiaal, kiezen bij de start van een
+   training. Handig op vakantie of bij een tweede sportschool.
+3. De schijvenset en het materiaal duidelijker vindbaar maken, ook vanuit het oefeningscherm.
+
+**Te besluiten:** alleen 1 en 3, of ook meerdere gyms (2)?
+
+**Test:** regel "een voorgesteld gewicht is altijd op te leggen met de schijven van dát profiel" (T-2).
+
+---
+
 ## Nog open uit eerder
 
 | # | Onderwerp | Stuk |
