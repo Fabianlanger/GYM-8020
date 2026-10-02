@@ -308,10 +308,13 @@ aan hoeveel schijven je gym heeft; 25 kg uit betekent dat de app er nooit mee re
 | T-5 | Screenshottests met Roborazzi: referentie-screenshots, verschil maakt de build rood, screenshots als download | gepland |
 | T-6 | End-to-end op een emulator (Maestro), 2–3 rooktests bij een versierelease | later |
 
-## Voorgestelde volgorde
+## Proces
 
-1. **v0.6.1 (snelle fixes):** B-2, B-3, B-4, V-1, plus O-2 zodra besloten. Samen met T-2, T-4 en T-5, zodat
-   de fixes meteen volgens de nieuwe teststrategie gaan.
-2. **V-4 (achteraf invoeren)** kan los daarna of samen met v0.7. De database-migratie deelt hij met V-3.
-3. **v0.7 (kracht):** V-2, O-1, V-3, samen met R-1 en D-20. Die raken allemaal hoe de app kracht en
-   vooruitgang rekent, dus die ontwerp je in één keer. T-3 erbij.
+| # | Wat | Status |
+|---|---|---|
+| P-1 | Werkwijze-upgrade naar de aanpak van Matt Pocock: eerst uitzoeken wat hij doet en wat we overnemen | later |
+| A-8 | Eén ondertekeningssleutel voor dev- en versiebuilds (eenmalige overstap met export → import) | vóór 0.9, zie ROADMAP |
+
+## Volgorde
+
+Zie **`ROADMAP.md`**: welke punten in welke release, de open vragen per release en de afhankelijkheden.
