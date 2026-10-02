@@ -219,6 +219,20 @@ schrijfwijze op af te stemmen.
 
 ---
 
+## O-3 · Wearables en gezondheidsdata (D-82)
+
+**Wat:** koppelen met wearables (Garmin op nummer 1) en gezondheidsdata in de app gebruiken.
+
+**Stand:** inventarisatie klaar in `docs/onderzoek-wearables.md`. Kern: **Health Connect** op Android
+verbindt Garmin (sinds 2025, alleen Garmin → telefoon) en vrijwel alle andere merken, lokaal en zonder
+server. De Garmin-cloud-API vraagt goedkeuring en een eigen server, en past daarom niet.
+
+**Eerste stap (voorstel):** automatisch lichaamsgewicht (W-1) en hartslag per oefening (W-2).
+
+**Te besluiten:** O-3a t/m O-3d in het onderzoeksdocument.
+
+---
+
 ## Nog open uit eerder
 
 | # | Onderwerp | Stuk |

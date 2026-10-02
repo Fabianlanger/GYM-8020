@@ -513,6 +513,7 @@ Elke fase = een werkende, installeerbare APK.
 | D-79 | **Materiaal ondersteunt, maar beperkt nooit**: profielen helpen met haalbare gewichten en schijven, maar zelf invoeren kan altijd en + / − gaan nooit de verkeerde kant op. Uitwerking: backlog O-2. | [BESLOTEN] |
 | D-80 | **Training achteraf invoeren** (uitwerking: backlog V-4). In het dashboard, bij Trainingen, een knop **"+ Training toevoegen"**. Voor als je je telefoon niet bij je had, of voor oude trainingen uit aantekeningen. Onvolledige gegevens mogen: wat je weet vul je in, de rest blijft leeg. | [BESLOTEN] |
 | D-81 | **Importeren uit aantekeningen** (tekst of bestand, met een vaste schrijfwijze) staat los van D-80 en komt later. Eerst handmatig invoeren. | [LATER] |
+| D-82 | **Wearables en gezondheidsdata** (Garmin eerst, maar merk-onafhankelijk): inventarisatie in `docs/onderzoek-wearables.md`, uitwerking backlog O-3. Voorlopige richting: via Android **Health Connect** (lokaal, geen server, geen account), beginnend met automatisch lichaamsgewicht en hartslag per oefening. | [ONDERZOEK] |
 
 ---
 
