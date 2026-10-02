@@ -347,4 +347,8 @@
         <item quantity="one">%1$d training to go, %2$d days left this week.</item>
         <item quantity="other">%1$d trainings to go, %2$d days left this week.</item>
     </plurals>
+    <string name="tr_warmup_hint_assist">With assistance: %1$s</string>
+    <string name="tr_warmup_hint_assist_pct">With assistance, about %1$d%% of your body weight</string>
+    <string name="ld_out_of_range">Outside the range of this material. Fine if your gym has it; adjust the material under Settings.</string>
+    <string name="settings_warmup_assist" formatted="false">Warm-up assistance for pull-ups and dips (% of body weight)</string>
 </resources>

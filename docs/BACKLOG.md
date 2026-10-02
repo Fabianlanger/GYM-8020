@@ -7,7 +7,7 @@ Status: **B** = bug, **V** = verbetering, **O** = onderzoek nodig.
 
 ---
 
-## O-2 · Materiaal ondersteunt, maar mag niet beperken (was B-1)
+## O-2 · Materiaal ondersteunt, maar mag niet beperken (was B-1) — *deels gedaan in v0.6.1*
 
 **Wat:** bij "Volgende keer" ging + van 85 naar 80. Het was een kabeloefening.
 
@@ -29,11 +29,17 @@ en schijven, maar **mogen je nooit tegenhouden**. Niemand weet vooraf welke appa
 **Test (volgens TESTING.md):** regel "+ geeft nooit een lager gewicht" als property-test, plus een test
 met precies dit geval (kabel, max 80, + vanaf 85).
 
-**Te besluiten:** welke combinatie van 1–5. Mijn voorlopige advies is 1 + 2 + 3.
+**Gedaan in v0.6.1:** 1 en 2. Buiten het bereik toont de app nu *"Buiten het bereik van dit materiaal"* in
+plaats van een correctie (richting 5). Tests: `MaterialRulesTest`. Die vond meteen een tweede fout: − op een
+stang kon vanaf een negatief gewicht naar 20 kg springen.
+
+**Nog te besluiten:** 3 (maximum laten meegroeien) en 4 (ruimere standaardprofielen).
 
 ---
 
-## B-2 · Toetsenbord springt open na GO
+## B-2 · Toetsenbord springt open na GO — *gedaan in v0.6.1*
+
+**Gedaan in v0.6.1:** focus wissen bij GO en na het aftellen, en het toetsenbord opent niet meer vanzelf als het venster focus krijgt. **Nog geen automatische test** (dat komt met T-4); handmatig nalopen bij de release.
 
 **Wat:** na GO en het aftellen verschijnt het toetsenbord.
 
@@ -45,7 +51,9 @@ alleen als je zelf in een veld tikt. De +/−-knoppen blijven zonder toetsenbord
 
 ---
 
-## V-1 · Scherm mag slapen na het aftellen
+## V-1 · Scherm mag slapen na het aftellen — *gedaan in v0.6.1*
+
+**Gedaan in v0.6.1 (D-84):** scherm aan vóór GO en tijdens het aftellen, daarna vrij; boven het vergrendelscherm alleen zolang het trainingsscherm open is. Handmatig nalopen bij de release.
 
 **Wat:** nu blijft het scherm tijdens de hele training aan. Na het aftellen mag het uit, maar je wilt snel
 weer verder zodra je de telefoon pakt.
@@ -65,7 +73,9 @@ weer verder zodra je de telefoon pakt.
 
 ---
 
-## B-3 · Set toevoegen bij "Volgende keer" is altijd zwaar
+## B-3 · Set toevoegen bij "Volgende keer" is altijd zwaar — *gedaan in v0.6.1*
+
+**Gedaan in v0.6.1:** tik op het label wisselt zwaar → licht → warming-up. Een lichte set neemt het gewicht van je andere lichte set over. Test: `PlanRolesTest`.
 
 **Wat:** een toegevoegde set staat op Z(waar) en je kunt hem niet op L(icht) zetten. Tikken op de Z doet niets.
 
@@ -140,7 +150,9 @@ planner daarom alleen "tot falen" of de standaard-streefwaarde.
 
 ---
 
-## B-4 · Pull-ups: "alleen lichaamsgewicht" is geen warming-up
+## B-4 · Pull-ups: "alleen lichaamsgewicht" is geen warming-up — *gedaan in v0.6.1*
+
+**Gedaan in v0.6.1 (D-83):** standaard 50% van je gewicht als ondersteuning, instelbaar in Instellingen → Methode. Per oefening instellen kan nog niet. Test: `MaterialRulesTest`.
 
 **Wat:** bij optrekken zegt de warming-upknop "Alleen lichaamsgewicht". Voor pull-ups is dat al een zware set.
 
@@ -249,8 +261,8 @@ horloge-app (W-9).
 
 | # | Wat | Status |
 |---|---|---|
-| T-1 | Regel "eerst een rode test, dan de fix" toepassen op alle B-punten hierboven | afgesproken, vanaf de volgende fix |
-| T-2 | Property-tests op de rekenlogica (regels uit TESTING.md §2) | gepland |
+| T-1 | Regel "eerst een rode test, dan de fix" toepassen op alle B-punten hierboven | in gebruik sinds v0.6.1 |
+| T-2 | Property-tests op de rekenlogica (regels uit TESTING.md §2) | gestart: + en − (v0.6.1); rest gepland |
 | T-3 | Mutatietesten (PIT) op `core/`: eerst meten, dan per release verbeteren | gepland |
 | T-4 | UI-tests met Compose via Robolectric voor de kritieke flows F-1, F-2, F-3, F-9 | gepland |
 | T-5 | Screenshottests met Roborazzi: referentie-screenshots, verschil maakt de build rood, screenshots als download | gepland |

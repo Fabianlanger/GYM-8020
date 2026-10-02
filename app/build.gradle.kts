@@ -16,7 +16,7 @@ android {
         // CI build number, so every build is a real update and visible under "About".
         val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionCode = build
-        versionName = "0.6.0 (build $build)"
+        versionName = "0.6.1 (build $build)"
     }
 
     signingConfigs {

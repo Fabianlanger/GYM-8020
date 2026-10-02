@@ -109,6 +109,7 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
         SettingStepper(stringResource(R.string.settings_light_target), settings.method.lightTarget) { v -> update { it.copy(method = it.method.copy(lightTarget = v)) } }
         SettingStepper(stringResource(R.string.settings_default_sets), settings.method.defaultSetCount, min = 1) { v -> update { it.copy(method = it.method.copy(defaultSetCount = v)) } }
         SettingStepper(stringResource(R.string.settings_margin), settings.method.goodMargin, min = 0) { v -> update { it.copy(method = it.method.copy(goodMargin = v)) } }
+        SettingStepper(stringResource(R.string.settings_warmup_assist), settings.warmupAssistPercent, min = 0, max = 90, step = 5) { v -> update { it.copy(warmupAssistPercent = v) } }
         Text(stringResource(R.string.settings_step), color = Gym.Muted)
         NumberStepper(
             value = settings.method.weightStepKg,
@@ -244,13 +245,13 @@ private fun SwitchRow(title: String, help: String, checked: Boolean, onChange: (
 }
 
 @Composable
-private fun SettingStepper(label: String, value: Int, min: Int = 1, onChange: (Int) -> Unit) {
+private fun SettingStepper(label: String, value: Int, min: Int = 1, max: Int = Int.MAX_VALUE, step: Int = 1, onChange: (Int) -> Unit) {
     Column {
         Text(label, color = Gym.Muted)
         NumberStepper(
             value = value.toDouble(),
-            onValueChange = { v -> v?.toInt()?.takeIf { it >= min }?.let(onChange) },
-            step = 1.0, decimals = false, min = min.toDouble(),
+            onValueChange = { v -> v?.toInt()?.takeIf { it in min..max }?.let(onChange) },
+            step = step.toDouble(), decimals = false, min = min.toDouble(),
             formatter = { it.toInt().toString() }, textSize = 22.sp, buttonSize = 48.dp,
         )
     }

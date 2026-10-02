@@ -48,7 +48,7 @@ Regels die we willen vastleggen (T-2):
 
 | Regel | Gebied |
 |---|---|
-| + geeft nooit een lager gewicht, − nooit een hoger | materiaal |
+| + geeft nooit een lager gewicht, − nooit een hoger | materiaal · **gebouwd** (`MaterialRulesTest`) |
 | Een voorgesteld gewicht is altijd op te leggen met het materiaal, of wordt als "buiten bereik" gemeld | materiaal |
 | Het doel gaat nooit de verkeerde kant op (te licht → zwaarder, te zwaar → lichter) | doelen |
 | Export → import levert exact dezelfde data op | back-up |
@@ -69,7 +69,7 @@ zijn. Nieuwe features voegen hun flow hier toe.
 | F-5 | Exporteren → importeren: alles terug | deels (back-upformaat) | open (T-2) |
 | F-6 | Automatische back-up naar map, houdt de nieuwste 7 | – | open |
 | F-7 | Dagherkenning en herinneringen | HomeAdvisorTest, RemindersTest | gedekt |
-| F-8 | Gewichten en schijven: alleen haalbare gewichten, minimale wissels | MaterialTest | gedekt, regels volgen (T-2) |
+| F-8 | Gewichten en schijven: haalbare gewichten, minimale wissels, materiaal beperkt nooit | MaterialTest, MaterialRulesTest | gedekt |
 | F-9 | Introductie bij eerste start; bestaande gebruikers slaan hem over | – | open (T-4) |
 | F-10 | Training achteraf invoeren → telt mee op de juiste datum; oudere datum verandert het doel niet | – | open (V-4) |
 

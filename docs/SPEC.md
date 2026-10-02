@@ -497,6 +497,7 @@ Elke fase = een werkende, installeerbare APK.
 | v0.4 — Heatmap | gebouwd: eigen lichaamsfiguur (art-deco-mozaïek) voor/achter, in de samenvatting met Totaal (volume) en T.o.v. vorige keer (e1RM zware set / reps), tik op een spier voor de waarde; ook in het dashboard (werksets per week). |
 | v0.5 — Publicatie | gebouwd: "Over de methode" in de app (offline, NL/EN) en `docs/methode.md`; introductie voor nieuwe gebruikers (methode, lichaamsgewicht, stang + schijven, weekplan; bestaande gebruikers met trainingen slaan hem over, opnieuw te bekijken via Instellingen); release-ondertekening met eigen sleutel via GitHub Secrets (`docs/RELEASE.md`); README bijgewerkt; DB-schema v2 vastgelegd. Open: screenshots voor de README, repo publiek maken. |
 | v0.6 — Logboek, herinneringen, back-up | gebouwd: logboek met alle trainingen (dashboard + "Alles"), afgeronde training bewerken vanuit logboek of samenvatting (D-74, D-75); lokale herinneringen (D-76); automatische back-up naar een gekozen map en Android-back-up (D-77). |
+| v0.6.1 — Snelle fixes | gebouwd: + en − gaan nooit de verkeerde kant op en het materiaal beperkt niet meer (D-79, O-2 deels); Z/L/warming-up wisselen bij "Volgende keer" (B-3); geen toetsenbord na GO (B-2); warming-up met ondersteuning voor pull-ups en dips (D-83, B-4); scherm mag uit na het aftellen, training boven het vergrendelscherm (D-84, V-1). Eerste release volgens de teststrategie (D-78): eerst een rode test, dan de fix. |
 
 | # | Besluit (na feedback v0.1) | Status |
 |---|---|---|
@@ -514,6 +515,8 @@ Elke fase = een werkende, installeerbare APK.
 | D-80 | **Training achteraf invoeren** (uitwerking: backlog V-4). In het dashboard, bij Trainingen, een knop **"+ Training toevoegen"**. Voor als je je telefoon niet bij je had, of voor oude trainingen uit aantekeningen. Onvolledige gegevens mogen: wat je weet vul je in, de rest blijft leeg. | [BESLOTEN] |
 | D-81 | **Importeren uit aantekeningen** (tekst of bestand, met een vaste schrijfwijze) staat los van D-80 en komt later. Eerst handmatig invoeren. | [LATER] |
 | D-82 | **Wearables en gezondheidsdata** (Garmin eerst, maar merk-onafhankelijk): inventarisatie in `docs/onderzoek-wearables.md`, uitwerking backlog O-3. Voorlopige richting: via Android **Health Connect** (lokaal, geen server, geen account), beginnend met automatisch lichaamsgewicht en hartslag per oefening. **Tweerichtingsverkeer** is gewenst: wat we in GYM-8020 vastleggen gaat ook terug naar wearables en hun apps (via Health Connect; voor Garmin via FIT-export of een eigen horloge-app, omdat Garmin geen data aanneemt). | [ONDERZOEK] |
+| D-83 | **Warming-up met ondersteuning** voor oefeningen met (bijna) je volle lichaamsgewicht (optrekken, chin-ups, dips; factor ≥ 0,9): standaard **50% van je lichaamsgewicht** als ondersteuning, afgerond op de stappen van de assisted machine. Instelbaar in Instellingen → Methode. Push-ups en dergelijke houden "alleen lichaamsgewicht". | [BESLOTEN] |
+| D-84 | **Scherm tijdens de training**: aan vóór GO en tijdens het aftellen; daarna mag het uit (batterij). **Alleen tijdens de training** toont de app zich boven het vergrendelscherm, zodat je zonder ontgrendelen terug bent. Na GO opent het toetsenbord niet vanzelf. | [BESLOTEN] |
 
 ---
 

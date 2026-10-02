@@ -63,7 +63,9 @@ class MaterialTest {
         assertNull(stack.plan(listOf(50.0)))
         val db = WeightCalculator(MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0, maxKg = 40.0), stock)
         assertEquals(24.0, db.up(22.0))
-        assertEquals(2.0, db.down(2.0))
+        // Below the lightest dumbbell − still works (D-79: material never limits), but never below zero.
+        assertEquals(0.0, db.down(2.0))
+        assertEquals(0.0, db.down(0.0))
     }
 
     @Test

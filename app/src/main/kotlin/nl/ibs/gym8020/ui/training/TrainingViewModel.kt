@@ -13,6 +13,7 @@ import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.core.logic.GoalAdvisor
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
+import nl.ibs.gym8020.core.logic.Warmup
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.SetRole
 import nl.ibs.gym8020.core.material.WeightCalculator
@@ -45,6 +46,8 @@ data class TrainingItem(
     val note: String = "",
     /** Achievable weights and plate plans from the exercise's material profile (v0.2). */
     val calc: WeightCalculator? = null,
+    /** Pull-ups and dips: warm-up assistance as signed extra (negative), when the body weight is known (B-4). */
+    val warmupAssistKg: Double? = null,
 ) {
     val hasInput: Boolean get() = sets.any { it.reps != null }
 }
@@ -84,7 +87,10 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             val list = setsBySe[se.id].orEmpty()
             val calc = Calculators.forExercise(ex, profiles, settings.plateStock)
             val plan = (draftMap[se.id] ?: suggestion(ex, list, settings.method, calc))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
-            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: "", calc)
+            val assist = if (Warmup.needsAssistance(ex.loadType, ex.bodyweightFactor)) {
+                Warmup.assistKg(session?.bodyweightKg, ex.bodyweightFactor, settings.warmupAssistPercent, calc)
+            } else null
+            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: "", calc, assist)
         }
         items.forEach { if (it.extra == null) loadExtra(it.exercise.id) }
         TrainingState(session, items, settings, exercises.filter { !it.archived }, loaded = true)

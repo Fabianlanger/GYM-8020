@@ -129,11 +129,51 @@ class WeightCalculator(val profile: MaterialProfile, private val stock: PlateSto
 
     fun isAchievable(weightKg: Double): Boolean = achievable.any { abs(it - weightKg) < 1e-6 }
 
-    /** Next achievable weight above [weightKg] (or the same if it is the maximum). */
-    override fun up(weightKg: Double): Double = achievable.firstOrNull { it > weightKg + 1e-6 } ?: achievable.lastOrNull() ?: weightKg
+    /** Outside what the profile knows (D-79): reported to the user, never corrected. */
+    fun outOfRange(weightKg: Double): Boolean {
+        val lo = achievable.firstOrNull() ?: return false
+        val hi = achievable.last()
+        return weightKg > hi + 1e-6 || weightKg < lo - 1e-6
+    }
 
-    /** Next achievable weight below [weightKg] (or the same if it is the minimum). */
-    override fun down(weightKg: Double): Double = achievable.lastOrNull { it < weightKg - 1e-6 } ?: achievable.firstOrNull() ?: weightKg
+    /** Step used outside the known range: the smallest plate, or the profile's step (D-79). */
+    private val stepAbove: Double
+        get() = when (profile.kind) {
+            MaterialKind.PLATES -> sizes.lastOrNull()?.let { kg(it * loadingPoints) } ?: profile.stepKg
+            MaterialKind.BODYWEIGHT -> sizes.lastOrNull()?.let(::kg) ?: profile.stepKg
+            else -> profile.stepKg
+        }.takeIf { it > 0 } ?: 1.0
+
+    private val stepBelow: Double
+        get() = (if (profile.kind == MaterialKind.PLATES) stepAbove else profile.stepKg).takeIf { it > 0 } ?: 1.0
+
+    /**
+     * Next weight up. Inside the profile's range: the next achievable weight. Above it the profile does not
+     * limit (D-79): + keeps going in the same step, so 80 → 82.5 → 85 on a cable that "ends" at 80.
+     * Never lower than [weightKg].
+     */
+    override fun up(weightKg: Double): Double {
+        val hi = achievable.lastOrNull()
+        if (hi == null || weightKg >= hi - 1e-6) return kg(g(weightKg + stepAbove))
+        return achievable.first { it > weightKg + 1e-6 }
+    }
+
+    /**
+     * Next weight down. Inside the range: the previous achievable weight; outside it: one step, never below
+     * zero for external weights. Never higher than [weightKg].
+     */
+    override fun down(weightKg: Double): Double {
+        val lo = achievable.firstOrNull()
+        val hi = achievable.lastOrNull()
+        val next = when {
+            lo == null || hi == null -> weightKg - stepBelow
+            weightKg > hi + 1e-6 -> maxOf(hi, weightKg - stepAbove)
+            weightKg <= lo + 1e-6 -> weightKg - stepBelow
+            else -> achievable.last { it < weightKg - 1e-6 }
+        }
+        val floored = if (profile.kind == MaterialKind.BODYWEIGHT) next else maxOf(0.0, next)
+        return minOf(weightKg, kg(g(floored)))
+    }
 
     /** Weight for a warm-up (D-44): empty bar, lowest pin, lightest dumbbell, or bodyweight only. */
     val warmupKg: Double

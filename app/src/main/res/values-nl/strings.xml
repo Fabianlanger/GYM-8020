@@ -346,4 +346,8 @@
         <item quantity="one">Nog %1$d training te gaan, %2$d dagen over deze week.</item>
         <item quantity="other">Nog %1$d trainingen te gaan, %2$d dagen over deze week.</item>
     </plurals>
+    <string name="tr_warmup_hint_assist">Met ondersteuning: %1$s</string>
+    <string name="tr_warmup_hint_assist_pct">Met ondersteuning, ongeveer %1$d%% van je gewicht</string>
+    <string name="ld_out_of_range">Buiten het bereik van dit materiaal. Prima als je gym het heeft; pas het materiaal aan onder Instellingen.</string>
+    <string name="settings_warmup_assist" formatted="false">Warming-up-ondersteuning bij optrekken en dippen (% van je gewicht)</string>
 </resources>

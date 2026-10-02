@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import nl.ibs.gym8020.core.logic.ReminderFlags
+import nl.ibs.gym8020.core.logic.Warmup
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.PlateStock
 import nl.ibs.gym8020.core.model.MethodSettings
@@ -36,6 +37,8 @@ data class AppSettings(
     val backupFolder: String? = null,
     val lastBackupAt: Long? = null,
     val backupFailed: Boolean = false,
+    /** Warm-up assistance for pull-ups and dips, % of the moved body weight (B-4, D-83). */
+    val warmupAssistPercent: Int = Warmup.DEFAULT_ASSIST_PERCENT,
 )
 
 class SettingsStore(private val context: Context) {
@@ -58,6 +61,7 @@ class SettingsStore(private val context: Context) {
         val backupFolder = stringPreferencesKey("backup_folder")
         val lastBackup = longPreferencesKey("last_backup_at")
         val backupFailed = booleanPreferencesKey("backup_failed")
+        val warmupAssist = intPreferencesKey("warmup_assist_percent")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
@@ -89,6 +93,7 @@ class SettingsStore(private val context: Context) {
             backupFolder = this[Keys.backupFolder],
             lastBackupAt = this[Keys.lastBackup],
             backupFailed = this[Keys.backupFailed] ?: false,
+            warmupAssistPercent = this[Keys.warmupAssist] ?: Warmup.DEFAULT_ASSIST_PERCENT,
         )
     }
 
@@ -113,6 +118,7 @@ class SettingsStore(private val context: Context) {
             if (next.backupFolder != null) prefs[Keys.backupFolder] = next.backupFolder else prefs.remove(Keys.backupFolder)
             if (next.lastBackupAt != null) prefs[Keys.lastBackup] = next.lastBackupAt else prefs.remove(Keys.lastBackup)
             prefs[Keys.backupFailed] = next.backupFailed
+            prefs[Keys.warmupAssist] = next.warmupAssistPercent
         }
     }
 }

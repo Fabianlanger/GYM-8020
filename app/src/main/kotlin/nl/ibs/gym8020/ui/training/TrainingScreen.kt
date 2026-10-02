@@ -7,6 +7,12 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.app.Activity
+import android.view.WindowManager
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import nl.ibs.gym8020.core.logic.PlanRoles
+import nl.ibs.gym8020.core.logic.Warmup
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -140,6 +146,17 @@ fun roleLabel(role: SetRole): String = when (role) {
 
 private fun kgText(kg: Double, unit: WeightUnit, signed: Boolean = false) = WeightFormat.format(kg, unit, signed) + " " + unit.name.lowercase()
 
+/** Warm-up hint for a training item, including assistance for pull-ups and dips (B-4). */
+@Composable
+fun warmupHint(item: TrainingItem, unit: WeightUnit, assistPercent: Int): String {
+    val ex = item.exercise
+    if (Warmup.needsAssistance(ex.loadType, ex.bodyweightFactor)) {
+        return item.warmupAssistKg?.let { stringResource(R.string.tr_warmup_hint_assist, kgText(-it, unit)) }
+            ?: stringResource(R.string.tr_warmup_hint_assist_pct, assistPercent)
+    }
+    return warmupHint(ex, item.calc, unit)
+}
+
 /** Warm-up weight from the material (D-44): empty bar 20 kg, lightest pin, lightest dumbbell, bodyweight only. */
 @Composable
 fun warmupHint(ex: ExerciseEntity, calc: WeightCalculator?, unit: WeightUnit): String {
@@ -167,11 +184,26 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
     var confirmFinish by remember { mutableStateOf(false) }
     var countdownFor by remember { mutableStateOf<Long?>(null) }
 
-    // Keep the screen on during a training.
+    // Screen (V-1): on before GO and during the countdown; after that it may go off to save battery.
+    // During the training the app shows over the lock screen, so waking the phone brings you straight back.
     val view = LocalView.current
-    DisposableEffect(Unit) {
-        view.keepScreenOn = true
+    val current = items.getOrNull(pager.currentPage)
+    val keepOn = countdownFor != null || (current != null && current.se.goAt == null && current.se.firstInputAt == null)
+    DisposableEffect(keepOn) {
+        view.keepScreenOn = keepOn
         onDispose { view.keepScreenOn = false }
+    }
+    val activity = LocalContext.current as? Activity
+    DisposableEffect(activity) {
+        activity?.showOverLockScreen(true)
+        onDispose { activity?.showOverLockScreen(false) }
+    }
+    // No keyboard after GO (B-2): only when you tap a field yourself.
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    fun dropFocus() {
+        focusManager.clearFocus(force = true)
+        keyboard?.hide()
     }
     LaunchedEffect(Unit) {
         while (true) {
@@ -225,8 +257,9 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
                             now = now,
                             allExercises = state.allExercises,
                             vm = vm,
+                            assistPercent = state.settings.warmupAssistPercent,
                             isLast = page == items.lastIndex,
-                            onGo = { countdownFor = item.se.id },
+                            onGo = { dropFocus(); countdownFor = item.se.id },
                             onFinish = { confirmFinish = true },
                         )
                     }
@@ -251,7 +284,7 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
             }
         }
         countdownFor?.let { seId ->
-            CountdownOverlay(onDone = { vm.go(seId); countdownFor = null })
+            CountdownOverlay(onDone = { vm.go(seId); countdownFor = null; dropFocus() })
         }
     }
 
@@ -296,6 +329,7 @@ private fun ExercisePage(
     now: Long,
     allExercises: List<ExerciseEntity>,
     vm: TrainingViewModel,
+    assistPercent: Int,
     isLast: Boolean,
     onGo: () -> Unit,
     onFinish: () -> Unit,
@@ -351,7 +385,7 @@ private fun ExercisePage(
                 Text(stringResource(R.string.tr_warmup_running, formatDuration(now - (se.warmupAt ?: now))), color = Gym.Gold, style = MaterialTheme.typography.bodyMedium)
             } else if (se.warmupAt == null) {
                 LineButton(
-                    stringResource(R.string.tr_warmup_button, warmupHint(ex, item.calc, unit)),
+                    stringResource(R.string.tr_warmup_button, warmupHint(item, unit, assistPercent)),
                     onClick = { vm.startWarmup(se.id) }, icon = Icons.Filled.LocalFireDepartment, modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -366,7 +400,7 @@ private fun ExercisePage(
             val prevReps = item.extra?.last?.sets?.filter { it.role == set.role }?.maxOfOrNull { it.reps ?: 0 }
             if (openSet == set.id) {
                 SetEditor(
-                    set = set, ex = ex, calc = item.calc, unit = unit, step = step, target = target, goodMargin = goodMargin,
+                    set = set, ex = ex, calc = item.calc, warmupText = warmupHint(item, unit, assistPercent), unit = unit, step = step, target = target, goodMargin = goodMargin,
                     previousReps = prevReps, isReps = isReps,
                     onChange = vm::updateSet,
                     onFirstInput = if (set.role.isWork) firstInput else ({}),
@@ -385,7 +419,7 @@ private fun ExercisePage(
             LineButton(stringResource(R.string.tr_add_warmup), onClick = { vm.addSet(se.id, SetRole.WARMUP) }, icon = Icons.Filled.LocalFireDepartment, modifier = Modifier.weight(1f))
         }
 
-        item.plan?.let { plan -> NextTimePlanner(item, plan, unit, step, targetOf, vm) }
+        item.plan?.let { plan -> NextTimePlanner(item, plan, unit, step, targetOf, vm, assistPercent) }
 
         Spacer(Modifier.height(4.dp))
         if (isLast) {
@@ -434,6 +468,8 @@ private fun loadText(weightKg: Double?, calc: WeightCalculator?, step: LoadStep?
     val p = calc.profile
     val w: Double = weightKg
     fun plates(l: List<Double>) = l.joinToString(" · ") { WeightFormat.format(it, unit) }
+    // Outside the profile: say so, never correct it (D-79).
+    if (calc.outOfRange(w)) return stringResource(R.string.ld_out_of_range)
     if (calc.isAchievable(w).not()) return stringResource(R.string.ld_not_achievable, kgText(calc.snap(w), unit, p.kind == MaterialKind.BODYWEIGHT))
     return when (p.kind) {
         MaterialKind.PLATES -> when {
@@ -588,6 +624,7 @@ private fun SetEditor(
     set: SetEntity,
     ex: ExerciseEntity,
     calc: WeightCalculator?,
+    warmupText: String,
     unit: WeightUnit,
     step: Double,
     target: Int?,
@@ -620,7 +657,7 @@ private fun SetEditor(
             }
         }
         if (set.role == SetRole.WARMUP) {
-            Text(warmupHint(ex, calc, unit), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
+            Text(warmupText, color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (set.role != SetRole.WARMUP && showWeight) {
@@ -664,6 +701,7 @@ private fun SetEditor(
         if (set.role != SetRole.WARMUP && showWeight) {
             val w = set.weightKg
             val info = when {
+                w != null && calc != null && calc.outOfRange(w) -> stringResource(R.string.ld_out_of_range)
                 w != null && calc != null && !calc.isAchievable(w) -> stringResource(R.string.ld_not_achievable, kgText(calc.snap(w), unit, signed))
                 signed -> w?.let { set.bodyweightKg?.let { bw -> stringResource(R.string.tr_effective, kgText(bw * ex.bodyweightFactor + w, unit)) } }
                     ?: stringResource(R.string.tr_bodyweight_missing)
@@ -704,7 +742,7 @@ private fun SignalChip(set: SetEntity, target: Int?, goodMargin: Int, isReps: Bo
 
 /** Plan for next time: a one-line summary; tap to adjust (D-18a). */
 @Composable
-private fun NextTimePlanner(item: TrainingItem, plan: PlanDraft, unit: WeightUnit, step: Double, targetOf: (SetRole) -> Int?, vm: TrainingViewModel) {
+private fun NextTimePlanner(item: TrainingItem, plan: PlanDraft, unit: WeightUnit, step: Double, targetOf: (SetRole) -> Int?, vm: TrainingViewModel, assistPercent: Int) {
     val ex = item.exercise
     val signed = ex.loadType == LoadType.BODYWEIGHT
     val isReps = ex.progression == Progression.REPS
@@ -727,7 +765,8 @@ private fun NextTimePlanner(item: TrainingItem, plan: PlanDraft, unit: WeightUni
             Spacer(Modifier.height(8.dp))
             plan.sets.forEachIndexed { i, p ->
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    RoleBadge(p.role)
+                    // Tap to switch heavy → light → warm-up (B-3).
+                    Box(Modifier.clickable { vm.editPlan(item.se.id) { d -> d.copy(sets = PlanRoles.cycle(d.sets, i)) } }) { RoleBadge(p.role) }
                     if (p.role.isWork && !isReps) {
                         NumberStepper(
                             value = p.weightKg,
@@ -746,7 +785,7 @@ private fun NextTimePlanner(item: TrainingItem, plan: PlanDraft, unit: WeightUni
                         )
                     } else {
                         Text(
-                            if (p.role == SetRole.WARMUP) warmupHint(ex, item.calc, unit) else (targetOf(p.role)?.let { stringResource(R.string.tr_target, it) } ?: stringResource(R.string.tr_to_failure)),
+                            if (p.role == SetRole.WARMUP) warmupHint(item, unit, assistPercent) else (targetOf(p.role)?.let { stringResource(R.string.tr_target, it) } ?: stringResource(R.string.tr_to_failure)),
                             color = Gym.Muted, modifier = Modifier.weight(1f),
                         )
                     }
@@ -842,4 +881,14 @@ fun BodyweightPrompt(onSave: (Double) -> Unit, onSkip: () -> Unit, onDismiss: ()
         confirmButton = { TextButton(onClick = { value?.takeIf { it > 0 }?.let(onSave) }, enabled = (value ?: 0.0) > 0) { Text(stringResource(R.string.action_save)) } },
         dismissButton = { TextButton(onClick = onSkip) { Text(stringResource(R.string.action_skip)) } },
     )
+}
+
+/** Show the training over the lock screen (V-1), only while the training screen is open. */
+private fun Activity.showOverLockScreen(on: Boolean) {
+    if (Build.VERSION.SDK_INT >= 27) {
+        setShowWhenLocked(on)
+    } else {
+        @Suppress("DEPRECATION")
+        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED) else window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+    }
 }
