@@ -54,6 +54,31 @@ Een kleine GYM-8020-app op je Garmin-horloge, geschreven in Garmins eigen taal (
 - **Werk:** groot. Het is een tweede app in een andere taal, met eigen tests en eigen publicatie in de
   Connect IQ Store.
 
+## Tweerichtingsverkeer: van GYM-8020 naar je wearable
+
+De wens: niet alleen data ophalen, maar ook wat je in GYM-8020 vastlegt terugsturen naar je wearable of de app
+ervan. Dat kan op drie manieren, en niet elke manier werkt voor elk merk.
+
+| Richting | Fitbit, Samsung, Google, Oura, Whoop, … | Garmin |
+|---|---|---|
+| **Afgeronde training** (oefeningen, sets, reps, gewicht) | **Ja, via Health Connect.** De training verschijnt als krachttraining in die apps. | **Niet via Health Connect** (Garmin neemt niets aan). Wel mogelijk: een **FIT-bestand** dat je zelf in Garmin Connect importeert (*Importeren* op connect.garmin.com). Of Garmin daarin sets en reps netjes toont, moeten we **testen**: dat lukt alleen als de oefeningen goed gecodeerd zijn. |
+| **Geplande training** (je doel voor vandaag naar je horloge) | Meestal niet: die apps hebben geen ingang voor workouts van andere apps | Officieel via de **Garmin Training API**: vraagt goedkeuring en een eigen server, en voor krachttraining is die beperkt. Hevy kreeg alleen een beperkte koppeling. Alternatief: onze eigen **horloge-app** (route C) toont je doel op je pols. |
+| **Hartslag en gewicht** terug | Niet nodig: die komen juist van de wearable | idem |
+
+**Conclusie:**
+- **Voor de meeste merken is tweerichtingsverkeer goed haalbaar via Health Connect.** Je data gaat erheen en
+  komt eruit: training en sets erheen, hartslag, gewicht en slaap eruit.
+- **Voor Garmin werkt de terugweg alleen met een omweg:** een FIT-bestand dat je zelf importeert (moet getest
+  worden) of een eigen horloge-app. Een automatische koppeling met Garmin Connect zit achter het
+  goedkeuringsprogramma, met een server, en is voor krachttraining beperkt. Garmin houdt die deur vooralsnog
+  dicht voor krachtapps.
+
+| # | Idee (tweerichting) | Werk |
+|---|---|---|
+| W-5 | Afgeronde trainingen naar Health Connect (Fitbit, Samsung, Google, …) | Middel |
+| W-8 | Training als **FIT-bestand** exporteren, om zelf in Garmin Connect te importeren. Eerst een proef: blijven sets en reps behouden? | Middel; proef klein |
+| W-9 | Doel van vandaag op je **Garmin-horloge** via een eigen Connect IQ-app (route C), resultaten terug naar de telefoon | Groot |
+
 ## Wat zouden we met de data doen?
 
 Gesorteerd van meeste naar minste waarde voor deze app:
@@ -84,7 +109,8 @@ Gesorteerd van meeste naar minste waarde voor deze app:
 
 1. **Route A, Health Connect**, beginnen met **W-1 (gewicht)** en **W-2 (hartslag per oefening)**. Dat levert
    het meeste op, werkt met Garmin én met vrijwel alle andere merken, en blijft lokaal.
-2. Daarna W-7, W-3 en W-5. W-4 pas na een eigen onderzoek naar wat zinvol en verantwoord is.
+2. Daarna **tweerichting**: W-5 (trainingen naar Health Connect) en een proef met W-8 (FIT naar Garmin).
+   Dan W-7 en W-3. W-4 pas na een eigen onderzoek naar wat zinvol en verantwoord is.
 3. **Route B niet doen** zolang we geen server willen.
 4. **Route C (horloge-app)** op de lange lijst. Leuk, maar een tweede product.
 
@@ -94,10 +120,16 @@ Gesorteerd van meeste naar minste waarde voor deze app:
 |---|---|---|
 | O-3a | Route A (Health Connect) als koppeling voor alle wearables? | Ja |
 | O-3b | Eerste stap: automatisch gewicht (W-1) en hartslag per oefening (W-2)? | Ja |
-| O-3c | Trainingen terugschrijven naar Health Connect (W-5)? | Later, als optie |
+| O-3c | Tweerichtingsverkeer: trainingen naar Health Connect (W-5) | Ja, direct na W-1/W-2 |
+| O-3e | Proef met FIT-export voor Garmin Connect (W-8) | Ja, eerst een kleine proef |
 | O-3d | Horloge-app voor Garmin (route C)? | Lange lijst |
 
 ## Bronnen
+
+- Garmin Training API (workouts naar Garmin Connect): https://developer.garmin.com/gc-developer-program/training-api
+- Beperkte Garmin-koppeling voor krachtapps (Hevy): https://the5krunner.com/2026/03/24/garmin-connect-plus-strength-apps/
+- Sets en oefeningen in FIT-bestanden: https://forums.garmin.com/developer/fit-sdk/f/discussion/350594/how-to-encode-strength-training-into-fit/1689937
+- Sets en reps uit Garmin-FIT: https://forum.intervals.icu/t/pulling-strength-workout-exercise-sets-reps-weight-from-garmin/123171
 
 - Garmin en Health Connect, welke data: https://gadgetsandwearables.com/2025/07/08/garmin-google-health-connect-launch/
 - Garmin en Health Connect, aankondiging: https://www.notebookcheck.net/Garmin-and-Health-Connect-integration-on-the-way-to-smartwatch-users.1022327.0.html

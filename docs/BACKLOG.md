@@ -229,6 +229,10 @@ server. De Garmin-cloud-API vraagt goedkeuring en een eigen server, en past daar
 
 **Eerste stap (voorstel):** automatisch lichaamsgewicht (W-1) en hartslag per oefening (W-2).
 
+**Tweerichtingsverkeer (gewenst):** trainingen terug naar Health Connect (W-5) voor Fitbit, Samsung, Google en
+anderen. Voor Garmin een proef met FIT-export die je zelf importeert (W-8), en op termijn een eigen
+horloge-app (W-9).
+
 **Te besluiten:** O-3a t/m O-3d in het onderzoeksdocument.
 
 ---
