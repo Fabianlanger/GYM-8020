@@ -47,7 +47,7 @@ Bij elke bug, wens of idee van de eigenaar:
   beantwoord moeten zijn**.
 - Snelle fixes en kleine dingen gaan in een kleine tussenrelease (0.x.y). Samenhangende features gaan samen
   in één release (0.x).
-- Tot en met 0.9 alleen **dev-builds** (D-85). De eigenaar test via de vaste dev-link.
+- Tot 1.0 alleen **dev-builds** (D-85). De eigenaar test via de vaste dev-link.
 
 ## 3. Afhankelijkheden checken (bij elke nieuwe feature)
 

@@ -308,12 +308,103 @@ aan hoeveel schijven je gym heeft; 25 kg uit betekent dat de app er nooit mee re
 | T-5 | Screenshottests met Roborazzi: referentie-screenshots, verschil maakt de build rood, screenshots als download | gepland |
 | T-6 | End-to-end op een emulator (Maestro), 2–3 rooktests bij een versierelease | later |
 
+## V-7 · Termen gelijktrekken met de fitnesswereld (D-87)
+
+**Wat:** "Schema" en "Weekplan" sluiten niet aan bij wat sporters en andere apps gebruiken.
+
+**Onderzoek:** `onderzoek-terminologie.md`. Voorstel:
+- Schema → **Workout**
+- Weekplan → **Program / Programma**
+- een gedane training → **Session** (NL: Training)
+- Volgende keer → **Next target**
+- Material → **Equipment**
+
+Zwaar/licht blijft; in de uitleg noemen we het "top set + back-off set".
+
+**Hoe:** alleen de teksten (EN + NL), de methodepagina, de introductie en de documentatie. **Niet** de code of
+de database (A-11). In de SPEC komt een woordenlijst met het verband tussen intern en scherm.
+
+**Te besluiten:** vragen 19–21 (ROADMAP).
+
+**Test:** screenshottests (T-5) vangen vergeten teksten; een simpele check dat er geen "schema" meer in de
+Engelse teksten staat.
+
+---
+
+## V-8 · Engels als standaardtaal, Nederlands te kiezen (D-88)
+
+**Wat:** de app is standaard Engels; Nederlands kies je in Instellingen (en op Android 13+ ook via de
+systeeminstellingen per app).
+
+**Nu:** de app volgt de taal van de telefoon, er is geen taalknop.
+
+**Afhankelijkheid (A-10):** standaardoefeningen, -workouts en -programma's staan nu in de database in de taal
+van de eerste start. Bij een taalwissel moeten ze meevertalen: namen van bibliotheekitems tonen via hun vaste
+sleutel in de gekozen taal. Zelf gewijzigde namen blijven bewaard.
+
+**Te besluiten:** vraag 22.
+
+**Test:** taal wisselen → bibliotheeknamen en teksten wisselen mee, eigen namen niet.
+
+---
+
+## V-9 · Rondleiding door de eerste workout (D-89)
+
+**Wat:** nieuwe gebruikers krijgen bij de eerste start de introductie, maar daarna niet de uitleg van de
+training zelf. Bij hun **eerste workout** (meestal Full body) loopt een korte rondleiding mee:
+- het onderdeel dat aan de beurt is **wiebelt of pulseert** zacht;
+- een kleine pop-up legt het in één of twee zinnen uit;
+- tik om naar de volgende stap te gaan;
+- overslaan kan altijd, en je kunt de rondleiding opnieuw bekijken via Instellingen.
+
+**Stappen in de "happy flow"** (voorstel, nog te testen in het prototype):
+1. Beginscherm: de kaart "Vandaag" → workout starten.
+2. Doelkaart: het gewicht voor vandaag en welke schijven erop gaan.
+3. Warming-up (optioneel).
+4. **GO**: aftellen, en de timer loopt.
+5. Reps invullen bij de **zware set**: tot falen, streef naar ±6.
+6. Het signaal: te licht / goed / te zwaar.
+7. De **lichte set**: tot falen, streef naar ±16.
+8. **Volgende doel**: het gewicht voor de volgende keer, met een voorstel van de app.
+9. Swipen naar de volgende oefening (het lint aan de zijkant).
+10. Training afronden → samenvatting (records, heatmap).
+
+**Ideeën om mee te nemen:**
+- **Contextueel:** een stap verschijnt pas als dat onderdeel voor het eerst in beeld komt, niet alles in één
+  keer.
+- **Hooguit ~10 korte stappen**, nooit iets blokkeren.
+- **Demo-workout** om te oefenen of te laten zien aan iemand anders, zonder dat er iets wordt opgeslagen.
+  Handig bij het presenteren van de app.
+
+**Eerst een prototype:** een klikbaar prototype op telefoonformaat (HTML), om de stappen, teksten en het
+wiebelen te testen vóór we het in de app bouwen.
+
+**Afhankelijkheden:**
+- komt ná de schermwijzigingen van 0.7/0.8, anders bouwen we de rondleiding twee keer;
+- komt ná V-7 (termen) en V-8 (taal), omdat de teksten daarop leunen;
+- UI-tests (T-4) controleren dat elke stap zijn onderdeel vindt.
+
+**Te besluiten:** vragen 23–25 (ROADMAP).
+
+**Test:** nieuwe flow F-11: de rondleiding verschijnt één keer, is over te slaan en opnieuw te starten, en
+verschijnt niet bij bestaande gebruikers.
+
+---
+
+## O-5 · Naam van de app (later)
+
+De eigenaar denkt erover de app anders te noemen. Voorlopig blijft het **GYM-8020**. Uitzoeken vóór 1.0,
+omdat de naam in de pakketnaam, het icoon en de store-vermelding terechtkomt: na publicatie is hij moeilijk te
+veranderen.
+
+---
+
 ## Proces
 
 | # | Wat | Status |
 |---|---|---|
 | P-1 | Werkwijze-upgrade naar de aanpak van Matt Pocock: eerst uitzoeken wat hij doet en wat we overnemen | later |
-| A-8 | Eén ondertekeningssleutel voor dev- en versiebuilds (eenmalige overstap met export → import) | vóór 0.9, zie ROADMAP |
+| A-8 | Eén ondertekeningssleutel voor dev- en versiebuilds (eenmalige overstap met export → import) | vóór 0.10 (wearables), zie ROADMAP |
 
 ## Volgorde
 

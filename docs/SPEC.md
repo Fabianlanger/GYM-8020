@@ -517,8 +517,12 @@ Elke fase = een werkende, installeerbare APK.
 | D-82 | **Wearables en gezondheidsdata** (Garmin eerst, maar merk-onafhankelijk): inventarisatie in `docs/onderzoek-wearables.md`, uitwerking backlog O-3. Voorlopige richting: via Android **Health Connect** (lokaal, geen server, geen account), beginnend met automatisch lichaamsgewicht en hartslag per oefening. **Tweerichtingsverkeer** is gewenst: wat we in GYM-8020 vastleggen gaat ook terug naar wearables en hun apps (via Health Connect; voor Garmin via FIT-export of een eigen horloge-app, omdat Garmin geen data aanneemt). | [ONDERZOEK] |
 | D-83 | **Warming-up met ondersteuning** voor oefeningen met (bijna) je volle lichaamsgewicht (optrekken, chin-ups, dips; factor ≥ 0,9): standaard **50% van je lichaamsgewicht** als ondersteuning, afgerond op de stappen van de assisted machine. Instelbaar in Instellingen → Methode. Push-ups en dergelijke houden "alleen lichaamsgewicht". | [BESLOTEN] |
 | D-84 | **Scherm tijdens de training**: aan vóór GO en tijdens het aftellen; daarna mag het uit (batterij). **Alleen tijdens de training** toont de app zich boven het vergrendelscherm, zodat je zonder ontgrendelen terug bent. Na GO opent het toetsenbord niet vanzelf. | [BESLOTEN] |
-| D-85 | **Tot en met 0.9 alleen dev-builds** (vaste dev-link, testsleutel). Eerst alles af wat we nu willen; de eerste versierelease met de eigen sleutel komt bij 1.0. Vóór 1.0 één sleutel voor alle builds (ROADMAP A-8). | [BESLOTEN] |
+| D-85 | **Tot 1.0 alleen dev-builds** (vaste dev-link, testsleutel). Eerst alles af wat we nu willen; de eerste versierelease met de eigen sleutel komt bij 1.0. Daarvóór één sleutel voor alle builds (ROADMAP A-8). | [BESLOTEN] |
 | D-86 | **Werkwijze vastgelegd** in `.claude/skills/werkwijze/SKILL.md` en `CLAUDE.md`: input vastleggen (BACKLOG, SPEC), releases indelen met genummerde vragen per release (`ROADMAP.md`), vooruitkijken op afhankelijkheden en architectuur, bugs test-first. Later een upgrade naar de werkwijze van Matt Pocock (P-1). | [BESLOTEN] |
+| D-87 | **Termen gelijk met de fitnesswereld** (onderzoek: `onderzoek-terminologie.md`, backlog V-7). Voorstel: Schema → Workout, Weekplan → Program/Programma, gedane training → Session, Volgende keer → Next target, Material → Equipment. Alleen teksten en documentatie; code en database houden hun interne namen (woordenlijst in de SPEC). | [ONDERZOEK] |
+| D-88 | **Engels is de standaardtaal**, Nederlands te kiezen in Instellingen (en per app in Android 13+). Bibliotheekitems vertalen mee met de gekozen taal. Vervangt G-4 ("volgt de telefoon"). Backlog V-8. | [BESLOTEN] |
+| D-89 | **Rondleiding door de eerste workout**: wiebelende markering + korte pop-up per stap in de happy flow, overslaan kan, opnieuw te bekijken. Eerst een klikbaar prototype. Backlog V-9. | [BESLOTEN] |
+| D-90 | **Naam van de app**: voorlopig GYM-8020; heroverwegen vóór 1.0 (O-5). | [LATER] |
 
 ---
 
@@ -550,7 +554,7 @@ De app ondersteunt het proces van de eigenaar, maar bevat geen persoonlijke inho
 | G-1 [BESLOTEN] | Is de methode (2 sets zwaar → licht, 6/16, doel na elke oefening) **de kern van GYM-8020** voor iedereen, of moet de app methode-neutraal zijn? | Methode is de kern en de standaard; de getallen zijn aanpasbaar in Instellingen. |
 | G-2 [BESLOTEN, nice to have → v0.5] | Wat ziet een **nieuwe gebruiker** bij de eerste start? | Korte onboarding van 3 schermen: (1) uitleg methode in 3 zinnen, (2) lichaamsgewicht (optioneel, alleen lokaal), (3) stanggewicht + schijven van je gym (voorgevuld met gangbare waarden), (4) kies een weekplan (Full body / PPL / Upper-Lower / leeg). |
 | G-3 | Moet de app **voorbeeldschema's** meeleveren? | **Besloten: ja** — zie D-63 en bijlage A. |
-| G-4 [BESLOTEN] | Taal van de app. | Engels + Nederlands, volgt de telefoon. |
+| G-4 [BESLOTEN, herzien in D-88] | Taal van de app. | Engels + Nederlands. Was: volgt de telefoon; nu: Engels standaard, Nederlands te kiezen (D-88). |
 
 ---
 

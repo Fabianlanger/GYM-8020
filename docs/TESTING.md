@@ -72,6 +72,8 @@ zijn. Nieuwe features voegen hun flow hier toe.
 | F-8 | Gewichten en schijven: haalbare gewichten, minimale wissels, materiaal beperkt nooit | MaterialTest, MaterialRulesTest | gedekt |
 | F-9 | Introductie bij eerste start; bestaande gebruikers slaan hem over | – | open (T-4) |
 | F-10 | Training achteraf invoeren → telt mee op de juiste datum; oudere datum verandert het doel niet | – | open (V-4) |
+| F-11 | Rondleiding bij de eerste workout: verschijnt één keer, is over te slaan en opnieuw te starten, niet bij bestaande gebruikers | – | open (V-9) |
+| F-12 | Taal wisselen: teksten en bibliotheeknamen wisselen mee, eigen namen niet | – | open (V-8) |
 
 **Mutatietesten** (T-3, met PIT op `core/`): een tool verandert bewust kleine dingen in de code, bijv. `>` in
 `>=` of `+` in `-`, en kijkt of een test dat opmerkt. Het resultaat is het percentage **gevangen** fouten.

@@ -10,5 +10,5 @@ checken, bugs test-first.
 Snel:
 - `core/` = pure Kotlin-logica met tests: `./gradlew -PcoreOnly :core:test`.
 - `app/` = Android; bouwt alleen in GitHub Actions (Google Maven is hier niet bereikbaar).
-- Tot en met 0.9 alleen dev-builds (vaste dev-link); versiereleases pas bij 1.0.
+- Tot 1.0 alleen dev-builds (vaste dev-link); versiereleases pas bij 1.0.
 - Geen persoonlijke trainingsdata in de repo.
