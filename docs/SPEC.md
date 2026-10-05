@@ -527,9 +527,11 @@ Elke fase = een werkende, installeerbare APK.
 | D-91 | **Snelknop lichaamsgewicht op het beginscherm**: direct invullen vanaf de startpagina, voorgevuld met de laatste meting, tikken = aanpassen. Voorrang: in 0.6.2. Backlog V-10. | [BESLOTEN] |
 | D-92 | **De app blijft draaibaar** (geen vaste staande stand). De draaibug (B-5) wordt opgelost doordat de aftelling het opnieuw opbouwen van het scherm overleeft. | [BESLOTEN] |
 | D-93 | **Herinnering lichaamsgewicht instelbaar: dagelijks of wekelijks** (standaard wekelijks). Aanvulling op D-76. | [BESLOTEN] |
-| D-94 | **Invulvelden: typen voorop, +/− bescheiden**, voor alle getalvelden. Variant nog te kiezen (backlog V-11, vraag 29). | [ONDERZOEK] |
+| D-94 | **Invulvelden: typen voorop, +/− bescheiden**, voor alle getalvelden: variant A, het veld voorop met kleine +/− in het vak (vraag 29). Backlog V-11. | [BESLOTEN] |
 | D-95 | **Dashboard:** huidig lichaamsgewicht en invullen bovenaan, de grafiek lager; alle grafieken krijgen een echt assenstelsel (waarden, eenheid, datums). Backlog V-12, V-13. | [BESLOTEN] |
 | D-96 | **Meerdere metingen lichaamsgewicht per dag**, zoals Garmin: per dag een staafje laag–hoog met een bolletje voor de laatste meting; de laatste meting van de dag telt. Met schema v3 in 0.7. Backlog V-14. | [BESLOTEN] |
+| D-97 | **De gebruiker bepaalt het doel, de app adviseert.** Een voorstel van de app wordt nooit stilletjes een doel; wat de gebruiker zet blijft staan en wordt direct bewaard. Meldingen die oordelen over wat "kan" verdwijnen. Uitwerking en keuzes: `review-doelen.md` (B-6..B-8, V-15..V-18). Raakt D-18a en D-28. | [BESLOTEN] |
+| D-98 | **Werkwijze-upgrade (P-1, Matt Pocock) heeft voorrang** op alle geplande releases, direct nadat 0.6.2 af is. | [BESLOTEN] |
 
 ---
 

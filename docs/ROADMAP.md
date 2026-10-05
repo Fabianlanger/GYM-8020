@@ -74,6 +74,14 @@ Bij V-10 (snelknop gewicht):
 
 ---
 
+## Direct na 0.6.2 · Werkwijze-upgrade (P-1) — *voorrang op alle releases hieronder (D-98)*
+
+De aanpak van Matt Pocock (skills) invoeren in deze repo. Eerst uitzoeken wat hij doet en wat we overnemen,
+dan voorstellen, dan invoeren. Daarna pakken we de review van de doelen op (`review-doelen.md`, B-6..B-8,
+V-15..V-18) met die nieuwe werkwijze. Die review hangt aan schema v3 (A-1) en schuift dus naar of vóór 0.7.
+
+---
+
 ## 0.7 · Kracht en datamodel
 
 *Doel: de app laat zien hoe sterk je bent en hoeveel sterker je wordt. Plus één database-migratie voor alles
@@ -191,5 +199,4 @@ workout. Eerst een prototype; bouwen pas als de schermen van 0.7/0.8 staan (A-13
 | W-4 | Herstel-hint op basis van slaap en rusthartslag (eerst eigen onderzoek) |
 | W-6 | Stappen op rustdagen |
 | W-9 | Eigen Garmin-horloge-app |
-| P-1 | Werkwijze-upgrade naar de aanpak van Matt Pocock (eerst uitzoeken wat we overnemen) |
 | O-5 | Naam van de app heroverwegen (vóór 1.0 beslissen, want de naam komt in pakketnaam, icoon en store) |

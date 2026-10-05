@@ -307,6 +307,7 @@ aan hoeveel schijven je gym heeft; 25 kg uit betekent dat de app er nooit mee re
 | T-4 | UI-tests met Compose via Robolectric voor de kritieke flows F-1, F-2, F-3, F-9 | gestart (v0.6.2): F-9, begin F-1, taalwissel; F-2/F-3 volgen |
 | T-5 | Screenshottests met Roborazzi: referentie-screenshots, verschil maakt de build rood, screenshots als download | gestart (v0.6.2): screenshots worden gemaakt (download + branch `ci-screenshots`); vergelijken volgt na goedkeuring van de referenties |
 | T-6 | End-to-end op een emulator (Maestro), 2–3 rooktests bij een versierelease | later |
+| T-7 | Vensters (dialogen) in UI-tests: blijven onder Robolectric "bezig" zodra ze boven de app-schermen openen; los en in een kale activity werken ze wel. Tot dit is opgelost: weegvenster en lichaamsgewichtvraag handmatig testen | open |
 
 ## V-7 · Termen gelijktrekken met de fitnesswereld (D-87) — *gedaan in v0.6.2*
 
@@ -504,13 +505,28 @@ De eigenaar denkt erover de app anders te noemen. Voorlopig blijft het **GYM-802
 omdat de naam in de pakketnaam, het icoon en de store-vermelding terechtkomt: na publicatie is hij moeilijk te
 veranderen.
 
+## Uit gebruik, 5 oktober 2026: doelen voor volgende keer
+
+Uitgangspunt van de eigenaar (D-97): **ik bepaal het doel, de app adviseert.** Alles hieronder staat
+uitgewerkt in **`review-doelen.md`**, met per onderdeel de keuze houden / aanpassen / verwijderen.
+
+| # | Wat | Review |
+|---|---|---|
+| B-6 | Gewijzigde doelen gaan verloren als je het trainingsscherm verlaat; terugkomen en swipen zet het automatische voorstel over jouw doel heen | R-B |
+| B-7 | Warming-up gaat niet mee naar volgende keer en staat niet bij "Laatste keer" | R-C |
+| B-8 | Oefeningen op reps: doel toont de algemene targets (6/16) en is niet in te stellen; referentie moet de laatste sessie zijn (vervangt V-3) | R-D |
+| V-15 | Automatisch voorstel (± 2,5) wordt stilletjes het doel; wordt advies naast jouw doel | R-A |
+| V-16 | Meldingen "Niet mogelijk met je materiaal" en "Buiten het bereik" verwijderen; rol van materiaalprofielen herzien | R-E, R-F, R-G |
+| V-17 | "Laatste keer" en "t.o.v. vorige keer" eenduidig definiëren (oefening / workout / spier); overgeslagen oefeningen zichtbaar; absoluut getal naast het percentage | R-H |
+| V-18 | Achteraf aanpassen van een training overschrijft geen zelfgezette doelen | R-I |
+
 ---
 
 ## Proces
 
 | # | Wat | Status |
 |---|---|---|
-| P-1 | Werkwijze-upgrade naar de aanpak van Matt Pocock: eerst uitzoeken wat hij doet en wat we overnemen | later |
+| P-1 | Werkwijze-upgrade naar de aanpak van Matt Pocock: eerst uitzoeken wat hij doet en wat we overnemen | **voorrang: direct na 0.6.2, vóór alle andere releases (D-98)** |
 | A-8 | Eén ondertekeningssleutel voor dev- en versiebuilds (eenmalige overstap met export → import) | vóór 0.10 (wearables), zie ROADMAP |
 
 ## Volgorde
