@@ -199,7 +199,7 @@ fun BarChart(
         val axis = Gym.Muted.copy(alpha = .6f)
         drawLine(axis, Offset(left, top - 6.dp.toPx()), Offset(left, bottom), 1.dp.toPx())
         drawLine(axis, Offset(left, bottom), Offset(size.width, bottom), 1.dp.toPx())
-        // Show a label every n bars so they never overlap.
+        // Show a label every n bars, counted back from the newest, so they never overlap.
         val every = (values.size / 6).coerceAtLeast(1)
         values.forEachIndexed { i, (label, v) ->
             val cx = left + slot * i + slot / 2
@@ -211,7 +211,7 @@ fun BarChart(
                 // Square off the bottom so the bar sits on the baseline.
                 drawRect(color, Offset(cx - bw / 2, bottom - minOf(h, r.x)), Size(bw, minOf(h, r.x) - gap / 2))
             }
-            if (i % every == 0 || i == values.lastIndex || i == selected) {
+            if ((values.lastIndex - i) % every == 0 || i == selected) {
                 val t = measurer.measure(label, axisStyle)
                 drawText(t, topLeft = Offset((cx - t.size.width / 2).coerceIn(0f, size.width - t.size.width), bottom + 3.dp.toPx()))
             }

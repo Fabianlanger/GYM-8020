@@ -3,6 +3,7 @@ package nl.ibs.gym8020.ui
 import android.content.Context
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
@@ -15,6 +16,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import kotlinx.coroutines.runBlocking
 import nl.ibs.gym8020.GymApp
 import nl.ibs.gym8020.MainActivity
+import nl.ibs.gym8020.SPLASH_TAG
 import nl.ibs.gym8020.data.AppLanguage
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -51,7 +53,12 @@ class AppFlowsTest {
         waitUntil(20_000) { has(skip) || has(home) }
         if (has(skip) && !has(home)) tap(skip)
         waitForText(home)
+        waitForSplash()
     }
+
+    /** The opening screen lies over the app for a moment; screenshots should show what is under it. */
+    private fun ComposeTestRule.waitForSplash() =
+        waitUntil(20_000) { onAllNodesWithTag(SPLASH_TAG).fetchSemanticsNodes().isEmpty() }
 
     private fun ComposeTestRule.shot(name: String) {
         waitForIdle()
@@ -66,6 +73,7 @@ class AppFlowsTest {
             rule.shot("en_01_intro")
             rule.tap("Skip")
             rule.waitForText("Weight today")
+            rule.waitForSplash()
             rule.shot("en_02_home")
             val settings = runBlocking { (context as GymApp).container.settings.current() }
             assertTrue("introduction is marked as done", settings.onboarded)
@@ -88,10 +96,15 @@ class AppFlowsTest {
     fun `F-1 start a workout and log body weight`() {
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
+            // Under Robolectric the dialog window never reports idle, so step the clock by hand while it is open.
+            rule.mainClock.autoAdvance = false
             rule.tap("Weight today")
+            rule.mainClock.advanceTimeBy(1_000)
             rule.waitForText("Save")
             rule.shot("en_07_weight_window")
             rule.tap("Cancel")
+            rule.mainClock.advanceTimeBy(1_000)
+            rule.mainClock.autoAdvance = true
 
             rule.waitForText("Full body")
             rule.tap("Full body")

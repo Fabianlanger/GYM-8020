@@ -43,8 +43,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -170,7 +172,8 @@ private fun GymNavHost(container: AppContainer) {
                             selected = route == tab.route,
                             onClick = { nav.switchTab(tab.route) },
                             icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(stringResource(tab.label), maxLines = 1) },
+                            // Tight tracking: five tabs with English labels must fit on a narrow phone.
+                            label = { Text(stringResource(tab.label), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.01.em)) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Gym.OnYellow,
                                 indicatorColor = Gym.Yellow,
@@ -287,10 +290,13 @@ private fun NavHostController.switchTab(route: String) {
     }
 }
 
+/** Test tag of the opening screen, so UI tests can wait until it is gone. */
+const val SPLASH_TAG = "splash"
+
 /** Opening screen with the IBS mark (D-51, D-52). */
 @Composable
 private fun Splash() {
-    Box(Modifier.fillMaxSize().background(Gym.Bg), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Gym.Bg).testTag(SPLASH_TAG), contentAlignment = Alignment.Center) {
         Lattice(Modifier.fillMaxSize(), alpha = .07f)
         Sunburst(Modifier.size(360.dp).padding(bottom = 180.dp), arcs = true)
         Column(
@@ -299,7 +305,7 @@ private fun Splash() {
             modifier = Modifier.padding(32.dp),
         ) {
             IbsMark(Modifier.size(96.dp))
-            Text("GYM · 8020", style = MaterialTheme.typography.headlineLarge)
+            Text("GYM · 8020", style = MaterialTheme.typography.headlineLarge, color = Gym.Cream)
             DecoDivider(Modifier.fillMaxWidth(.8f))
             Eyebrow(stringResource(R.string.about_ibs))
         }
