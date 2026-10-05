@@ -96,7 +96,7 @@ class AppFlowsTest {
     fun `F-1 start a workout`() {
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
-            rule.tap("Full body")
+            rule.tap("Start") // the big button under today's workout
             // No body weight yet: the app asks once; skip it.
             rule.waitForText("Skip")
             rule.shot("en_07_bodyweight_question")
