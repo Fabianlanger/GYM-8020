@@ -22,12 +22,14 @@ import nl.ibs.gym8020.SPLASH_TAG
 import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Seeder
+import nl.ibs.gym8020.data.db.BodyweightEntity
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.LocalDate
 
 /**
  * UI flows and screenshots (TESTING.md: T-4, T-5). Runs on the JVM with Robolectric; the screenshots land in
@@ -107,32 +109,20 @@ class AppFlowsTest {
         }
     }
 
-    /** F-1 start: a workout from the home screen opens the training screen (after the body weight question). */
+    /**
+     * F-1 start: a workout from the home screen opens the training screen. Body weight is already logged, so no
+     * question window appears: windows (dialogs) never get idle in these tests on top of the app (T-7).
+     */
     @Test
     fun `F-1 start a workout`() {
         freshInstall()
+        runBlocking { (context as GymApp).container.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = 80.0)) }
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
+            rule.shot("en_07_home_weight_logged")
             rule.tap("Start") // the big button under today's workout
-            // No body weight yet: the app asks once; skip it.
-            rule.waitForText("Skip")
-            rule.shot("en_07_bodyweight_question")
-            rule.tap("Skip")
             rule.waitForText("Back squat")
             rule.shot("en_08_training")
-        }
-    }
-
-    /** V-10: the weight card opens a small window to log today's weight. */
-    @Test
-    fun `V-10 weight card opens the input window`() {
-        freshInstall()
-        ActivityScenario.launch(MainActivity::class.java).use {
-            rule.toHome("Skip", "Weight today")
-            rule.tap("Weight today")
-            rule.waitForText("Save")
-            rule.shot("en_09_weight_window")
-            rule.tap("Cancel")
         }
     }
 
