@@ -78,6 +78,16 @@ android {
     }
 }
 
+// Full stack traces in the CI log when a test fails (artifacts are not readable from every environment).
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showCauses = true
+        showStackTraces = true
+    }
+}
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
