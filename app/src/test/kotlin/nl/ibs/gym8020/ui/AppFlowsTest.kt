@@ -13,11 +13,15 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import nl.ibs.gym8020.GymApp
 import nl.ibs.gym8020.MainActivity
 import nl.ibs.gym8020.SPLASH_TAG
 import nl.ibs.gym8020.data.AppLanguage
+import nl.ibs.gym8020.data.AppSettings
+import nl.ibs.gym8020.data.Seeder
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -38,6 +42,20 @@ class AppFlowsTest {
 
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
+    /**
+     * Each test gets a new database, but the settings store lives for the whole test process. Start every test
+     * as a fresh install: default settings, then the standard content in the chosen language.
+     */
+    private fun freshInstall(dutch: Boolean = false) = runBlocking {
+        AppLanguage.set(context, if (dutch) AppLanguage.DUTCH else AppLanguage.ENGLISH)
+        val app = context as GymApp
+        app.seeding.join() // the app's own first-start fill, based on the previous test's settings
+        val container = app.container
+        withContext(Dispatchers.IO) { container.db.clearAllTables() }
+        container.settings.update { AppSettings() }
+        Seeder(container.db, container.settings, dutch).seedIfNeeded()
+    }
+
     private fun ComposeTestRule.waitForText(text: String, timeoutMs: Long = 20_000) =
         waitUntil(timeoutMs) { onAllNodesWithText(text, ignoreCase = true).fetchSemanticsNodes().isNotEmpty() }
 
@@ -45,13 +63,10 @@ class AppFlowsTest {
 
     private fun ComposeTestRule.has(text: String) = onAllNodesWithText(text, ignoreCase = true).fetchSemanticsNodes().isNotEmpty()
 
-    /**
-     * The settings store lives for the whole test process, so only the first test sees a fresh install.
-     * Later tests skip the introduction if it shows, then wait for the home screen.
-     */
+    /** Skips the introduction, then waits for the home screen. */
     private fun ComposeTestRule.toHome(skip: String, home: String) {
-        waitUntil(20_000) { has(skip) || has(home) }
-        if (has(skip) && !has(home)) tap(skip)
+        waitForText(skip)
+        tap(skip)
         waitForText(home)
         waitForSplash()
     }
@@ -68,6 +83,7 @@ class AppFlowsTest {
     /** F-9 (intro on first start) plus the main screens, in English (the default, D-88). */
     @Test
     fun `F-9 first start shows the introduction, then the main screens`() {
+        freshInstall()
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.waitForText("Skip")
             rule.shot("en_01_intro")
@@ -94,6 +110,7 @@ class AppFlowsTest {
     /** F-1 start: a workout from the home screen opens the training screen (after the body weight question). */
     @Test
     fun `F-1 start a workout`() {
+        freshInstall()
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
             rule.tap("Start") // the big button under today's workout
@@ -109,6 +126,7 @@ class AppFlowsTest {
     /** V-10: the weight card opens a small window to log today's weight. */
     @Test
     fun `V-10 weight card opens the input window`() {
+        freshInstall()
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
             rule.tap("Weight today")
@@ -121,7 +139,7 @@ class AppFlowsTest {
     /** V-8: Dutch is selectable; the same screens in Dutch. */
     @Test
     fun `V-8 Dutch when chosen`() {
-        AppLanguage.set(context, AppLanguage.DUTCH)
+        freshInstall(dutch = true)
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Overslaan", "Gewicht vandaag")
             rule.shot("nl_02_home")

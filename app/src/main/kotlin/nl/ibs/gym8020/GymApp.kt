@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
@@ -37,6 +38,10 @@ class GymApp : Application() {
     lateinit var container: AppContainer
         private set
 
+    /** The first-start fill with standard content; tests wait for it. */
+    lateinit var seeding: Job
+        private set
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(AppLanguage.wrap(base))
     }
@@ -44,7 +49,7 @@ class GymApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        container.appScope.launch { container.seeder.seedIfNeeded() }
+        seeding = container.appScope.launch { container.seeder.seedIfNeeded() }
         Reminders.createChannel(this)
         // Replan the daily reminder whenever its settings change (and once at start).
         container.settings.settings

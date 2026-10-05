@@ -45,8 +45,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -167,13 +169,14 @@ private fun GymNavHost(container: AppContainer) {
         bottomBar = {
             if (showBar) {
                 NavigationBar(containerColor = Gym.Surface) {
+                    // One size for all labels: shrinks a little when the longest does not fit.
+                    var labelSize by remember { mutableStateOf(12.sp) }
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = route == tab.route,
                             onClick = { nav.switchTab(tab.route) },
                             icon = { Icon(tab.icon, contentDescription = null) },
-                            // Tight tracking: five tabs with English labels must fit on a narrow phone.
-                            label = { Text(stringResource(tab.label), maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.01.em)) },
+                            label = { TabLabel(stringResource(tab.label), labelSize) { labelSize = it } },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Gym.OnYellow,
                                 indicatorColor = Gym.Yellow,
@@ -288,6 +291,16 @@ private fun NavHostController.switchTab(route: String) {
         launchSingleTop = true
         restoreState = true
     }
+}
+
+/** Tab label; asks for a smaller [size] when it does not fit (five tabs, long Dutch words). */
+@Composable
+private fun TabLabel(text: String, size: TextUnit, onShrink: (TextUnit) -> Unit) {
+    Text(
+        text, maxLines = 1, softWrap = false,
+        style = MaterialTheme.typography.labelMedium.copy(fontSize = size, letterSpacing = 0.01.em),
+        onTextLayout = { if (it.hasVisualOverflow && size > 8.sp) onShrink(size * 0.9f) },
+    )
 }
 
 /** Test tag of the opening screen, so UI tests can wait until it is gone. */
