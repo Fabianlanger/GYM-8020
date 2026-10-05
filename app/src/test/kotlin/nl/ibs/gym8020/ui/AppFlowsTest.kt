@@ -41,6 +41,18 @@ class AppFlowsTest {
 
     private fun ComposeTestRule.tap(text: String) = onAllNodesWithText(text, ignoreCase = true).onFirst().performClick()
 
+    private fun ComposeTestRule.has(text: String) = onAllNodesWithText(text, ignoreCase = true).fetchSemanticsNodes().isNotEmpty()
+
+    /**
+     * The settings store lives for the whole test process, so only the first test sees a fresh install.
+     * Later tests skip the introduction if it shows, then wait for the home screen.
+     */
+    private fun ComposeTestRule.toHome(skip: String, home: String) {
+        waitUntil(20_000) { has(skip) || has(home) }
+        if (has(skip) && !has(home)) tap(skip)
+        waitForText(home)
+    }
+
     private fun ComposeTestRule.shot(name: String) {
         waitForIdle()
         onRoot().captureRoboImage("build/outputs/roborazzi/$name.png")
@@ -75,9 +87,7 @@ class AppFlowsTest {
     @Test
     fun `F-1 start a workout and log body weight`() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            rule.waitForText("Skip")
-            rule.tap("Skip")
-            rule.waitForText("Weight today")
+            rule.toHome("Skip", "Weight today")
             rule.tap("Weight today")
             rule.waitForText("Save")
             rule.shot("en_07_weight_window")
@@ -98,10 +108,7 @@ class AppFlowsTest {
     fun `V-8 Dutch when chosen`() {
         AppLanguage.set(context, AppLanguage.DUTCH)
         ActivityScenario.launch(MainActivity::class.java).use {
-            rule.waitForText("Overslaan")
-            rule.shot("nl_01_intro")
-            rule.tap("Overslaan")
-            rule.waitForText("Gewicht vandaag")
+            rule.toHome("Overslaan", "Gewicht vandaag")
             rule.shot("nl_02_home")
             rule.tap("Workouts")
             rule.waitForText("Programma's")

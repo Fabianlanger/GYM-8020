@@ -55,6 +55,20 @@ jobs:
           path: app/build/outputs/roborazzi/
           if-no-files-found: ignore
 
+      # The same screenshots on the branch ci-screenshots (overwritten each build), so they can be viewed
+      # without downloading artifacts.
+      - name: Publish screenshots to branch
+        if: always() && github.event_name == 'push' && hashFiles('app/build/outputs/roborazzi/*.png') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf /tmp/shots && mkdir -p /tmp/shots && cp app/build/outputs/roborazzi/*.png /tmp/shots/
+          cd /tmp/shots
+          git init -q && git checkout -q -b ci-screenshots
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add . && git commit -qm "Screenshots for ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-screenshots
+
       # New Room schema versions are generated here; commit them to app/schemas for migration tests.
       - name: Check Room schemas
         if: hashFiles('app/build.gradle.kts') != ''
