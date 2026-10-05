@@ -91,28 +91,30 @@ class AppFlowsTest {
         }
     }
 
-    /** F-1 start: a workout from the home screen opens the training screen; the weight card opens its window. */
+    /** F-1 start: a workout from the home screen opens the training screen (after the body weight question). */
     @Test
-    fun `F-1 start a workout and log body weight`() {
+    fun `F-1 start a workout`() {
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
-            // Under Robolectric the dialog window never reports idle, so step the clock by hand while it is open.
-            rule.mainClock.autoAdvance = false
-            rule.tap("Weight today")
-            rule.mainClock.advanceTimeBy(1_000)
-            rule.waitForText("Save")
-            rule.shot("en_07_weight_window")
-            rule.tap("Cancel")
-            rule.mainClock.advanceTimeBy(1_000)
-            rule.mainClock.autoAdvance = true
-
-            rule.waitForText("Full body")
             rule.tap("Full body")
             // No body weight yet: the app asks once; skip it.
             rule.waitForText("Skip")
+            rule.shot("en_07_bodyweight_question")
             rule.tap("Skip")
             rule.waitForText("Back squat")
             rule.shot("en_08_training")
+        }
+    }
+
+    /** V-10: the weight card opens a small window to log today's weight. */
+    @Test
+    fun `V-10 weight card opens the input window`() {
+        ActivityScenario.launch(MainActivity::class.java).use {
+            rule.toHome("Skip", "Weight today")
+            rule.tap("Weight today")
+            rule.waitForText("Save")
+            rule.shot("en_09_weight_window")
+            rule.tap("Cancel")
         }
     }
 
