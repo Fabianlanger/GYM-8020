@@ -498,6 +498,7 @@ Elke fase = een werkende, installeerbare APK.
 | v0.5 — Publicatie | gebouwd: "Over de methode" in de app (offline, NL/EN) en `docs/methode.md`; introductie voor nieuwe gebruikers (methode, lichaamsgewicht, stang + schijven, weekplan; bestaande gebruikers met trainingen slaan hem over, opnieuw te bekijken via Instellingen); release-ondertekening met eigen sleutel via GitHub Secrets (`docs/RELEASE.md`); README bijgewerkt; DB-schema v2 vastgelegd. Open: screenshots voor de README, repo publiek maken. |
 | v0.6 — Logboek, herinneringen, back-up | gebouwd: logboek met alle trainingen (dashboard + "Alles"), afgeronde training bewerken vanuit logboek of samenvatting (D-74, D-75); lokale herinneringen (D-76); automatische back-up naar een gekozen map en Android-back-up (D-77). |
 | v0.6.1 — Snelle fixes | gebouwd: + en − gaan nooit de verkeerde kant op en het materiaal beperkt niet meer (D-79, O-2 deels); Z/L/warming-up wisselen bij "Volgende keer" (B-3); geen toetsenbord na GO (B-2); warming-up met ondersteuning voor pull-ups en dips (D-83, B-4); scherm mag uit na het aftellen, training boven het vergrendelscherm (D-84, V-1). Eerste release volgens de teststrategie (D-78): eerst een rode test, dan de fix. |
+| v0.6.2 — Stabiel, zichtbaar en Engels | gebouwd: aftelling overleeft het draaien (B-5, D-92); termen Workout/Program/Session/Next target/Equipment (V-7); Engels standaard, Nederlands te kiezen in Instellingen, bibliotheek vertaalt mee (V-8); kaart "Gewicht vandaag" op het beginscherm (V-10); alle getalvelden als invulvak met kleine +/− (V-11, variant A); dashboard met gewicht bovenaan en grafieken met assen (V-12, V-13); herinnering lichaamsgewicht dagelijks of wekelijks (D-93). Eerste UI- en screenshottests (T-4, T-5). |
 
 | # | Besluit (na feedback v0.1) | Status |
 |---|---|---|
@@ -563,6 +564,19 @@ De app ondersteunt het proces van de eigenaar, maar bevat geen persoonlijke inho
 | G-4 [BESLOTEN, herzien in D-88] | Taal van de app. | Engels + Nederlands. Was: volgt de telefoon; nu: Engels standaard, Nederlands te kiezen (D-88). |
 
 ---
+
+## Bijlage W — Woordenlijst: intern en op het scherm (A-11, D-87)
+
+Code en database houden hun interne namen; alleen de teksten gebruiken de nieuwe termen.
+
+| Intern (code, database, oudere beslissingen) | Scherm (Engels) | Scherm (Nederlands) |
+|---|---|---|
+| schema (`SchemaEntity`) | Workout | Workout |
+| weekplan (`WeekPlanEntity`) | Program | Programma |
+| training / sessie (`SessionEntity`) | Session | Training |
+| volgende keer | Next target | Volgend doel |
+| materiaal (`MaterialProfileEntity`) | Equipment | Materiaal |
+| zware / lichte set (Z/L) | Heavy / Light (H/L) | Zwaar / Licht (Z/L) |
 
 ## Bijlage A — Standaardschema's
 

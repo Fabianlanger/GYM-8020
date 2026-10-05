@@ -35,7 +35,7 @@ valt en welke latere features erop leunen.
 
 ---
 
-## 0.6.2 · Stabiel, zichtbaar en Engels
+## 0.6.2 · Stabiel, zichtbaar en Engels — *gebouwd*
 
 *Doel: de laatste bug uit gebruik eruit, termen en taal goed, en de testbasis voor schermen staan (A-9, A-12).*
 
@@ -66,11 +66,11 @@ Plus vragen 19–22 hieronder bij V-7 en V-8 (`onderzoek-terminologie.md`):
 Bij V-10 (snelknop gewicht):
 27. ~~Kaart "Gewicht vandaag" met klein invulvenster?~~ **Ja.**
 28. ~~Herinnering dagelijks of wekelijks?~~ **Ja.**
-29. **Invulvelden (V-11):** variant A (veld voorop, kleine +/− in het vak), B (alleen het veld, stappen bij
-    het toetsenbord) of C (zoals nu, rustiger)? *Advies: A.* **Nog open: dit is de enige vraag die 0.6.2
-    nog tegenhoudt.**
-30. **Meerdere metingen per dag (V-14)** in 0.7 met de database-aanpassing, en in 0.6.2 vervangt de
-    snelknop nog de meting van vandaag? *Advies: ja.*
+29. ~~**Invulvelden (V-11):** variant A, B of C?~~ **A**: veld voorop, kleine +/− in het vak.
+30. ~~**Meerdere metingen per dag (V-14)** in 0.7, en in 0.6.2 vervangt de snelknop de meting van vandaag?~~
+    **Ja.**
+
+**Status:** gebouwd (dev-build). Alle vragen beantwoord.
 
 ---
 

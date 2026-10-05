@@ -249,7 +249,7 @@ horloge-app (W-9).
 
 ---
 
-## B-5 · Timer kwijt na draaien van het scherm
+## B-5 · Timer kwijt na draaien van het scherm — *gedaan in v0.6.2*
 
 **Wat:** GO geklikt, telefoon kantelt, scherm draait naar liggend en terug, en de timer is weg.
 
@@ -302,13 +302,13 @@ aan hoeveel schijven je gym heeft; 25 kg uit betekent dat de app er nooit mee re
 | # | Wat | Status |
 |---|---|---|
 | T-1 | Regel "eerst een rode test, dan de fix" toepassen op alle B-punten hierboven | in gebruik sinds v0.6.1 |
-| T-2 | Property-tests op de rekenlogica (regels uit TESTING.md §2) | gestart: + en − (v0.6.1); rest gepland |
+| T-2 | Property-tests op de rekenlogica (regels uit TESTING.md §2) | gestart: + en − (v0.6.1), herinneringen en grafiekassen (v0.6.2); rest gepland |
 | T-3 | Mutatietesten (PIT) op `core/`: eerst meten, dan per release verbeteren | gepland |
-| T-4 | UI-tests met Compose via Robolectric voor de kritieke flows F-1, F-2, F-3, F-9 | gepland |
-| T-5 | Screenshottests met Roborazzi: referentie-screenshots, verschil maakt de build rood, screenshots als download | gepland |
+| T-4 | UI-tests met Compose via Robolectric voor de kritieke flows F-1, F-2, F-3, F-9 | gestart (v0.6.2): F-9, begin F-1, taalwissel; F-2/F-3 volgen |
+| T-5 | Screenshottests met Roborazzi: referentie-screenshots, verschil maakt de build rood, screenshots als download | gestart (v0.6.2): screenshots worden gemaakt (download + branch `ci-screenshots`); vergelijken volgt na goedkeuring van de referenties |
 | T-6 | End-to-end op een emulator (Maestro), 2–3 rooktests bij een versierelease | later |
 
-## V-7 · Termen gelijktrekken met de fitnesswereld (D-87)
+## V-7 · Termen gelijktrekken met de fitnesswereld (D-87) — *gedaan in v0.6.2*
 
 **Wat:** "Schema" en "Weekplan" sluiten niet aan bij wat sporters en andere apps gebruiken.
 
@@ -332,7 +332,7 @@ Engelse teksten staat.
 
 ---
 
-## V-8 · Engels als standaardtaal, Nederlands te kiezen (D-88)
+## V-8 · Engels als standaardtaal, Nederlands te kiezen (D-88) — *gedaan in v0.6.2*
 
 **Wat:** de app is standaard Engels; Nederlands kies je in Instellingen (en op Android 13+ ook via de
 systeeminstellingen per app).
@@ -392,7 +392,7 @@ verschijnt niet bij bestaande gebruikers.
 
 ---
 
-## V-10 · Snelknop op het beginscherm: lichaamsgewicht invullen (D-91)
+## V-10 · Snelknop op het beginscherm: lichaamsgewicht invullen (D-91) — *gedaan in v0.6.2*
 
 **Wat:** je wilt je gewicht elke dag invullen, zonder eerst een workout te starten of via het dashboard te
 gaan.
@@ -423,7 +423,7 @@ dezelfde dag = aanpassen, geen dubbele meting (regeltest).
 
 ---
 
-## V-11 · Invulvelden uitnodigender: typen voorop, +/− bescheiden
+## V-11 · Invulvelden uitnodigender: typen voorop, +/− bescheiden — *gedaan in v0.6.2*
 
 **Wat:** de grote ronde +/−-knoppen nodigen uit om te tikken, terwijl de eigenaar liever typt. Het getal ziet
 er niet uit als een invulveld. Dit geldt voor **alle** getalvelden: gewicht, reps, lichaamsgewicht,
@@ -446,7 +446,7 @@ in de code, zodat alle velden tegelijk veranderen.
 
 ---
 
-## V-12 · Dashboard: lichaamsgewicht hoger, grafiek lager
+## V-12 · Dashboard: lichaamsgewicht hoger, grafiek lager — *gedaan in v0.6.2*
 
 **Wat:** het lichaamsgewicht staat ver onderaan het dashboard. Gewenst: **je huidige gewicht en de knop om in
 te vullen bovenaan** (bij de kerncijfers). De **grafiek** mag lager op de pagina blijven.
@@ -455,7 +455,7 @@ te vullen bovenaan** (bij de kerncijfers). De **grafiek** mag lager op de pagina
 
 ---
 
-## V-13 · Grafieken met een echt assenstelsel
+## V-13 · Grafieken met een echt assenstelsel — *gedaan in v0.6.2*
 
 **Wat:** de grafieken in het dashboard hebben geen zichtbare assen. Gewenst:
 - verticale as met waarden en eenheid (bijv. kg);
