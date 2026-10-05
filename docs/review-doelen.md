@@ -108,6 +108,15 @@ meldingen R-E en R-F en het voorstel R-A ("één haalbare stap").
 percentage van andere oefeningen (bijv. pull-up voor de biceps), of verschijnen als "gelijk". Er staat alleen
 een percentage, geen absoluut getal.
 
+**Voorbeeld (screenshot samenvatting, 5 oktober):** twee armoefeningen overgeslagen. Toch staan de biceps op
+"beter" en de triceps op "gelijk". De biceps krijgen hun score van pull-up en roeien, de triceps van de
+drukoefeningen. De overgeslagen oefeningen tellen niet mee, dus de kaart laat niet zien dat je armen minder
+werk kregen. Ook staat er alleen "Lats · +5,4 %", zonder absoluut getal.
+
+**Ook opgevallen in dezelfde samenvatting:** "Incline bench press · 00:03 training". De tijd per oefening
+meet van GO tot de eerste invoer; vul je pas later in, dan klopt het getal niet. Dit valt onder V-2 (kracht
+in plaats van tijd in de samenvatting).
+
 **Voorstel, eerst samen vastleggen:**
 1. "Laatste keer" van een **oefening** = de laatste sessie waarin je hem echt deed. (Zo is het nu.)
 2. Vergelijking van een **workout** = deze sessie tegenover de vorige sessie van dezelfde workout.
