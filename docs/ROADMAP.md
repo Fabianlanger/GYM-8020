@@ -30,6 +30,7 @@ valt en welke latere features erop leunen.
 | A-10 | **Bibliotheeknamen tonen via hun vaste sleutel in de gekozen taal**, niet als vaste tekst in de database. | Nu staan ze in de database in de taal van de eerste start; een taalknop vertaalt ze dan niet mee. | V-8, V-5 |
 | A-11 | **Nieuwe termen alleen in teksten, niet in code en database.** Een woordenlijst legt het verband. | Code en database hernoemen kost veel, is riskant voor je data en levert de gebruiker niets op. | V-7 |
 | A-12 | **Termen en taal (V-7, V-8) vóór de screenshot-referenties (T-5) en vóór de rondleiding (V-9).** | Anders moeten alle referentie-screenshots en alle rondleidingsteksten twee keer. | T-5, V-9 |
+| A-14 | **Lichaamsgewicht krijgt een herkomst** (handmatig / wearable) in schema v3 (A-1). | De snelknop (V-10) en automatisch gewicht uit Garmin (W-1) vullen dezelfde gegevens; met de herkomst bepalen we welke voorgaat en kun je handmatig corrigeren. | V-10, W-1 |
 | A-13 | **De rondleiding pas bouwen als de schermen van 0.7/0.8 staan**, met UI-tests die controleren dat elke stap zijn onderdeel vindt. | Een rondleiding wijst naar concrete onderdelen; die verschuiven bij een herontwerp. | V-9 |
 
 ---
@@ -43,6 +44,7 @@ valt en welke latere features erop leunen.
 | B-5 | Timer kwijt na draaien van het scherm |
 | V-7 | Termen gelijk met de fitnesswereld (Workout, Program, Session, Next target, Equipment) |
 | V-8 | Engels standaard, Nederlands te kiezen; bibliotheek vertaalt mee (A-10) |
+| V-10 | Snelknop op het beginscherm om je lichaamsgewicht in te vullen (voorrang) |
 | T-4 | UI-tests (Compose) voor de kritieke flows F-1, F-2, F-3, F-9 |
 | T-5 | Screenshottests: referentie-screenshots, verschil maakt de build rood, screenshots als download |
 | T-2 | Meer regels testen: doel, back-up heen en terug, schijven |
@@ -57,6 +59,12 @@ Plus vragen 19–22 hieronder bij V-7 en V-8 (`onderzoek-terminologie.md`):
     de uitleg.*
 21. **"Material" wordt "Equipment"** (NL blijft "Materiaal")? *Advies: ja.*
 22. **Engels standaard**, Nederlands te kiezen, en de bibliotheek vertaalt mee? *Advies: ja.*
+
+Bij V-10 (snelknop gewicht):
+27. **Vorm:** een kaart "Gewicht vandaag" op het beginscherm die direct een invulvenster opent, voorgevuld
+    met je laatste meting? *Advies: ja.*
+28. **Herinnering:** de gewichtsherinnering instelbaar maken als dagelijks of wekelijks (standaard
+    wekelijks)? *Advies: ja.*
 
 ---
 

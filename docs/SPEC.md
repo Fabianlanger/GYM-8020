@@ -523,6 +523,7 @@ Elke fase = een werkende, installeerbare APK.
 | D-88 | **Engels is de standaardtaal**, Nederlands te kiezen in Instellingen (en per app in Android 13+). Bibliotheekitems vertalen mee met de gekozen taal. Vervangt G-4 ("volgt de telefoon"). Backlog V-8. | [BESLOTEN] |
 | D-89 | **Rondleiding door de eerste workout**: wiebelende markering + korte pop-up per stap in de happy flow, overslaan kan, opnieuw te bekijken. Eerst een klikbaar prototype. Backlog V-9. | [BESLOTEN] |
 | D-90 | **Naam van de app**: voorlopig GYM-8020; heroverwegen vóór 1.0 (O-5). | [LATER] |
+| D-91 | **Snelknop lichaamsgewicht op het beginscherm**: direct invullen vanaf de startpagina, voorgevuld met de laatste meting, tikken = aanpassen. Voorrang: in 0.6.2. Backlog V-10. | [BESLOTEN] |
 
 ---
 

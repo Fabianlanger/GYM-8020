@@ -391,6 +391,36 @@ verschijnt niet bij bestaande gebruikers.
 
 ---
 
+## V-10 · Snelknop op het beginscherm: lichaamsgewicht invullen (D-91)
+
+**Wat:** je wilt je gewicht elke dag invullen, zonder eerst een workout te starten of via het dashboard te
+gaan.
+
+**Nu:** gewicht invullen kan via Dashboard → Lichaamsgewicht, of via de vraag bij het starten van een workout
+(als je meting ouder is dan 7 dagen).
+
+**Voorstel:**
+- Op het beginscherm een kleine kaart of chip: **"Gewicht vandaag"**.
+  - Nog niet ingevuld: *"Invullen"*.
+  - Al ingevuld: *"81,4 kg ✓"*. Tikken = aanpassen.
+- Tikken opent direct een klein invulvenster op het beginscherm, **voorgevuld met je laatste meting**, met
+  +/− per 0,1. Opslaan, klaar. Twee tikken als het gewicht gelijk is.
+- Een klein lijntje met de trend van de laatste dagen (optioneel, als het niet druk wordt).
+- Daarna vraagt de workout niet meer naar je gewicht; dat werkt al zo.
+
+**Samenhang:**
+- De herinnering "Lichaamsgewicht" (D-76) is nu wekelijks. Met dagelijks wegen past een keuze
+  **dagelijks / wekelijks** beter (vraag 28).
+- W-1 (gewicht automatisch uit Garmin of weegschaal, 0.10) vult dezelfde gegevens. De knop blijft dan nodig
+  om handmatig te corrigeren. Daarom krijgt een meting later een **herkomst** (handmatig / wearable); zie A-14.
+
+**Te besluiten:** vragen 27–28 (ROADMAP).
+
+**Test:** gewicht via de snelknop opslaan → staat in de lijst, de workout vraagt niet meer; tweede keer op
+dezelfde dag = aanpassen, geen dubbele meting (regeltest).
+
+---
+
 ## O-5 · Naam van de app (later)
 
 De eigenaar denkt erover de app anders te noemen. Voorlopig blijft het **GYM-8020**. Uitzoeken vóór 1.0,
