@@ -29,8 +29,8 @@ valt en welke latere features erop leunen.
 | A-9 | **UI-tests en screenshots (T-4/T-5) vóór de grote schermwijzigingen van 0.7.** | Dan zien we bij het herontwerp van de samenvatting meteen wat er verandert, en sluipen er geen regressies in. | V-2, V-4, V-6 |
 | A-10 | **Bibliotheeknamen tonen via hun vaste sleutel in de gekozen taal**, niet als vaste tekst in de database. | Nu staan ze in de database in de taal van de eerste start; een taalknop vertaalt ze dan niet mee. | V-8, V-5 |
 | A-11 | **Nieuwe termen alleen in teksten, niet in code en database.** Een woordenlijst legt het verband. | Code en database hernoemen kost veel, is riskant voor je data en levert de gebruiker niets op. | V-7 |
-| A-12 | **Termen en taal (V-7, V-8) vóór de screenshot-referenties (T-5) en vóór de rondleiding (V-9).** | Anders moeten alle referentie-screenshots en alle rondleidingsteksten twee keer. | T-5, V-9 |
-| A-14 | **Lichaamsgewicht krijgt een herkomst** (handmatig / wearable) in schema v3 (A-1). | De snelknop (V-10) en automatisch gewicht uit Garmin (W-1) vullen dezelfde gegevens; met de herkomst bepalen we welke voorgaat en kun je handmatig corrigeren. | V-10, W-1 |
+| A-12 | **Termen, taal en invulvelden (V-7, V-8, V-11) vóór de screenshot-referenties (T-5) en vóór de rondleiding (V-9).** | Anders moeten alle referentie-screenshots en alle rondleidingsteksten twee keer. | T-5, V-9 |
+| A-14 | **Lichaamsgewicht krijgt een tijdstip en een herkomst** (handmatig / wearable) in schema v3 (A-1); meerdere metingen per dag (V-14). | De snelknop (V-10) en automatisch gewicht uit Garmin (W-1) vullen dezelfde gegevens; met de herkomst bepalen we welke voorgaat en kun je handmatig corrigeren. | V-10, W-1 |
 | A-13 | **De rondleiding pas bouwen als de schermen van 0.7/0.8 staan**, met UI-tests die controleren dat elke stap zijn onderdeel vindt. | Een rondleiding wijst naar concrete onderdelen; die verschuiven bij een herontwerp. | V-9 |
 
 ---
@@ -45,26 +45,32 @@ valt en welke latere features erop leunen.
 | V-7 | Termen gelijk met de fitnesswereld (Workout, Program, Session, Next target, Equipment) |
 | V-8 | Engels standaard, Nederlands te kiezen; bibliotheek vertaalt mee (A-10) |
 | V-10 | Snelknop op het beginscherm om je lichaamsgewicht in te vullen (voorrang) |
+| V-11 | Invulvelden uitnodigender: typen voorop, +/− bescheiden (alle getalvelden) |
+| V-12 | Dashboard: lichaamsgewicht en invullen bovenaan, grafiek lager |
+| V-13 | Grafieken met een echt assenstelsel |
+| – | Herinnering lichaamsgewicht: dagelijks of wekelijks (D-93) |
 | T-4 | UI-tests (Compose) voor de kritieke flows F-1, F-2, F-3, F-9 |
 | T-5 | Screenshottests: referentie-screenshots, verschil maakt de build rood, screenshots als download |
 | T-2 | Meer regels testen: doel, back-up heen en terug, schijven |
 
 **Vragen:**
-1. **B-5:** mag de app vast staand (portret)? *Advies: ja.*
+1. ~~**B-5:** mag de app vast staand (portret)?~~ **Nee**: de app blijft draaibaar; de aftelling overleeft
+   het draaien (D-92).
 
 Plus vragen 19–22 hieronder bij V-7 en V-8 (`onderzoek-terminologie.md`):
-19. **Termen:** Workout / Program / Session, of in Hevy-stijl Routine / Program / Workout? *Advies: Workout /
-    Program / Session.*
-20. **Zwaar/licht** houden, of "Top set / Back-off set" in de app? *Advies: zwaar/licht houden; de vakterm in
-    de uitleg.*
-21. **"Material" wordt "Equipment"** (NL blijft "Materiaal")? *Advies: ja.*
-22. **Engels standaard**, Nederlands te kiezen, en de bibliotheek vertaalt mee? *Advies: ja.*
+19. ~~Termen Workout / Program / Session?~~ **Ja.**
+20. ~~Zwaar/licht houden?~~ **Ja, Heavy/Light blijft** (H en L).
+21. ~~"Material" wordt "Equipment"?~~ **Ja.**
+22. ~~Engels standaard, Nederlands te kiezen, bibliotheek vertaalt mee?~~ **Ja.**
 
 Bij V-10 (snelknop gewicht):
-27. **Vorm:** een kaart "Gewicht vandaag" op het beginscherm die direct een invulvenster opent, voorgevuld
-    met je laatste meting? *Advies: ja.*
-28. **Herinnering:** de gewichtsherinnering instelbaar maken als dagelijks of wekelijks (standaard
-    wekelijks)? *Advies: ja.*
+27. ~~Kaart "Gewicht vandaag" met klein invulvenster?~~ **Ja.**
+28. ~~Herinnering dagelijks of wekelijks?~~ **Ja.**
+29. **Invulvelden (V-11):** variant A (veld voorop, kleine +/− in het vak), B (alleen het veld, stappen bij
+    het toetsenbord) of C (zoals nu, rustiger)? *Advies: A.* **Nog open: dit is de enige vraag die 0.6.2
+    nog tegenhoudt.**
+30. **Meerdere metingen per dag (V-14)** in 0.7 met de database-aanpassing, en in 0.6.2 vervangt de
+    snelknop nog de meting van vandaag? *Advies: ja.*
 
 ---
 
@@ -80,6 +86,7 @@ wat 0.7 en 0.8 nodig hebben (A-1, A-2, A-4).*
 | V-2 | Samenvatting: e1RM en totaal verzet gewicht t.o.v. vorige keer; tijden als gemiddelde |
 | O-1 | Krachtindex (100 = je beginniveau), in de samenvatting en het dashboard |
 | V-3 | Reps-doel voor oefeningen zonder gewicht (crunches) |
+| V-14 | Meerdere metingen lichaamsgewicht per dag, zoals Garmin (schema v3) |
 | D-20 | Optioneel "gestopt vóór falen: nog 1 / 2 / 3+" per set |
 | R-1 | Spierpercentages: 100 / 50 / 25 (stabilisator), bibliotheek bijstellen |
 | A-5 | Standaard oefeningscodes in de bibliotheek |

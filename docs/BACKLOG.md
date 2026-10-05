@@ -258,10 +258,10 @@ onthouden, en de oefening start officieel (tijdstempel GO) pas aan het einde van
 tijdens die 3 seconden, dan verdwijnt de aftelling en start de timer nooit. Na de aftelling overleeft de timer
 een draai wel, want die rekent vanuit de database.
 
-**Voorstel:**
-1. App **altijd staand**. Liggend heeft in de gym geen nut, en dan kan het ook niet per ongeluk gebeuren.
-2. Aftelling bewaren bij een herbouw (rememberSaveable), voor het geval Android het scherm om een andere reden
-   herbouwt (bijv. donkere modus of taal wisselen).
+**Besloten (0.6.2):** de app blijft **draaibaar**; geen vaste staande stand (keuze van de eigenaar).
+Oplossing daarom: de aftelling overleeft het opnieuw opbouwen van het scherm. Het starttijdstip van de
+aftelling wordt bewaard, en na het draaien telt hij verder waar hij was. Daarna start de timer zoals altijd.
+Ook de liggende weergave van het trainingsscherm nalopen, zodat die bruikbaar is.
 
 **Test:** UI-test "draaien tijdens aftelling → timer start toch" (komt met T-4). Tot die tijd handmatig.
 
@@ -324,7 +324,8 @@ Zwaar/licht blijft; in de uitleg noemen we het "top set + back-off set".
 **Hoe:** alleen de teksten (EN + NL), de methodepagina, de introductie en de documentatie. **Niet** de code of
 de database (A-11). In de SPEC komt een woordenlijst met het verband tussen intern en scherm.
 
-**Te besluiten:** vragen 19–21 (ROADMAP).
+**Besloten:** Workout / Program / Session / Next target / Equipment (vragen 19 en 21: ja). **Heavy/Light
+blijft** (vraag 20), want H en L zijn mooie afkortingen.
 
 **Test:** screenshottests (T-5) vangen vergeten teksten; een simpele check dat er geen "schema" meer in de
 Engelse teksten staat.
@@ -342,7 +343,7 @@ systeeminstellingen per app).
 van de eerste start. Bij een taalwissel moeten ze meevertalen: namen van bibliotheekitems tonen via hun vaste
 sleutel in de gekozen taal. Zelf gewijzigde namen blijven bewaard.
 
-**Te besluiten:** vraag 22.
+**Besloten:** ja (vraag 22).
 
 **Test:** taal wisselen → bibliotheeknamen en teksten wisselen mee, eigen namen niet.
 
@@ -414,10 +415,86 @@ gaan.
 - W-1 (gewicht automatisch uit Garmin of weegschaal, 0.10) vult dezelfde gegevens. De knop blijft dan nodig
   om handmatig te corrigeren. Daarom krijgt een meting later een **herkomst** (handmatig / wearable); zie A-14.
 
-**Te besluiten:** vragen 27–28 (ROADMAP).
+**Besloten:** kaart op het beginscherm met een klein invulvenster (vraag 27: ja); herinnering
+dagelijks/wekelijks (vraag 28: ja). Hoe het invulveld eruitziet volgt uit V-11.
 
 **Test:** gewicht via de snelknop opslaan → staat in de lijst, de workout vraagt niet meer; tweede keer op
 dezelfde dag = aanpassen, geen dubbele meting (regeltest).
+
+---
+
+## V-11 · Invulvelden uitnodigender: typen voorop, +/− bescheiden
+
+**Wat:** de grote ronde +/−-knoppen nodigen uit om te tikken, terwijl de eigenaar liever typt. Het getal ziet
+er niet uit als een invulveld. Dit geldt voor **alle** getalvelden: gewicht, reps, lichaamsgewicht,
+instellingen.
+
+**Varianten** (afbeelding gedeeld in de chat):
+- **A · Veld voorop** *(advies)*: duidelijk invulvak met rand en eenheid; tik = cijfertoetsenbord met het
+  getal geselecteerd. Kleine, stille +/− rechts in het vak, voor de stap van je materiaal.
+- **B · Alleen het veld**: geen +/− in beeld; pas bij tikken verschijnen snelle stappen (bijv. −2,5 / +2,5)
+  boven het toetsenbord.
+- **C · Zoals nu, rustiger**: zelfde opbouw, kleinere omlijnde knoppen, het getal in een vak.
+
+**Waarom advies A:** typen wordt de hoofdroute, maar de stap van je materiaal (de volgende haalbare
+schijvencombinatie) blijft één tik weg. Dat is in de gym met één hand handig.
+
+**Te besluiten:** vraag 29.
+
+**Afhankelijkheid:** raakt veel schermen, dus vóór de referentie-screenshots (A-12). Eén gedeeld onderdeel
+in de code, zodat alle velden tegelijk veranderen.
+
+---
+
+## V-12 · Dashboard: lichaamsgewicht hoger, grafiek lager
+
+**Wat:** het lichaamsgewicht staat ver onderaan het dashboard. Gewenst: **je huidige gewicht en de knop om in
+te vullen bovenaan** (bij de kerncijfers). De **grafiek** mag lager op de pagina blijven.
+
+**Te besluiten:** niets; komt in 0.6.2 samen met de snelknop (V-10).
+
+---
+
+## V-13 · Grafieken met een echt assenstelsel
+
+**Wat:** de grafieken in het dashboard hebben geen zichtbare assen. Gewenst:
+- verticale as met waarden en eenheid (bijv. kg);
+- horizontale as met datums;
+- lichte hulplijnen.
+
+Geldt voor alle dashboardgrafieken, om te beginnen het lichaamsgewicht.
+
+**Te besluiten:** niets; komt in 0.6.2.
+
+**Test:** screenshottests (T-5) leggen de nieuwe grafieken vast.
+
+---
+
+## V-14 · Meerdere metingen per dag (zoals Garmin)
+
+**Wat:** meerdere keren per dag wegen. Per dag zie je **een bolletje per meting**; **de laatste meting van de
+dag telt** voor berekeningen. Garmin doet het zo: een grijs staafje van het laagste tot het hoogste gewicht
+van die dag, en een bolletje voor het laatste gewicht.
+
+**Nu:** één meting per dag; opnieuw invullen vervangt de oude waarde (de database staat maar één meting per
+dag toe).
+
+**Voorstel:**
+- Elke meting met datum en tijd opslaan.
+- Grafiek: per dag een dun staafje van laag naar hoog, met een bolletje voor de laatste meting (en de andere
+  metingen als kleine stipjes).
+- Overal waar het lichaamsgewicht wordt gebruikt (oefeningen met eigen gewicht): de laatste meting op of vóór
+  de trainingsdag.
+- De snelknop wordt dan "meting toevoegen"; de lijst toont alle metingen.
+
+**Afhankelijkheid:** vraagt een database-aanpassing. Die neemt mee met schema v3 in 0.7 (A-1), samen met de
+herkomst van een meting (A-14, handmatig / wearable). **In 0.6.2 vervangt de snelknop dus nog de meting van
+vandaag.**
+
+**Te besluiten:** vraag 30.
+
+**Test:** regels: de laatste meting van de dag telt; een meting toevoegen verwijdert geen oudere van dezelfde
+dag; migratie behoudt alle bestaande metingen.
 
 ---
 

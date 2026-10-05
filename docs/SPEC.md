@@ -519,11 +519,16 @@ Elke fase = een werkende, installeerbare APK.
 | D-84 | **Scherm tijdens de training**: aan vóór GO en tijdens het aftellen; daarna mag het uit (batterij). **Alleen tijdens de training** toont de app zich boven het vergrendelscherm, zodat je zonder ontgrendelen terug bent. Na GO opent het toetsenbord niet vanzelf. | [BESLOTEN] |
 | D-85 | **Tot 1.0 alleen dev-builds** (vaste dev-link, testsleutel). Eerst alles af wat we nu willen; de eerste versierelease met de eigen sleutel komt bij 1.0. Daarvóór één sleutel voor alle builds (ROADMAP A-8). | [BESLOTEN] |
 | D-86 | **Werkwijze vastgelegd** in `.claude/skills/werkwijze/SKILL.md` en `CLAUDE.md`: input vastleggen (BACKLOG, SPEC), releases indelen met genummerde vragen per release (`ROADMAP.md`), vooruitkijken op afhankelijkheden en architectuur, bugs test-first. Later een upgrade naar de werkwijze van Matt Pocock (P-1). | [BESLOTEN] |
-| D-87 | **Termen gelijk met de fitnesswereld** (onderzoek: `onderzoek-terminologie.md`, backlog V-7). Voorstel: Schema → Workout, Weekplan → Program/Programma, gedane training → Session, Volgende keer → Next target, Material → Equipment. Alleen teksten en documentatie; code en database houden hun interne namen (woordenlijst in de SPEC). | [ONDERZOEK] |
+| D-87 | **Termen gelijk met de fitnesswereld** (onderzoek: `onderzoek-terminologie.md`, backlog V-7): Schema → Workout, Weekplan → Program/Programma, gedane training → Session, Volgende keer → Next target, Material → Equipment. **Heavy/Light blijft** (H en L als afkorting). Alleen teksten en documentatie; code en database houden hun interne namen (woordenlijst in de SPEC). | [BESLOTEN] |
 | D-88 | **Engels is de standaardtaal**, Nederlands te kiezen in Instellingen (en per app in Android 13+). Bibliotheekitems vertalen mee met de gekozen taal. Vervangt G-4 ("volgt de telefoon"). Backlog V-8. | [BESLOTEN] |
 | D-89 | **Rondleiding door de eerste workout**: wiebelende markering + korte pop-up per stap in de happy flow, overslaan kan, opnieuw te bekijken. Eerst een klikbaar prototype. Backlog V-9. | [BESLOTEN] |
 | D-90 | **Naam van de app**: voorlopig GYM-8020; heroverwegen vóór 1.0 (O-5). | [LATER] |
 | D-91 | **Snelknop lichaamsgewicht op het beginscherm**: direct invullen vanaf de startpagina, voorgevuld met de laatste meting, tikken = aanpassen. Voorrang: in 0.6.2. Backlog V-10. | [BESLOTEN] |
+| D-92 | **De app blijft draaibaar** (geen vaste staande stand). De draaibug (B-5) wordt opgelost doordat de aftelling het opnieuw opbouwen van het scherm overleeft. | [BESLOTEN] |
+| D-93 | **Herinnering lichaamsgewicht instelbaar: dagelijks of wekelijks** (standaard wekelijks). Aanvulling op D-76. | [BESLOTEN] |
+| D-94 | **Invulvelden: typen voorop, +/− bescheiden**, voor alle getalvelden. Variant nog te kiezen (backlog V-11, vraag 29). | [ONDERZOEK] |
+| D-95 | **Dashboard:** huidig lichaamsgewicht en invullen bovenaan, de grafiek lager; alle grafieken krijgen een echt assenstelsel (waarden, eenheid, datums). Backlog V-12, V-13. | [BESLOTEN] |
+| D-96 | **Meerdere metingen lichaamsgewicht per dag**, zoals Garmin: per dag een staafje laag–hoog met een bolletje voor de laatste meting; de laatste meting van de dag telt. Met schema v3 in 0.7. Backlog V-14. | [BESLOTEN] |
 
 ---
 
