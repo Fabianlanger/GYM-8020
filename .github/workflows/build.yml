@@ -43,7 +43,17 @@ jobs:
 
       - name: Build debug APK
         if: hashFiles('app/build.gradle.kts') != ''
-        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --console=plain
+        # Unit, UI and screenshot tests (TESTING.md T-4/T-5). Screenshots are recorded, not yet compared:
+        # once the references are approved they go into the repo and CI switches to verifying.
+        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug -Proborazzi.test.record=true --console=plain
+
+      - name: Upload screenshots
+        if: always() && hashFiles('app/build.gradle.kts') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: app/build/outputs/roborazzi/
+          if-no-files-found: ignore
 
       # New Room schema versions are generated here; commit them to app/schemas for migration tests.
       - name: Check Room schemas

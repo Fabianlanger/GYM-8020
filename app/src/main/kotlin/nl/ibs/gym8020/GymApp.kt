@@ -50,7 +50,7 @@ class GymApp : Application() {
         container.settings.settings
             .map { it.reminders to it.reminderMinutes }
             .distinctUntilChanged()
-            .onEach { Reminders.reschedule(this, container.settings.current()) }
+            .onEach { runCatching { Reminders.reschedule(this, container.settings.current()) } }
             .launchIn(container.appScope)
     }
 }
