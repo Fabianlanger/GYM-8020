@@ -73,4 +73,14 @@ class RemindersTest {
         assertEquals(listOf(Reminder.Bodyweight), ReminderPlanner.daily(monday, emptyList(), null, emptyList(), monday.minusDays(7), true, flags))
         assertEquals(emptyList(), ReminderPlanner.daily(monday, emptyList(), null, emptyList(), monday.minusDays(7), false, flags))
     }
+
+    @Test
+    fun `body weight daily when chosen (D-93)`() {
+        val flags = ReminderFlags(bodyweight = true, bodyweightDaily = true)
+        assertTrue(ReminderPlanner.bodyweightDue(monday, monday.minusDays(1), daily = true))
+        assertFalse(ReminderPlanner.bodyweightDue(monday, monday, daily = true))
+        assertTrue(ReminderPlanner.bodyweightDue(thursday, null, daily = true))
+        assertEquals(listOf(Reminder.Bodyweight), ReminderPlanner.daily(thursday, emptyList(), null, emptyList(), thursday.minusDays(1), true, flags))
+        assertEquals(emptyList(), ReminderPlanner.daily(thursday, emptyList(), null, emptyList(), thursday, true, flags))
+    }
 }

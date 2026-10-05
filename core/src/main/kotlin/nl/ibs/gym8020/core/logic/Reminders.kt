@@ -16,7 +16,13 @@ sealed interface Reminder {
 }
 
 /** Which daily reminders are switched on (all off by default). */
-data class ReminderFlags(val trainingDay: Boolean = false, val behind: Boolean = false, val bodyweight: Boolean = false) {
+data class ReminderFlags(
+    val trainingDay: Boolean = false,
+    val behind: Boolean = false,
+    val bodyweight: Boolean = false,
+    /** Body weight reminder every day instead of weekly (D-93). */
+    val bodyweightDaily: Boolean = false,
+) {
     val any: Boolean get() = trainingDay || behind || bodyweight
 }
 
@@ -49,12 +55,17 @@ object ReminderPlanner {
                 }
             }
         }
-        if (flags.bodyweight && usesBodyweight && bodyweightDue(today, lastBodyweight)) out += Reminder.Bodyweight
+        // Daily = you track your weight on purpose, so no need for bodyweight exercises.
+        if (flags.bodyweight && (usesBodyweight || flags.bodyweightDaily) && bodyweightDue(today, lastBodyweight, flags.bodyweightDaily)) out += Reminder.Bodyweight
         return out
     }
 
-    /** Weekly, not daily: on day 7, 14, … after the last measurement; never measured → on Mondays. */
-    fun bodyweightDue(today: LocalDate, last: LocalDate?): Boolean {
+    /**
+     * Weekly (default): on day 7, 14, … after the last measurement; never measured → on Mondays.
+     * Daily (D-93): every day without a measurement yet.
+     */
+    fun bodyweightDue(today: LocalDate, last: LocalDate?, daily: Boolean = false): Boolean {
+        if (daily) return last == null || last.isBefore(today)
         if (last == null) return today.dayOfWeek.value == 1
         val days = ChronoUnit.DAYS.between(last, today)
         return days >= 7 && days % 7 == 0L

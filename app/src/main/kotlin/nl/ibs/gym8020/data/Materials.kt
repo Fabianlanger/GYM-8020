@@ -31,3 +31,12 @@ val ExerciseEntity.movementOrDefault: Movement
         equipment == Equipment.DUMBBELL -> Movement.CURL
         else -> Movement.LEG_MACHINE
     }
+
+/**
+ * Library profiles show their name in the app language, unless the user renamed them (A-10): the stored name
+ * is the language of the first start, so a name equal to either library name counts as "not renamed".
+ */
+fun MaterialProfileEntity.displayName(dutch: Boolean): String {
+    val lib = libraryKey?.let { key -> DefaultLibrary.materials.firstOrNull { it.key == key } } ?: return name
+    return if (name == lib.nameEn || name == lib.nameNl) (if (dutch) lib.nameNl else lib.nameEn) else name
+}

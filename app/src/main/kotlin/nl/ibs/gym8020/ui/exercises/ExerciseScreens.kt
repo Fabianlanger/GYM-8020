@@ -47,6 +47,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.data.displayName
+import nl.ibs.gym8020.ui.components.appIsDutch
 import nl.ibs.gym8020.core.model.Equipment
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.Movement
@@ -304,7 +306,7 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
         Eyebrow(stringResource(R.string.exercise_material))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             FilterChip(materialId == null, { materialId = null }, label = { Text(stringResource(R.string.exercise_material_none)) })
-            profiles.forEach { p -> FilterChip(materialId == p.id, { materialId = p.id }, label = { Text(p.name) }) }
+            profiles.forEach { p -> FilterChip(materialId == p.id, { materialId = p.id }, label = { Text(p.displayName(appIsDutch())) }) }
         }
         profiles.firstOrNull { it.id == materialId }?.let { p ->
             Text(kindName(p.kind) + " · " + profileSummary(p, unit), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)

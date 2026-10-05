@@ -56,6 +56,7 @@ class SettingsStore(private val context: Context) {
         val remindDay = booleanPreferencesKey("remind_training_day")
         val remindBehind = booleanPreferencesKey("remind_behind")
         val remindBodyweight = booleanPreferencesKey("remind_bodyweight")
+        val remindBodyweightDaily = booleanPreferencesKey("remind_bodyweight_daily")
         val remindOpen = booleanPreferencesKey("remind_open_session")
         val remindMinutes = intPreferencesKey("remind_minutes")
         val backupFolder = stringPreferencesKey("backup_folder")
@@ -87,6 +88,7 @@ class SettingsStore(private val context: Context) {
                 trainingDay = this[Keys.remindDay] ?: false,
                 behind = this[Keys.remindBehind] ?: false,
                 bodyweight = this[Keys.remindBodyweight] ?: false,
+                bodyweightDaily = this[Keys.remindBodyweightDaily] ?: false,
             ),
             reminderOpenSession = this[Keys.remindOpen] ?: false,
             reminderMinutes = this[Keys.remindMinutes] ?: (18 * 60),
@@ -113,6 +115,7 @@ class SettingsStore(private val context: Context) {
             prefs[Keys.remindDay] = next.reminders.trainingDay
             prefs[Keys.remindBehind] = next.reminders.behind
             prefs[Keys.remindBodyweight] = next.reminders.bodyweight
+            prefs[Keys.remindBodyweightDaily] = next.reminders.bodyweightDaily
             prefs[Keys.remindOpen] = next.reminderOpenSession
             prefs[Keys.remindMinutes] = next.reminderMinutes
             if (next.backupFolder != null) prefs[Keys.backupFolder] = next.backupFolder else prefs.remove(Keys.backupFolder)

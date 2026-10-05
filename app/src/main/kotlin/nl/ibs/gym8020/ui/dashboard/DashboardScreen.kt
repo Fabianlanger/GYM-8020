@@ -1,5 +1,8 @@
 package nl.ibs.gym8020.ui.dashboard
 
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Icon
+import nl.ibs.gym8020.ui.components.PlainCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -88,6 +91,18 @@ fun DashboardScreen(container: AppContainer, onOpenBodyweight: () -> Unit, onOpe
             StatTile(avgDuration?.let(::formatDuration) ?: "—", stringResource(R.string.dash_avg_duration), Modifier.weight(1f))
         }
 
+        // Body weight at the top (V-12): current value and a tap to log; the chart stays lower on the page.
+        PlainCard(onClick = onOpenBodyweight) {
+            Icon(Icons.Filled.MonitorWeight, contentDescription = null, tint = Gym.Yellow)
+            Column(Modifier.weight(1f)) {
+                Eyebrow(stringResource(R.string.body_title))
+                val last = d.bodyweight.lastOrNull()
+                Text(last?.let { kg(it.value) } ?: stringResource(R.string.home_weight_log), style = MaterialTheme.typography.titleMedium)
+                Dashboard.change(d.bodyweight)?.let { Text(stringResource(R.string.dash_change, sign(it)), style = MaterialTheme.typography.bodySmall, color = Gym.Muted) }
+            }
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.body_manage), tint = Gym.Yellow)
+        }
+
         // Latest trainings, to look back and correct (log).
         val recent by container.db.sessions().observeFinished().collectAsStateWithLifecycle(emptyList())
         val counts by container.db.sessions().observeWorkSetCounts().collectAsStateWithLifecycle(emptyList())
@@ -142,7 +157,7 @@ fun DashboardScreen(container: AppContainer, onOpenBodyweight: () -> Unit, onOpe
         // Goals reached.
         if (d.goalRate.isNotEmpty()) {
             Eyebrow(stringResource(R.string.dash_goals))
-            LineChart(d.goalRate.map { Point(it.weekStart, it.value) }, format = ::pct, fixedMin = 0.0, fixedMax = 1.0)
+            LineChart(d.goalRate.map { Point(it.weekStart, it.value) }, format = ::pct, fixedMin = 0.0, fixedMax = 1.0, tickFormat = ::pct)
         }
 
         // Time.
@@ -162,7 +177,7 @@ fun DashboardScreen(container: AppContainer, onOpenBodyweight: () -> Unit, onOpe
         DecoDivider()
         Eyebrow(stringResource(R.string.body_title))
         if (d.bodyweight.isNotEmpty()) {
-            LineChart(d.bodyweight, format = ::kg, trend = d.bodyweightTrend.takeIf { d.bodyweight.size >= 3 })
+            LineChart(d.bodyweight, format = ::kg, trend = d.bodyweightTrend.takeIf { d.bodyweight.size >= 3 }, unit = unit.name.lowercase())
             Dashboard.change(d.bodyweight)?.let { Text(stringResource(R.string.dash_change, sign(it)), style = MaterialTheme.typography.bodySmall, color = Gym.Muted) }
         } else {
             Text(stringResource(R.string.body_empty), color = Gym.Muted)
@@ -224,7 +239,7 @@ private fun ExerciseSection(d: DashboardData, kg: (Double) -> String) {
     val series = if (repsMode) p.reps else p.e1rm
     Text(ex.name, style = MaterialTheme.typography.titleLarge)
     Text(stringResource(if (repsMode) R.string.dash_reps_over_time else R.string.dash_e1rm_over_time), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
-    if (series.isNotEmpty()) LineChart(series, format = if (repsMode) ({ "${it.toInt()}" }) else kg)
+    if (series.isNotEmpty()) LineChart(series, format = if (repsMode) ({ "${it.toInt()}" }) else kg, unit = if (repsMode) "reps" else d.unit.name.lowercase())
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatTile(Dashboard.change(series)?.let(::sign) ?: "—", stringResource(R.string.dash_change_label), Modifier.weight(1f))
         StatTile(d.records[ex.id]?.let { "${WeightFormat.format(it.weightKg ?: 0.0, d.unit)}×${it.reps}" } ?: "—", stringResource(R.string.dash_record), Modifier.weight(1f))

@@ -37,6 +37,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import nl.ibs.gym8020.core.stats.AxisTicks
 import nl.ibs.gym8020.core.stats.Point
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
@@ -52,25 +53,43 @@ import kotlin.math.abs
 private val axisStyle = TextStyle(fontFamily = Poppins, fontSize = 10.sp, color = Gym.Muted)
 private val valueStyle = TextStyle(fontFamily = Poppins, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Gym.Cream)
 private val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
+private val shortDate = DateTimeFormatter.ofPattern("d MMM")
 
-/** Line over time with an optional trend line; the last point is marked and labeled. */
+/** Axis tick text: plain numbers with the right decimals and a decimal comma. */
+private fun tickText(v: Double, decimals: Int): String = "%.${decimals}f".format(v).replace('.', ',')
+
+/**
+ * Line over time with an optional trend line; the last point is marked and labeled. Real axes (V-13): a value
+ * axis with round numbers and the [unit] on top, a time axis with dates; light grid lines.
+ */
 @Composable
 fun LineChart(
     points: List<Point>,
     format: (Double) -> String,
     modifier: Modifier = Modifier,
     trend: List<Point>? = null,
-    height: Dp = 170.dp,
+    height: Dp = 190.dp,
     fixedMin: Double? = null,
     fixedMax: Double? = null,
+    unit: String? = null,
+    /** Extra marks per point (e.g. several weigh-ins on one day); drawn as small dots. */
+    extraDots: List<Point> = emptyList(),
+    /** Text for the value axis; plain numbers by default. */
+    tickFormat: ((Double) -> String)? = null,
 ) {
     if (points.isEmpty()) return
     val measurer = rememberTextMeasurer()
     var selected by remember(points) { mutableStateOf<Int?>(null) }
+    val values = points.map { it.value } + trend.orEmpty().map { it.value } + extraDots.map { it.value }
+    val ticks = AxisTicks.nice(fixedMin ?: values.min(), fixedMax ?: values.max(), 4)
+    val lo = fixedMin ?: ticks.values.first()
+    val hi = fixedMax ?: ticks.values.last()
+    val tickLabels = ticks.values.filter { it >= lo - 1e-9 && it <= hi + 1e-9 }.map { it to (tickFormat?.invoke(it) ?: tickText(it, ticks.decimals)) }
+    val leftPx = remember(tickLabels) { tickLabels.maxOfOrNull { measurer.measure(it.second, axisStyle).size.width } ?: 0 }
     Canvas(
         modifier.fillMaxWidth().height(height).pointerInput(points) {
             detectTapGestures { tap ->
-                val left = 40.dp.toPx()
+                val left = leftPx + 10.dp.toPx()
                 val w = size.width - left - 12.dp.toPx()
                 val x0 = points.first().date.toEpochDay()
                 val span = (points.last().date.toEpochDay() - x0).coerceAtLeast(1)
@@ -80,46 +99,53 @@ fun LineChart(
             }
         },
     ) {
-        val left = 40.dp.toPx()
-        val top = 18.dp.toPx()
-        val bottom = size.height - 18.dp.toPx()
+        val left = leftPx + 10.dp.toPx()
+        val top = 22.dp.toPx()
+        val bottom = size.height - 22.dp.toPx()
         val right = size.width - 12.dp.toPx()
-        val values = points.map { it.value } + trend.orEmpty().map { it.value }
-        var lo = fixedMin ?: values.min()
-        var hi = fixedMax ?: values.max()
-        if (hi - lo < 1e-9) { lo -= 1; hi += 1 }
-        val pad = if (fixedMin == null) (hi - lo) * .12 else 0.0
-        lo -= pad; hi += if (fixedMax == null) pad else 0.0
         val x0 = points.first().date.toEpochDay()
         val span = (points.last().date.toEpochDay() - x0).coerceAtLeast(1)
-        fun x(p: Point) = left + (right - left) * (p.date.toEpochDay() - x0) / span
+        fun xOf(day: Long) = left + (right - left) * (day - x0) / span
+        fun x(p: Point) = xOf(p.date.toEpochDay())
         fun y(v: Double) = (bottom - (bottom - top) * (v - lo) / (hi - lo)).toFloat()
 
-        // Recessive grid with three value labels.
-        for (k in 0..2) {
-            val v = lo + (hi - lo) * k / 2
+        // Value axis: round numbers, light grid lines, the unit on top.
+        tickLabels.forEach { (v, text) ->
             val yy = y(v)
-            drawLine(Gym.Gold.copy(alpha = .16f), Offset(left, yy), Offset(right, yy), 1.dp.toPx())
-            val t = measurer.measure(format(v), axisStyle)
+            drawLine(Gym.Gold.copy(alpha = .14f), Offset(left, yy), Offset(right, yy), 1.dp.toPx())
+            val t = measurer.measure(text, axisStyle)
             drawText(t, topLeft = Offset(left - t.size.width - 6.dp.toPx(), yy - t.size.height / 2))
         }
-        // Date labels: first and last.
-        val d0 = measurer.measure(points.first().date.format(dateFormat), axisStyle)
-        drawText(d0, topLeft = Offset(left, bottom + 4.dp.toPx()))
-        if (points.size > 1) {
-            val d1 = measurer.measure(points.last().date.format(dateFormat), axisStyle)
-            drawText(d1, topLeft = Offset(right - d1.size.width, bottom + 4.dp.toPx()))
+        unit?.let { drawText(measurer.measure(it, axisStyle), topLeft = Offset(0f, 0f)) }
+        // Axis lines.
+        val axis = Gym.Muted.copy(alpha = .6f)
+        drawLine(axis, Offset(left, top - 6.dp.toPx()), Offset(left, bottom), 1.dp.toPx())
+        drawLine(axis, Offset(left, bottom), Offset(right, bottom), 1.dp.toPx())
+        // Time axis: up to four dates with tick marks.
+        val dayTicks = if (span <= 1) listOf(x0) else (0..3).map { x0 + span * it / 3 }.distinct()
+        dayTicks.forEachIndexed { i, day ->
+            val xx = xOf(day)
+            drawLine(axis, Offset(xx, bottom), Offset(xx, bottom + 4.dp.toPx()), 1.dp.toPx())
+            val t = measurer.measure(java.time.LocalDate.ofEpochDay(day).format(shortDate), axisStyle)
+            val tx = when (i) {
+                0 -> xx
+                dayTicks.lastIndex -> xx - t.size.width
+                else -> xx - t.size.width / 2
+            }
+            drawText(t, topLeft = Offset(tx.coerceIn(0f, size.width - t.size.width), bottom + 6.dp.toPx()))
         }
         trend?.takeIf { it.size > 1 }?.let { tr ->
             val p = Path()
             tr.forEachIndexed { i, pt -> if (i == 0) p.moveTo(x(pt), y(pt.value)) else p.lineTo(x(pt), y(pt.value)) }
             drawPath(p, Gym.Cream.copy(alpha = .45f), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))))
         }
+        extraDots.forEach { drawCircle(Gym.Yellow.copy(alpha = .45f), 2.5.dp.toPx(), Offset(x(it), y(it.value))) }
         if (points.size > 1) {
             val p = Path()
             points.forEachIndexed { i, pt -> if (i == 0) p.moveTo(x(pt), y(pt.value)) else p.lineTo(x(pt), y(pt.value)) }
             drawPath(p, Gym.Yellow, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
         }
+        points.forEach { drawCircle(Gym.Yellow, 2.dp.toPx(), Offset(x(it), y(it.value))) }
         val idx = selected ?: points.lastIndex
         val pt = points[idx]
         val c = Offset(x(pt), y(pt.value))
@@ -131,7 +157,7 @@ fun LineChart(
     }
 }
 
-/** Vertical bars with an optional dashed reference line (e.g. the weekly target). */
+/** Vertical bars with an optional dashed reference line (e.g. the weekly target), on a value axis (V-13). */
 @Composable
 fun BarChart(
     values: List<Pair<String, Double>>,
@@ -143,47 +169,64 @@ fun BarChart(
     if (values.isEmpty()) return
     val measurer = rememberTextMeasurer()
     var selected by remember(values) { mutableStateOf<Int?>(null) }
+    val maxV = values.maxOf { it.second }.coerceAtLeast(reference ?: 0.0)
+    val ticks = AxisTicks.nice(0.0, maxV.coerceAtLeast(1e-9), 3)
+    val hi = ticks.values.last().coerceAtLeast(1e-9)
+    val tickLabels = ticks.values.map { it to tickText(it, ticks.decimals) }
+    val leftPx = remember(tickLabels) { tickLabels.maxOfOrNull { measurer.measure(it.second, axisStyle).size.width } ?: 0 }
     Canvas(
         modifier.fillMaxWidth().height(height).pointerInput(values) {
             detectTapGestures { tap ->
-                val slot = (size.width - 8.dp.toPx()) / values.size
-                selected = ((tap.x - 4.dp.toPx()) / slot).toInt().coerceIn(0, values.lastIndex)
+                val left = leftPx + 10.dp.toPx()
+                val slot = (size.width - left - 4.dp.toPx()) / values.size
+                selected = ((tap.x - left) / slot).toInt().coerceIn(0, values.lastIndex)
             }
         },
     ) {
+        val left = leftPx + 10.dp.toPx()
         val top = 20.dp.toPx()
         val bottom = size.height - 16.dp.toPx()
-        val hi = (values.maxOf { it.second }.coerceAtLeast(reference ?: 0.0)).coerceAtLeast(1e-9) * 1.1
-        val slot = (size.width - 8.dp.toPx()) / values.size
+        val slot = (size.width - left - 4.dp.toPx()) / values.size
         val bw = (slot * .55f).coerceAtMost(22.dp.toPx())
         val gap = 2.dp.toPx()
-        drawLine(Gym.Gold.copy(alpha = .3f), Offset(0f, bottom), Offset(size.width, bottom), 1.dp.toPx())
+        fun y(v: Double) = (bottom - (bottom - top) * (v / hi)).toFloat()
+        tickLabels.forEach { (v, text) ->
+            val yy = y(v)
+            if (v > 0) drawLine(Gym.Gold.copy(alpha = .14f), Offset(left, yy), Offset(size.width, yy), 1.dp.toPx())
+            val t = measurer.measure(text, axisStyle)
+            drawText(t, topLeft = Offset(left - t.size.width - 6.dp.toPx(), yy - t.size.height / 2))
+        }
+        val axis = Gym.Muted.copy(alpha = .6f)
+        drawLine(axis, Offset(left, top - 6.dp.toPx()), Offset(left, bottom), 1.dp.toPx())
+        drawLine(axis, Offset(left, bottom), Offset(size.width, bottom), 1.dp.toPx())
+        // Show a label every n bars so they never overlap.
+        val every = (values.size / 6).coerceAtLeast(1)
         values.forEachIndexed { i, (label, v) ->
-            val cx = 4.dp.toPx() + slot * i + slot / 2
-            val h = ((bottom - top) * (v / hi)).toFloat()
+            val cx = left + slot * i + slot / 2
+            val h = bottom - y(v)
             if (h > 0) {
                 val r = CornerRadius(4.dp.toPx())
-                drawRoundRect(if (selected == null || selected == i) Gym.Yellow else Gym.Yellow.copy(alpha = .45f), Offset(cx - bw / 2, bottom - h), Size(bw, h), r)
+                val color = if (selected == null || selected == i) Gym.Yellow else Gym.Yellow.copy(alpha = .45f)
+                drawRoundRect(color, Offset(cx - bw / 2, bottom - h), Size(bw, h), r)
                 // Square off the bottom so the bar sits on the baseline.
-                drawRect(if (selected == null || selected == i) Gym.Yellow else Gym.Yellow.copy(alpha = .45f), Offset(cx - bw / 2, bottom - minOf(h, r.x)), Size(bw, minOf(h, r.x) - gap / 2))
+                drawRect(color, Offset(cx - bw / 2, bottom - minOf(h, r.x)), Size(bw, minOf(h, r.x) - gap / 2))
             }
-            if (i == 0 || i == values.lastIndex || i == selected) {
+            if (i % every == 0 || i == values.lastIndex || i == selected) {
                 val t = measurer.measure(label, axisStyle)
                 drawText(t, topLeft = Offset((cx - t.size.width / 2).coerceIn(0f, size.width - t.size.width), bottom + 3.dp.toPx()))
             }
         }
         reference?.let { ref ->
-            val yy = (bottom - (bottom - top) * (ref / hi)).toFloat()
-            drawLine(Gym.Cream.copy(alpha = .5f), Offset(0f, yy), Offset(size.width, yy), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f)))
+            val yy = y(ref)
+            drawLine(Gym.Cream.copy(alpha = .5f), Offset(left, yy), Offset(size.width, yy), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f)))
             val t = measurer.measure(format(ref), axisStyle)
             drawText(t, topLeft = Offset(size.width - t.size.width, yy - t.size.height - 2.dp.toPx()))
         }
         val idx = selected ?: values.lastIndex
         val v = values[idx].second
-        val cx = 4.dp.toPx() + slot * idx + slot / 2
+        val cx = left + slot * idx + slot / 2
         val t = measurer.measure(format(v), valueStyle)
-        val h = ((bottom - top) * (v / hi)).toFloat()
-        drawText(t, topLeft = Offset((cx - t.size.width / 2).coerceIn(0f, size.width - t.size.width), (bottom - h - t.size.height - 3.dp.toPx()).coerceAtLeast(0f)))
+        drawText(t, topLeft = Offset((cx - t.size.width / 2).coerceIn(0f, size.width - t.size.width), (y(v) - t.size.height - 3.dp.toPx()).coerceAtLeast(0f)))
     }
 }
 

@@ -1,6 +1,7 @@
 package nl.ibs.gym8020
 
 import android.app.Application
+import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AutoBackup
 import nl.ibs.gym8020.data.BackupService
 import nl.ibs.gym8020.data.Seeder
@@ -28,12 +30,16 @@ class AppContainer(val app: Application) {
     val backup = BackupService(db, settings)
     val autoBackup = AutoBackup(app, backup, settings, appScope)
     val training = TrainingRepository(db, settings, onFinished = { autoBackup.runSoon() })
-    val seeder = Seeder(db, settings, dutch = java.util.Locale.getDefault().language == "nl")
+    val seeder = Seeder(db, settings, dutch = AppLanguage.get(app) == AppLanguage.DUTCH)
 }
 
 class GymApp : Application() {
     lateinit var container: AppContainer
         private set
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(AppLanguage.wrap(base))
+    }
 
     override fun onCreate() {
         super.onCreate()

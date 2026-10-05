@@ -57,6 +57,7 @@ import nl.ibs.gym8020.BuildConfig
 import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
+import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.ui.components.DecoCard
 import nl.ibs.gym8020.ui.components.Eyebrow
@@ -124,6 +125,18 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
                 FilterChip(settings.unit == u, { update { it.copy(unit = u) } }, label = { Text(u.name.lowercase()) })
             }
         }
+        Text(stringResource(R.string.settings_language), color = Gym.Muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val current = AppLanguage.get(context)
+            listOf(AppLanguage.ENGLISH to "English", AppLanguage.DUTCH to "Nederlands").forEach { (code, label) ->
+                FilterChip(current == code, {
+                    if (current != code) {
+                        AppLanguage.set(context, code)
+                        (context as? android.app.Activity)?.recreate()
+                    }
+                }, label = { Text(label) })
+            }
+        }
 
         DecoDivider(Modifier.fillMaxWidth().padding(vertical = 8.dp))
         Eyebrow(stringResource(R.string.mat_title))
@@ -142,6 +155,12 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
         SwitchRow(stringResource(R.string.rem_behind), stringResource(R.string.rem_behind_help), r.behind) { on -> reminder(on) { it.copy(reminders = it.reminders.copy(behind = on)) } }
         SwitchRow(stringResource(R.string.rem_open), stringResource(R.string.rem_open_help), settings.reminderOpenSession) { on -> reminder(on) { it.copy(reminderOpenSession = on) } }
         SwitchRow(stringResource(R.string.rem_bw), stringResource(R.string.rem_bw_help), r.bodyweight) { on -> reminder(on) { it.copy(reminders = it.reminders.copy(bodyweight = on)) } }
+        if (r.bodyweight) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(start = 4.dp)) {
+                FilterChip(!r.bodyweightDaily, { update { it.copy(reminders = it.reminders.copy(bodyweightDaily = false)) } }, label = { Text(stringResource(R.string.rem_bw_weekly)) })
+                FilterChip(r.bodyweightDaily, { update { it.copy(reminders = it.reminders.copy(bodyweightDaily = true)) } }, label = { Text(stringResource(R.string.rem_bw_daily)) })
+            }
+        }
         if (r.any) {
             val time = "%02d:%02d".format(settings.reminderMinutes / 60, settings.reminderMinutes % 60)
             LineButton(

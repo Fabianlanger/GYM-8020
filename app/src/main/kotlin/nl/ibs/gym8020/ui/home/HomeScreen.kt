@@ -1,5 +1,10 @@
 package nl.ibs.gym8020.ui.home
 
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Add
+import nl.ibs.gym8020.ui.components.NumberStepper
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +82,8 @@ data class HomeState(
     val planSchemaIds: List<Long> = emptyList(),
     val openSession: SessionEntity? = null,
     val lastBodyweightDate: LocalDate? = null,
+    /** Latest body weight measurement, for the quick card (V-10). */
+    val lastBodyweightKg: Double? = null,
 )
 
 class HomeViewModel(private val c: AppContainer) : ViewModel() {
@@ -111,6 +118,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             planSchemaIds = slots.map { it.schemaId }.distinct(),
             openSession = open,
             lastBodyweightDate = bodyweights.firstOrNull()?.epochDay?.let(LocalDate::ofEpochDay),
+            lastBodyweightKg = bodyweights.firstOrNull()?.kg,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
@@ -124,6 +132,11 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
             Reminders.onTrainingStarted(c.app, id, c.settings.current())
             onStarted(id)
         }
+    }
+
+    /** Quick card (V-10): today's measurement; saving again on the same day replaces it. */
+    fun saveBodyweight(kg: Double) {
+        viewModelScope.launch { c.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = kg)) }
     }
 
     fun discard(id: Long) {
@@ -140,10 +153,21 @@ fun HomeScreen(container: AppContainer, onOpenTraining: (Long) -> Unit, onAllSch
     val vm: HomeViewModel = viewModel { HomeViewModel(container) }
     val state by vm.state.collectAsStateWithLifecycle()
     var pendingStart by remember { mutableStateOf<Long?>(null) }
+    var editWeight by remember { mutableStateOf(false) }
+    val unit = container.settings.settings.collectAsStateWithLifecycle(nl.ibs.gym8020.data.AppSettings()).value.unit
 
     fun requestStart(schemaId: Long) {
         if (HomeAdvisor.shouldAskBodyweight(state.today, state.lastBodyweightDate)) pendingStart = schemaId
         else vm.start(schemaId, null, onOpenTraining)
+    }
+
+    if (editWeight) {
+        QuickWeightDialog(
+            initialKg = state.lastBodyweightKg,
+            unit = unit,
+            onSave = { kg -> editWeight = false; vm.saveBodyweight(kg) },
+            onDismiss = { editWeight = false },
+        )
     }
 
     pendingStart?.let { schemaId ->
@@ -163,6 +187,7 @@ fun HomeScreen(container: AppContainer, onOpenTraining: (Long) -> Unit, onAllSch
                 Eyebrow(state.today.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), Modifier.weight(1f))
                 IbsMark(Modifier.size(26.dp))
             }
+            QuickWeightCard(state, unit, onClick = { editWeight = true })
 
             state.openSession?.let { open ->
                 val old = System.currentTimeMillis() - open.startedAt > 4 * 60 * 60 * 1000L
@@ -205,6 +230,51 @@ fun HomeScreen(container: AppContainer, onOpenTraining: (Long) -> Unit, onAllSch
             Spacer(Modifier.height(8.dp))
         }
     }
+}
+
+/** Quick card on the home screen (V-10): today's body weight, tap to log or adjust. */
+@Composable
+private fun QuickWeightCard(state: HomeState, unit: nl.ibs.gym8020.core.logic.WeightUnit, onClick: () -> Unit) {
+    val today = state.lastBodyweightDate == state.today
+    PlainCard(onClick = onClick) {
+        Icon(Icons.Filled.MonitorWeight, contentDescription = null, tint = if (today) Gym.Yellow else Gym.Muted)
+        Column(Modifier.weight(1f)) {
+            Eyebrow(stringResource(R.string.home_weight_today))
+            val kg = state.lastBodyweightKg
+            Text(
+                when {
+                    today && kg != null -> nl.ibs.gym8020.core.logic.WeightFormat.format(kg, unit) + " " + unit.name.lowercase()
+                    else -> stringResource(R.string.home_weight_log)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = if (today) Gym.Cream else Gym.Yellow,
+            )
+        }
+        Icon(if (today) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, tint = if (today) Gym.Positive else Gym.Yellow)
+    }
+}
+
+/** Small input window for today's body weight, pre-filled with the last measurement (V-10). */
+@Composable
+private fun QuickWeightDialog(initialKg: Double?, unit: nl.ibs.gym8020.core.logic.WeightUnit, onSave: (Double) -> Unit, onDismiss: () -> Unit) {
+    var value by remember { mutableStateOf(initialKg) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.home_weight_today)) },
+        text = {
+            NumberStepper(
+                value = value, onValueChange = { value = it }, step = 0.1, min = 0.0, startFrom = 75.0,
+                formatter = { nl.ibs.gym8020.core.logic.WeightFormat.format(it, unit) }, parser = unit::toKg,
+                suffix = unit.name.lowercase(), textSize = 26.sp,
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { value?.takeIf { it > 0 }?.let(onSave) }, enabled = (value ?: 0.0) > 0) {
+                Text(stringResource(R.string.action_save))
+            }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
 }
 
 @Composable

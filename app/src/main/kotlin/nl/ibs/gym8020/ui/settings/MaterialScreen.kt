@@ -41,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.data.displayName
+import nl.ibs.gym8020.ui.components.appIsDutch
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.MaterialKind
@@ -125,7 +127,7 @@ fun MaterialScreen(container: AppContainer) {
             PlainCard(onClick = { editing = m }) {
                 Icon(Icons.Filled.FitnessCenter, contentDescription = null, tint = Gym.Gold, modifier = Modifier.size(22.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(m.name, style = MaterialTheme.typography.titleMedium)
+                    Text(m.displayName(appIsDutch()), style = MaterialTheme.typography.titleMedium)
                     Text(kindName(m.kind) + " · " + profileSummary(m, unit), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
                 }
             }

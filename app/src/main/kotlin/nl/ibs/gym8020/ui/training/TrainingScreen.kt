@@ -70,6 +70,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -182,7 +183,9 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
     val scope = rememberCoroutineScope()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var confirmFinish by remember { mutableStateOf(false) }
-    var countdownFor by remember { mutableStateOf<Long?>(null) }
+    // Survives rotation (B-5): which exercise is counting down and since when.
+    var countdownFor by rememberSaveable { mutableStateOf<Long?>(null) }
+    var countdownStart by rememberSaveable { mutableStateOf(0L) }
 
     // Screen (V-1): on before GO and during the countdown; after that it may go off to save battery.
     // During the training the app shows over the lock screen, so waking the phone brings you straight back.
@@ -259,7 +262,7 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
                             vm = vm,
                             assistPercent = state.settings.warmupAssistPercent,
                             isLast = page == items.lastIndex,
-                            onGo = { dropFocus(); countdownFor = item.se.id },
+                            onGo = { dropFocus(); countdownStart = System.currentTimeMillis(); countdownFor = item.se.id },
                             onFinish = { confirmFinish = true },
                         )
                     }
@@ -284,7 +287,7 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
             }
         }
         countdownFor?.let { seId ->
-            CountdownOverlay(onDone = { vm.go(seId); countdownFor = null; dropFocus() })
+            CountdownOverlay(startedAt = countdownStart, onDone = { vm.go(seId); countdownFor = null; dropFocus() })
         }
     }
 
@@ -826,18 +829,26 @@ private fun NextTimePlanner(item: TrainingItem, plan: PlanDraft, unit: WeightUni
 }
 
 /** 3-2-1 with sound and vibration (D-32), then the exercise timer starts. */
+/** 3-2-1 before an exercise. Counts from [startedAt], so it continues where it was after a rotation (B-5). */
 @Composable
-private fun CountdownOverlay(onDone: () -> Unit) {
+private fun CountdownOverlay(startedAt: Long, onDone: () -> Unit) {
     val context = LocalContext.current
-    var count by remember { mutableIntStateOf(3) }
+    fun remaining() = (3 - ((System.currentTimeMillis() - startedAt) / 1000L).toInt()).coerceIn(0, 3)
+    var count by remember { mutableIntStateOf(remaining().coerceAtLeast(1)) }
     val tone = remember { runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90) }.getOrNull() }
     DisposableEffect(Unit) { onDispose { tone?.release() } }
-    LaunchedEffect(Unit) {
-        for (i in 3 downTo 1) {
-            count = i
-            tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-            vibrate(context, 60)
-            delay(1000)
+    LaunchedEffect(startedAt) {
+        var shown = -1
+        while (true) {
+            val r = remaining()
+            if (r == 0) break
+            if (r != shown) {
+                shown = r
+                count = r
+                tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+                vibrate(context, 60)
+            }
+            delay(50)
         }
         tone?.startTone(ToneGenerator.TONE_PROP_BEEP2, 300)
         vibrate(context, 250)
