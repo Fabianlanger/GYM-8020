@@ -53,7 +53,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import nl.ibs.gym8020.ui.body.BodyweightScreen
 import nl.ibs.gym8020.ui.dashboard.DashboardScreen
@@ -148,7 +150,8 @@ private fun GymNavHost(container: AppContainer) {
         if (!settings.onboarded) {
             nav.currentBackStackEntryFlow.first() // wait until the graph is set
             if (container.db.sessions().all().isEmpty()) {
-                nav.navigate(Routes.INTRO)
+                // Navigation must run on the main thread; after a database call we may be elsewhere.
+                withContext(Dispatchers.Main) { nav.navigate(Routes.INTRO) }
             } else {
                 container.settings.update { it.copy(onboarded = true) }
             }

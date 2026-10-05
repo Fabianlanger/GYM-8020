@@ -42,7 +42,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.logic.WeightFormat
@@ -79,7 +81,8 @@ fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: 
     fun finish() = scope.launch {
         bodyweight?.takeIf { it > 0 }?.let { container.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = it)) }
         container.settings.update { it.copy(onboarded = true) }
-        onDone()
+        withContext(Dispatchers.Main) { onDone() } // navigation on the main thread
+
     }
 
     BackHandler(enabled = page > 0) { page-- }
