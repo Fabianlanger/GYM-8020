@@ -12,3 +12,17 @@ Snel:
 - `app/` = Android; bouwt alleen in GitHub Actions (Google Maven is hier niet bereikbaar).
 - Tot 1.0 alleen dev-builds (vaste dev-link); versiereleases pas bij 1.0.
 - Geen persoonlijke trainingsdata in de repo.
+
+## Agent skills
+
+### Issue tracker
+
+Issues en specs staan in GitHub Issues van Fabianlanger/GYM-8020. Zie `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+De vijf standaardrollen, label = naam (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). Zie `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` en `docs/adr/` in de hoofdmap. Zie `docs/agents/domain.md`.
