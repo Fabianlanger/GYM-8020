@@ -27,12 +27,16 @@ fun defaultRoles(count: Int): List<SetRole> = List(count.coerceAtLeast(1)) { i -
 
 fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDate()
 
+/** Your target for next time for one exercise: per set the role and weight, plus a note. */
+data class Target(val sets: List<PlannedSet>, val note: String? = null)
+
 /** What was done last time for an exercise (reference and "vorige keer"). */
 data class LastPerformance(val date: LocalDate, val sets: List<SetEntity>)
 
 class TrainingRepository(
     private val db: AppDatabase,
     private val settings: SettingsStore,
+    private val marks: TargetMarks,
     /** Called after a training is finished (automatic backup). */
     private val onFinished: () -> Unit = {},
 ) {
@@ -170,6 +174,27 @@ class TrainingRepository(
     }
 
     suspend fun planNote(exerciseId: Long): String? = db.plans().get(exerciseId)?.note
+
+    // ---- target for next time (B-6, D-97) ----
+
+    /** The stored target for an exercise: what the next session starts from. */
+    suspend fun target(exerciseId: Long): Target? {
+        val plan = db.plans().get(exerciseId) ?: return null
+        return Target(db.plans().sets(exerciseId).map { PlannedSet(it.role, it.weightKg) }, plan.note)
+    }
+
+    /** You set your target during session exercise [seId]: stored right away. */
+    suspend fun setTarget(seId: Long, exerciseId: Long, target: Target) {
+        savePlan(exerciseId, target.sets, target.note)
+    }
+
+    /** The target you set yourself during session exercise [seId], or null if you did not. */
+    suspend fun targetSetIn(seId: Long, exerciseId: Long): Target? = null
+
+    /** Stores the advice as target when moving on, unless you set one yourself during [seId]. */
+    suspend fun storeAdvice(seId: Long, exerciseId: Long, advice: Target) {
+        savePlan(exerciseId, advice.sets, advice.note)
+    }
 
     /** Whether [sessionId] is the most recent finished training with this exercise (then it drives the plan). */
     suspend fun isLatestFor(exerciseId: Long, sessionId: Long): Boolean =

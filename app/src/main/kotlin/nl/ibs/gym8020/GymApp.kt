@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AutoBackup
+import nl.ibs.gym8020.data.PrefsTargetMarks
 import nl.ibs.gym8020.data.BackupService
 import nl.ibs.gym8020.data.Seeder
 import nl.ibs.gym8020.data.SettingsStore
@@ -30,7 +31,7 @@ class AppContainer(val app: Application) {
     val settings = SettingsStore(app)
     val backup = BackupService(db, settings)
     val autoBackup = AutoBackup(app, backup, settings, appScope)
-    val training = TrainingRepository(db, settings, onFinished = { autoBackup.runSoon() })
+    val training = TrainingRepository(db, settings, PrefsTargetMarks(app), onFinished = { autoBackup.runSoon() })
     val seeder = Seeder(db, settings, dutch = AppLanguage.get(app) == AppLanguage.DUTCH)
 }
 
