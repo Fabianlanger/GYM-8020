@@ -20,6 +20,7 @@ import nl.ibs.gym8020.core.material.WeightCalculator
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Calculators
 import nl.ibs.gym8020.data.LastPerformance
+import nl.ibs.gym8020.data.Target
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.SessionExerciseEntity
@@ -71,13 +72,15 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     private val extras = MutableStateFlow<Map<Long, ExerciseExtra>>(emptyMap())
     private val drafts = MutableStateFlow<Map<Long, PlanDraft>>(emptyMap())
     private val notes = MutableStateFlow<Map<Long, String>>(emptyMap())
+    /** Targets you set yourself earlier in this session, read back after leaving the screen (B-6). */
+    private val ownTargets = MutableStateFlow<Map<Long, PlanDraft>>(emptyMap())
 
     val state: StateFlow<TrainingState> = combine(
         c.db.sessions().observe(sessionId),
         c.db.sessions().observeExercises(sessionId),
         c.db.sessions().observeSets(sessionId),
         combine(c.db.exercises().observeAll(), c.settings.settings, c.db.materials().observeAll()) { e, s, m -> Triple(e, s, m) },
-        combine(extras, drafts, notes) { e, d, n -> Triple(e, d, n) },
+        combine(extras, combine(drafts, ownTargets) { d, o -> o + d }, notes) { e, d, n -> Triple(e, d, n) },
     ) { session, ses, sets, (exercises, settings, materials), (extraMap, draftMap, noteMap) ->
         val byId = exercises.associateBy { it.id }
         val profiles = materials.associateBy { it.id }
@@ -90,13 +93,25 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             val assist = if (Warmup.needsAssistance(ex.loadType, ex.bodyweightFactor)) {
                 Warmup.assistKg(session?.bodyweightKg, ex.bodyweightFactor, settings.warmupAssistPercent, calc)
             } else null
-            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: "", calc, assist)
+            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist)
         }
-        items.forEach { if (it.extra == null) loadExtra(it.exercise.id) }
+        items.forEach {
+            if (it.extra == null) loadExtra(it.exercise.id)
+            loadOwnTarget(it.se.id, it.exercise.id)
+        }
         TrainingState(session, items, settings, exercises.filter { !it.archived }, loaded = true)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TrainingState())
 
     private val loading = HashSet<Long>()
+    private val loadingTargets = HashSet<Long>()
+
+    private fun loadOwnTarget(seId: Long, exerciseId: Long) {
+        if (!loadingTargets.add(seId)) return
+        viewModelScope.launch {
+            val own = repo.targetSetIn(seId, exerciseId) ?: return@launch
+            ownTargets.update { it + (seId to PlanDraft(own.sets, own.note.orEmpty(), edited = true)) }
+        }
+    }
 
     private fun loadExtra(exerciseId: Long) {
         if (!loading.add(exerciseId)) return
@@ -146,20 +161,30 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     fun addExercise(exerciseId: Long) = launch { repo.addExercise(sessionId, exerciseId) }
 
     // ---- plan for next time (D-18a) ----
+    /** You change your target: shown at once and stored right away (B-6). */
     fun editPlan(seId: Long, transform: (PlanDraft) -> PlanDraft) {
-        val current = state.value.items.firstOrNull { it.se.id == seId }?.plan ?: return
-        drafts.update { it + (seId to transform(current).copy(edited = true)) }
+        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
+        val current = item.plan ?: return
+        val next = transform(current).copy(note = item.note, edited = true)
+        drafts.update { it + (seId to next) }
+        launch { repo.setTarget(seId, item.exercise.id, Target(next.sets, next.note)) }
     }
 
+    /** A note is part of your target, so it is stored right away as well. */
     fun setPlanNote(seId: Long, note: String) {
         notes.update { it + (seId to note) }
+        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
+        val plan = item.plan ?: return
+        drafts.update { it + (seId to plan.copy(note = note, edited = true)) }
+        launch { repo.setTarget(seId, item.exercise.id, Target(plan.sets, note)) }
     }
 
+    /** Moving on or finishing: the advice becomes the target only if you did not set one yourself. */
     private suspend fun persistPlan(seId: Long) {
         val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
         val plan = item.plan ?: return
-        if (item.se.skipped || plan.sets.isEmpty()) return
-        repo.savePlan(item.exercise.id, plan.sets, plan.note)
+        if (item.se.skipped || plan.sets.isEmpty() || plan.edited) return
+        repo.storeAdvice(seId, item.exercise.id, Target(plan.sets, plan.note))
     }
 
     fun finish(onFinished: () -> Unit) = launch {

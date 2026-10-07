@@ -186,13 +186,16 @@ class TrainingRepository(
     /** You set your target during session exercise [seId]: stored right away. */
     suspend fun setTarget(seId: Long, exerciseId: Long, target: Target) {
         savePlan(exerciseId, target.sets, target.note)
+        marks.markSetByYou(seId)
     }
 
     /** The target you set yourself during session exercise [seId], or null if you did not. */
-    suspend fun targetSetIn(seId: Long, exerciseId: Long): Target? = null
+    suspend fun targetSetIn(seId: Long, exerciseId: Long): Target? =
+        if (marks.isSetByYou(seId)) target(exerciseId) else null
 
     /** Stores the advice as target when moving on, unless you set one yourself during [seId]. */
     suspend fun storeAdvice(seId: Long, exerciseId: Long, advice: Target) {
+        if (marks.isSetByYou(seId)) return
         savePlan(exerciseId, advice.sets, advice.note)
     }
 
