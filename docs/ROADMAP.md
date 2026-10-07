@@ -7,7 +7,7 @@ een latere feature geen grote verbouwing wordt. Werkwijze: `.claude/skills/werkw
 komen pas bij 1.0, als alles af is wat we nu willen (D-85).
 
 Legenda: B = bug · V = verbetering · O = onderzoek/ontwerp · T = testen · W = wearables · R/D = besluiten in SPEC.
-Details per punt staan in `BACKLOG.md`.
+**Sinds oktober 2026 staat het werk in GitHub Issues** (mijlpaal per release, labels volgens `docs/agents/triage-labels.md`). Dit document houdt de doelen per release en de afhankelijkheden; de nummers (#n) verwijzen naar de issues. De open vragen hieronder staan ook in de issues met label `needs-info`. De doelen-review loopt via de Wayfinder-kaart #1.
 
 ---
 
@@ -89,16 +89,16 @@ wat 0.7 en 0.8 nodig hebben (A-1, A-2, A-4).*
 
 | Punt | Wat |
 |---|---|
-| A-1 | Schema v3 met migratietest en back-upformaat v3 |
-| A-3 | Krachtmodel in `core` |
-| V-2 | Samenvatting: e1RM en totaal verzet gewicht t.o.v. vorige keer; tijden als gemiddelde |
-| O-1 | Krachtindex (100 = je beginniveau), in de samenvatting en het dashboard |
-| V-3 | Reps-doel voor oefeningen zonder gewicht (crunches) |
-| V-14 | Meerdere metingen lichaamsgewicht per dag, zoals Garmin (schema v3) |
-| D-20 | Optioneel "gestopt vóór falen: nog 1 / 2 / 3+" per set |
-| R-1 | Spierpercentages: 100 / 50 / 25 (stabilisator), bibliotheek bijstellen |
-| A-5 | Standaard oefeningscodes in de bibliotheek |
-| T-3 | Mutatietesten op `core`: eerste meting |
+| A-1 (#11) | Schema v3 met migratietest en back-upformaat v3 |
+| A-3 (#12) | Krachtmodel in `core` |
+| V-2 (#13) | Samenvatting: e1RM en totaal verzet gewicht t.o.v. vorige keer; tijden als gemiddelde |
+| O-1 (#14) | Krachtindex (100 = je beginniveau), in de samenvatting en het dashboard |
+| V-3 → kaart #1 | Reps-doel: nu het kaart-ticket "Doel bij oefeningen op reps" (#4) |
+| V-14 (#15) | Meerdere metingen lichaamsgewicht per dag, zoals Garmin (schema v3) |
+| D-20 (#16) | Optioneel "gestopt vóór falen: nog 1 / 2 / 3+" per set |
+| R-1 (#17) | Spierpercentages: 100 / 50 / 25 (stabilisator), bibliotheek bijstellen |
+| A-5 (#18) | Standaard oefeningscodes in de bibliotheek |
+| T-3 (#19) | Mutatietesten op `core`: eerste meting |
 
 **Vragen** (adviezen staan in `onderzoek-spieren-en-zwaarte.md` en `BACKLOG.md`):
 2. **O-1:** Krachtindex zoals voorgesteld? *Advies: ja.*
@@ -121,9 +121,9 @@ wat 0.7 en 0.8 nodig hebben (A-1, A-2, A-4).*
 
 | Punt | Wat |
 |---|---|
-| V-4 | Training achteraf invoeren (dashboard → "+ Training toevoegen") |
-| V-6 | Schijven per materiaalprofiel (uitzondering); meerdere gyms als vraag 10 = ja |
-| O-2 | Rest: maximum laat meegroeien en/of ruimere standaardprofielen |
+| V-4 (#24) | Training achteraf invoeren (dashboard → "+ Training toevoegen") |
+| V-6 (#25) | Schijven per materiaalprofiel (uitzondering); meerdere gyms als vraag 10 = ja |
+| O-2 (#26) | Rest: maximum laat meegroeien en/of ruimere standaardprofielen |
 
 **Vragen:**
 11. **V-4:** sets voorvullen met het gewicht van toen, of leeg beginnen? *Advies: voorvullen.*
@@ -140,9 +140,9 @@ workout. Eerst een prototype; bouwen pas als de schermen van 0.7/0.8 staan (A-13
 
 | Punt | Wat |
 |---|---|
-| V-9 | Prototype (klikbaar, HTML op telefoonformaat): stappen, teksten, wiebelen. Kan al eerder, los van de app. |
-| V-9 | Rondleiding in de app: markering + pop-up per stap, overslaan en opnieuw bekijken |
-| V-9 | Demo-workout om te oefenen of te presenteren, zonder opslaan (als vraag 24 = ja) |
+| V-9 (#27) | Prototype (klikbaar, HTML op telefoonformaat): stappen, teksten, wiebelen. Kan al eerder, los van de app. |
+| V-9 (#27) | Rondleiding in de app: markering + pop-up per stap, overslaan en opnieuw bekijken |
+| V-9 (#27) | Demo-workout om te oefenen of te presenteren, zonder opslaan (als vraag 24 = ja) |
 | T-4 | UI-test: de rondleiding vindt elke stap; verschijnt één keer (F-11) |
 
 **Vragen:**
@@ -161,13 +161,13 @@ workout. Eerst een prototype; bouwen pas als de schermen van 0.7/0.8 staan (A-13
 
 | Punt | Wat |
 |---|---|
-| A-8 | Eén ondertekeningssleutel voor dev en release; eenmalige overstap met export → import |
-| W-1 | Lichaamsgewicht automatisch van weegschaal of Garmin |
-| W-2 | Hartslag per oefening (gemiddeld en maximaal) en herstel tijdens het wisselen |
-| W-5 | Trainingen naar Health Connect (Fitbit, Samsung, Google, …) |
-| W-8 | Proef: training als FIT-bestand om zelf in Garmin Connect te importeren |
-| W-7 | Garmin-training herkennen en voorstellen om in te voeren |
-| W-3 | Calorieën per training |
+| A-8 (#28) | Eén ondertekeningssleutel voor dev en release; eenmalige overstap met export → import |
+| W-1 (#30) | Lichaamsgewicht automatisch van weegschaal of Garmin |
+| W-2 (#31) | Hartslag per oefening (gemiddeld en maximaal) en herstel tijdens het wisselen |
+| W-5 (#32) | Trainingen naar Health Connect (Fitbit, Samsung, Google, …) |
+| W-8 (#33) | Proef: training als FIT-bestand om zelf in Garmin Connect te importeren |
+| W-7 (#34) | Garmin-training herkennen en voorstellen om in te voeren |
+| W-3 (#35) | Calorieën per training |
 
 **Vragen** (`onderzoek-wearables.md`):
 15. **O-3a:** Health Connect als koppeling voor alle wearables? *Advies: ja.*
@@ -183,7 +183,7 @@ workout. Eerst een prototype; bouwen pas als de schermen van 0.7/0.8 staan (A-13
 | – | Eerste versierelease met de eigen sleutel |
 | – | Screenshots in de README (uit T-5, met voorbeelddata) |
 | – | Repo publiek |
-| T-6 | Rooktests op een echte emulator bij elke versierelease |
+| T-6 (#39) | Rooktests op een echte emulator bij elke versierelease |
 
 **Vragen:**
 18. Wanneer gaat de repo publiek: bij 1.0, of al eerder?
@@ -195,8 +195,8 @@ workout. Eerst een prototype; bouwen pas als de schermen van 0.7/0.8 staan (A-13
 
 | Punt | Wat |
 |---|---|
-| V-5 | Importeren uit aantekeningen (eerst een paar voorbeelden van jou nodig) |
-| W-4 | Herstel-hint op basis van slaap en rusthartslag (eerst eigen onderzoek) |
-| W-6 | Stappen op rustdagen |
-| W-9 | Eigen Garmin-horloge-app |
-| O-5 | Naam van de app heroverwegen (vóór 1.0 beslissen, want de naam komt in pakketnaam, icoon en store) |
+| V-5 (#40) | Importeren uit aantekeningen (eerst een paar voorbeelden van jou nodig) |
+| W-4 (#41) | Herstel-hint op basis van slaap en rusthartslag (eerst eigen onderzoek) |
+| W-6 (#42) | Stappen op rustdagen |
+| W-9 (#43) | Eigen Garmin-horloge-app |
+| O-5 (#44) | Naam van de app heroverwegen (vóór 1.0 beslissen, want de naam komt in pakketnaam, icoon en store) |
