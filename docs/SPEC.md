@@ -567,18 +567,9 @@ De app ondersteunt het proces van de eigenaar, maar bevat geen persoonlijke inho
 
 ---
 
-## Bijlage W — Woordenlijst: intern en op het scherm (A-11, D-87)
+## Bijlage W — Woordenlijst
 
-Code en database houden hun interne namen; alleen de teksten gebruiken de nieuwe termen.
-
-| Intern (code, database, oudere beslissingen) | Scherm (Engels) | Scherm (Nederlands) |
-|---|---|---|
-| schema (`SchemaEntity`) | Workout | Workout |
-| weekplan (`WeekPlanEntity`) | Program | Programma |
-| training / sessie (`SessionEntity`) | Session | Training |
-| volgende keer | Next target | Volgend doel |
-| materiaal (`MaterialProfileEntity`) | Equipment | Materiaal |
-| zware / lichte set (Z/L) | Heavy / Light (H/L) | Zwaar / Licht (Z/L) |
+Verhuisd naar **`GLOSSARY.md`** in de hoofdmap (Nederlandse term met de Engelse term uit code en scherm).
 
 ## Bijlage A — Standaardschema's
 
