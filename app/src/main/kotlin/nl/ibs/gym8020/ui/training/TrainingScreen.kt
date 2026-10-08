@@ -766,7 +766,7 @@ private fun SetEditor(
                         allowNegative = signed,
                         min = if (signed) null else 0.0,
                         // Never prefilled (#47): the target is a grey hint; tap it (or − / +) to take it over.
-                        placeholder = set.goalWeightKg?.let { WeightFormat.format(it, unit, signed) } ?: "—",
+                        placeholder = set.goalWeightKg?.let { WeightFormat.format(it, unit, signed) },
                         startFrom = set.goalWeightKg,
                         placeholderTakesOver = true,
                         next = calc?.let { c -> { v: Double -> c.up(v) } },
