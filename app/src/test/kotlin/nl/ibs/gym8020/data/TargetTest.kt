@@ -12,6 +12,9 @@ import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
 import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.data.db.ExerciseEntity
+import nl.ibs.gym8020.data.db.SessionEntity
+import nl.ibs.gym8020.data.db.SessionExerciseEntity
+import nl.ibs.gym8020.data.db.SetEntity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -21,8 +24,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * B-6, D-97: the target for next time is yours. What you set is stored right away, survives leaving the
- * training screen, and moving on never replaces it with advice.
+ * B-6, D-97, #52: the target for next time is yours. What you set is stored right away, survives leaving the
+ * training screen, and moving on or correcting the training never replaces it with the default target.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34])
@@ -56,17 +59,17 @@ class TargetTest {
     }
 
     @Test
-    fun `moving on does not replace your target with advice`() = runBlocking {
+    fun `moving on does not replace your target with the default target`() = runBlocking {
         repository().setTarget(seId = 1, exerciseId = exerciseId, target = heavy(80.0))
 
-        repository().storeAdvice(seId = 1, exerciseId = exerciseId, advice = heavy(82.5))
+        repository().storeDefaultTarget(seId = 1, exerciseId = exerciseId, target = heavy(82.5))
 
         assertEquals(heavy(80.0), repository().target(exerciseId))
     }
 
     @Test
-    fun `without a target of your own the advice is stored when moving on`() = runBlocking {
-        repository().storeAdvice(seId = 2, exerciseId = exerciseId, advice = heavy(82.5))
+    fun `without a target of your own the default target is stored when moving on`() = runBlocking {
+        repository().storeDefaultTarget(seId = 2, exerciseId = exerciseId, target = heavy(82.5))
 
         assertEquals(heavy(82.5), repository().target(exerciseId))
         assertNull(repository().targetSetIn(seId = 2, exerciseId = exerciseId))
@@ -77,5 +80,38 @@ class TargetTest {
         repository().setTarget(seId = 1, exerciseId = exerciseId, target = heavy(80.0))
 
         assertNull(repository().targetSetIn(seId = 3, exerciseId = exerciseId))
+    }
+
+    /** A finished training with one heavy set of [kg] × 6 and a light set you did not do; returns (session, se). */
+    private suspend fun finishedSession(kg: Double): Pair<Long, Long> {
+        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Pull", startedAt = 1_000L, endedAt = 2_000L))
+        val seId = db.sessions().insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exerciseId, position = 0))
+        db.sessions().insertSets(
+            listOf(
+                SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.HEAVY, weightKg = kg, reps = 6),
+                SetEntity(sessionExerciseId = seId, position = 1, role = SetRole.LIGHT),
+            ),
+        )
+        return sessionId to seId
+    }
+
+    @Test
+    fun `correcting a training stores the default target from what you lifted`() = runBlocking {
+        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        val (sessionId, _) = finishedSession(85.0)
+
+        repository().recomputeTarget(db.exercises().get(exerciseId)!!, sessionId)
+
+        assertEquals(Target(listOf(PlannedSet(SetRole.HEAVY, 85.0), PlannedSet(SetRole.LIGHT, 40.0))), repository().target(exerciseId))
+    }
+
+    @Test
+    fun `correcting a training keeps the target you set in it`() = runBlocking {
+        val (sessionId, seId) = finishedSession(85.0)
+        repository().setTarget(seId = seId, exerciseId = exerciseId, target = heavy(80.0))
+
+        repository().recomputeTarget(db.exercises().get(exerciseId)!!, sessionId)
+
+        assertEquals(heavy(80.0), repository().target(exerciseId))
     }
 }

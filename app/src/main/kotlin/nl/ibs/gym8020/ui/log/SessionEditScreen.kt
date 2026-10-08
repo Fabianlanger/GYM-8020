@@ -132,8 +132,7 @@ class SessionEditViewModel(private val c: AppContainer, private val sessionId: L
             .filter { it.id in changed.value && repo.isLatestFor(it.id, sessionId) }
 
     fun recompute(exercises: List<ExerciseEntity>, onDone: () -> Unit) = viewModelScope.launch {
-        val calcs = state.value.items.associate { it.exercise.id to it.calc }
-        exercises.forEach { repo.recomputePlan(it, sessionId, calcs[it.id]) }
+        exercises.forEach { repo.recomputeTarget(it, sessionId) }
         c.autoBackup.runSoon()
         onDone()
     }

@@ -2,12 +2,11 @@ package nl.ibs.gym8020.data
 
 import androidx.room.withTransaction
 import nl.ibs.gym8020.core.logic.EffectiveWeight
-import nl.ibs.gym8020.core.logic.GoalAdvisor
+import nl.ibs.gym8020.core.logic.DefaultTarget
 import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.Strength
-import nl.ibs.gym8020.core.logic.WeightSteps
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.Progression
@@ -192,10 +191,26 @@ class TrainingRepository(
     suspend fun targetSetIn(seId: Long, exerciseId: Long): Target? =
         if (marks.isSetByYou(seId)) target(exerciseId) else null
 
-    /** Stores the advice as target when moving on, unless you set one yourself during [seId]. */
-    suspend fun storeAdvice(seId: Long, exerciseId: Long, advice: Target) {
+    /**
+     * Stores the default target (#52) when moving on, unless you set one yourself during [seId]. Never the
+     * advice: the advice does not become a target by itself.
+     */
+    suspend fun storeDefaultTarget(seId: Long, exerciseId: Long, target: Target) {
         if (marks.isSetByYou(seId)) return
-        savePlan(exerciseId, advice.sets, advice.note)
+        savePlan(exerciseId, target.sets, target.note)
+    }
+
+    /** The set roles the workout of [sessionId] gives this exercise; the default target's sets without a target. */
+    suspend fun workoutRoles(sessionId: Long, exerciseId: Long): List<SetRole> {
+        val schemaId = sessions.get(sessionId)?.schemaId
+        val entry = schemaId?.let { id -> db.schemas().entries(id).firstOrNull { it.exerciseId == exerciseId } }
+        return defaultRoles(entry?.setCount ?: settings.current().method.defaultSetCount)
+    }
+
+    /** "Volgende keer op gewicht / op reps" (#52): the exercise's progression, from the next session on. */
+    suspend fun setProgression(exerciseId: Long, progression: Progression) {
+        val exercise = db.exercises().get(exerciseId) ?: return
+        if (exercise.progression != progression) db.exercises().update(exercise.copy(progression = progression))
     }
 
     /** Whether [sessionId] is the most recent finished training with this exercise (then it drives the plan). */
@@ -203,21 +218,23 @@ class TrainingRepository(
         sessions.historyExercises(exerciseId, excludeSession = -1).firstOrNull()?.sessionId == sessionId
 
     /**
-     * Plan for next time again from the (corrected) sets of a training, keeping the note.
-     * [steps] are the achievable weights of the exercise's material.
+     * The default target again from the (corrected) sets of a training (#52), keeping the note. A target you
+     * set yourself in that training stays.
      */
-    suspend fun recomputePlan(exercise: ExerciseEntity, sessionId: Long, steps: WeightSteps?) {
+    suspend fun recomputeTarget(exercise: ExerciseEntity, sessionId: Long) {
         val se = sessions.exercises(sessionId).firstOrNull { it.exerciseId == exercise.id && !it.skipped } ?: return
+        if (marks.isSetByYou(se.id)) return
         val sets = sessions.setsOf(se.id)
         if (sets.none { it.reps != null }) return
-        val method = settings.current().method.let {
-            it.copy(heavyTarget = exercise.heavyTarget ?: it.heavyTarget, lightTarget = exercise.lightTarget ?: it.lightTarget)
-        }
-        val plan = GoalAdvisor.planNext(
-            sets.map { PerformedSet(it.role, PerformanceWeight.forPlan(it.weightKg, it.reps, it.goalWeightKg, exercise.progression, exercise.loadType), it.reps) },
-            exercise.loadType, exercise.progression, method, steps,
+        val stored = target(exercise.id)?.sets
+        val target = DefaultTarget.of(
+            stored,
+            if (stored.isNullOrEmpty()) workoutRoles(sessionId, exercise.id) else emptyList(),
+            sets.map { PerformedSet(it.role, it.weightKg, it.reps) },
+            exercise.progression,
+            exercise.loadType,
         )
-        savePlan(exercise.id, plan, planNote(exercise.id))
+        savePlan(exercise.id, target, planNote(exercise.id))
     }
 
     // ---- history ----
