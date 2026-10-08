@@ -154,6 +154,8 @@
     <string name="tr_swipe_hint">Swipe for the next exercise</string>
     <string name="tr_take_off">Take off %s in total</string>
     <string name="tr_target">target %d</string>
+    <string name="tr_next_by_weight">Next time by weight</string>
+    <string name="tr_next_by_reps">Next time by reps</string>
     <string name="tr_to_failure">To failure</string>
     <string name="tr_total">Session %s</string>
     <string name="tr_unskip">Do it after all</string>

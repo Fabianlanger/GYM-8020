@@ -10,16 +10,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
+import nl.ibs.gym8020.core.logic.DefaultTarget
 import nl.ibs.gym8020.core.logic.FinishCheck
 import nl.ibs.gym8020.core.logic.FinishExercise
 import nl.ibs.gym8020.core.logic.FinishSet
 import nl.ibs.gym8020.core.logic.Finding
-import nl.ibs.gym8020.core.logic.GoalAdvisor
-import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
+import nl.ibs.gym8020.core.logic.ProgressionSwitch
+import nl.ibs.gym8020.core.logic.RepsTarget
 import nl.ibs.gym8020.core.logic.Warmup
 import nl.ibs.gym8020.core.model.MethodSettings
+import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
 import nl.ibs.gym8020.core.material.WeightCalculator
 import nl.ibs.gym8020.data.AppSettings
@@ -37,6 +39,10 @@ data class ExerciseExtra(
     val lastNote: String?,
     /** Only when there is no history: similar exercises as a reference (D-68). */
     val similar: List<Pair<ExerciseEntity, LastPerformance>> = emptyList(),
+    /** Your stored target as this session started: the sets and previous values of the default target (#52). */
+    val stored: List<PlannedSet>? = null,
+    /** The set roles from the workout, for the default target when there is no stored target. */
+    val workout: List<SetRole> = emptyList(),
 )
 
 /** The plan for next time as edited on the training screen. */
@@ -47,13 +53,20 @@ data class TrainingItem(
     val exercise: ExerciseEntity,
     val sets: List<SetEntity>,
     val extra: ExerciseExtra?,
-    /** The plan for next time: the user's edited draft or the live suggestion. Null until reps are entered. */
+    /** Your target for next time: what you set yourself, else the default target (#52). Null until reps are entered. */
     val plan: PlanDraft?,
     val note: String = "",
     /** Achievable weights and plate plans from the exercise's material profile (v0.2). */
     val calc: WeightCalculator? = null,
     /** Pull-ups and dips: warm-up assistance as signed extra (negative), when the body weight is known (B-4). */
     val warmupAssistKg: Double? = null,
+    /**
+     * The progression of today's sets. Switching "volgende keer op gewicht / op reps" changes the exercise from the
+     * next session on (#52), so today's sets keep the progression the session started with.
+     */
+    val progressionToday: Progression = exercise.progression,
+    /** Reps progression: per set the reps of its role last time, the number in its header (#52). Null on weight. */
+    val repsTargets: List<Int?>? = null,
 ) {
     val hasInput: Boolean get() = sets.any { it.reps != null }
 }
@@ -94,11 +107,15 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             val ex = byId[se.exerciseId] ?: return@mapNotNull null
             val list = setsBySe[se.id].orEmpty()
             val calc = Calculators.forExercise(ex, profiles, settings.plateStock)
-            val plan = (draftMap[se.id] ?: suggestion(ex, list, settings.method, calc))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
+            val plan = (draftMap[se.id] ?: defaultTarget(ex, list, extraMap[ex.id]))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
             val assist = if (Warmup.needsAssistance(ex.loadType, ex.bodyweightFactor)) {
                 Warmup.assistKg(session?.bodyweightKg, ex.bodyweightFactor, settings.warmupAssistPercent, calc)
             } else null
-            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist)
+            val today = startProgression.getOrPut(ex.id) { ex.progression }
+            val repsTargets = if (today == Progression.REPS) {
+                RepsTarget.forSets(list.map { it.role }, extraMap[ex.id]?.last?.sets?.map { PerformedSet(it.role, it.weightKg, it.reps) })
+            } else null
+            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist, today, repsTargets)
         }
         items.forEach {
             if (it.extra == null) loadExtra(it.exercise.id)
@@ -108,6 +125,8 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TrainingState())
 
     private val loading = HashSet<Long>()
+    /** Per exercise the progression as this session started (#52). */
+    private val startProgression = HashMap<Long, Progression>()
     private val loadingTargets = HashSet<Long>()
 
     private fun loadOwnTarget(seId: Long, exerciseId: Long) {
@@ -123,19 +142,20 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         viewModelScope.launch {
             val last = repo.lastPerformance(exerciseId, sessionId)
             val similar = if (last == null) repo.similarPerformances(exerciseId, sessionId) else emptyList()
-            val extra = ExerciseExtra(last, repo.planNote(exerciseId), similar)
+            val extra = ExerciseExtra(
+                last, repo.planNote(exerciseId), similar,
+                stored = repo.target(exerciseId)?.sets,
+                workout = repo.workoutRoles(sessionId, exerciseId),
+            )
             extras.update { it + (exerciseId to extra) }
         }
     }
 
-    private fun suggestion(ex: ExerciseEntity, sets: List<SetEntity>, method: MethodSettings, calc: WeightCalculator?): PlanDraft? {
-        if (sets.none { it.reps != null }) return null
-        val performed = sets.map { PerformedSet(it.role, PerformanceWeight.forPlan(it.weightKg, it.reps, it.goalWeightKg, ex.progression, ex.loadType), it.reps) }
-        val m = method.copy(
-            heavyTarget = ex.heavyTarget ?: method.heavyTarget,
-            lightTarget = ex.lightTarget ?: method.lightTarget,
-        )
-        return PlanDraft(GoalAdvisor.planNext(performed, ex.loadType, ex.progression, m, calc))
+    /** The default target (#52): per set the weight you lifted today; never the advice. Null until reps are in. */
+    private fun defaultTarget(ex: ExerciseEntity, sets: List<SetEntity>, extra: ExerciseExtra?): PlanDraft? {
+        if (extra == null || sets.none { it.reps != null }) return null
+        val today = sets.map { PerformedSet(it.role, it.weightKg, it.reps) }
+        return PlanDraft(DefaultTarget.of(extra.stored, extra.workout, today, ex.progression, ex.loadType))
     }
 
     // ---- timestamps ----
@@ -184,12 +204,25 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         launch { repo.setTarget(seId, item.exercise.id, Target(plan.sets, note)) }
     }
 
-    /** Moving on or finishing: the advice becomes the target only if you did not set one yourself. */
+    /**
+     * "Volgende keer op gewicht / op reps" (#52): the exercise switches from the next session on, and your
+     * target follows right away (to weight on a bodyweight exercise: 0, body weight only).
+     */
+    fun switchProgression(seId: Long) {
+        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
+        val ex = item.exercise
+        val to = ProgressionSwitch.offered(ex.progression, ex.loadType) ?: return
+        val today = item.sets.map { PerformedSet(it.role, it.weightKg, it.reps) }
+        editPlan(seId) { d -> d.copy(sets = ProgressionSwitch.target(d.sets, today, to, ex.loadType)) }
+        launch { repo.setProgression(ex.id, to) }
+    }
+
+    /** Moving on or finishing: the default target is stored, unless you set a target yourself. */
     private suspend fun persistPlan(seId: Long) {
         val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
         val plan = item.plan ?: return
         if (item.se.skipped || plan.sets.isEmpty() || plan.edited) return
-        repo.storeAdvice(seId, item.exercise.id, Target(plan.sets, plan.note))
+        repo.storeDefaultTarget(seId, item.exercise.id, Target(plan.sets, plan.note))
     }
 
     /** The check before finishing (#47): what is missing in your performance and your target. */
@@ -198,7 +231,7 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             FinishExercise(
                 sessionExerciseId = item.se.id,
                 exerciseId = item.exercise.id,
-                progression = item.exercise.progression,
+                progression = item.progressionToday,
                 loadType = item.exercise.loadType,
                 sets = item.sets.map { FinishSet(it.role, it.weightKg, it.reps) },
                 skipped = item.se.skipped,

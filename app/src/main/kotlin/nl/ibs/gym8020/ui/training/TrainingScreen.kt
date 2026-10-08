@@ -106,7 +106,10 @@ import nl.ibs.gym8020.core.logic.FindingKind
 import nl.ibs.gym8020.core.logic.GoalAdvisor
 import nl.ibs.gym8020.core.logic.Missing
 import nl.ibs.gym8020.core.logic.PerformanceWeight
+import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
+import nl.ibs.gym8020.core.logic.ProgressionSwitch
+import nl.ibs.gym8020.core.logic.RepsTarget
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.LoadStep
@@ -430,7 +433,7 @@ private fun ExercisePage(
     val running = se.goAt != null && se.firstInputAt == null
     val warmingUp = se.warmupAt != null && se.goAt == null && se.firstInputAt == null
     val beforeGo = se.goAt == null && se.firstInputAt == null
-    val isReps = ex.progression == Progression.REPS
+    val isReps = item.progressionToday == Progression.REPS
     val firstInput = { vm.firstInput(se.id) }
     // One set is open for editing at a time; the rest are compact lines.
     var openSet by remember(se.id) { mutableStateOf(item.sets.firstOrNull { it.reps == null }?.id) }
@@ -490,8 +493,9 @@ private fun ExercisePage(
 
         // Sets: filling in the first number stops the exercise timer (D-31). Warm-up reps don't.
         item.sets.forEach { set ->
-            val target = targetOf(set.role)
-            val prevReps = item.extra?.last?.sets?.filter { it.role == set.role }?.maxOfOrNull { it.reps ?: 0 }
+            val target = headerTarget(item, set, targetOf)
+            // Reps progression: the reps to beat are the header number, the reps of this set's role last time (#52).
+            val prevReps = if (item.repsTargets != null) target else item.extra?.last?.sets?.filter { it.role == set.role }?.maxOfOrNull { it.reps ?: 0 }
             if (openSet == set.id) {
                 SetEditor(
                     set = set, ex = ex, calc = item.calc, warmupText = warmupHint(item, unit, assistPercent), unit = unit, step = step, target = target, goodMargin = goodMargin,
@@ -585,6 +589,15 @@ private fun loadText(weightKg: Double?, calc: WeightCalculator?, step: LoadStep?
     }
 }
 
+/**
+ * The number in a set's header (#52). Reps progression: the reps of that set's role last time, none without a
+ * last time. Weight progression: the heavy/light rep target from the settings.
+ */
+private fun headerTarget(item: TrainingItem, set: SetEntity, targetOf: (SetRole) -> Int?): Int? {
+    val reps = item.repsTargets ?: return targetOf(set.role)
+    return reps.getOrNull(item.sets.indexOf(set))
+}
+
 /** Goal before GO: all work sets in one card; big weight, small plate instructions. */
 @Composable
 private fun GoalCard(item: TrainingItem, unit: WeightUnit, targetOf: (SetRole) -> Int?) {
@@ -597,10 +610,10 @@ private fun GoalCard(item: TrainingItem, unit: WeightUnit, targetOf: (SetRole) -
     DecoCard(corners = true, padding = 16.dp) {
         work.forEachIndexed { i, set ->
             if (i > 0) Spacer(Modifier.height(10.dp))
-            val target = targetOf(set.role)
+            val target = headerTarget(item, set, targetOf)
             Eyebrow(roleLabel(set.role) + (target?.let { " · " + stringResource(R.string.tr_target, it) } ?: ""))
-            if (ex.progression == Progression.REPS && (weights[i] ?: 0.0) == 0.0) {
-                val prev = item.extra?.last?.sets?.filter { it.role == set.role }?.maxOfOrNull { it.reps ?: 0 }
+            if (item.progressionToday == Progression.REPS && (weights[i] ?: 0.0) == 0.0) {
+                val prev = target
                 Text(
                     prev?.let { stringResource(R.string.tr_reps_progression, it) } ?: stringResource(R.string.tr_to_failure),
                     style = MaterialTheme.typography.titleLarge, color = Gym.Yellow,
@@ -851,6 +864,9 @@ private fun NextTimePlanner(
     val ex = item.exercise
     val signed = ex.loadType == LoadType.BODYWEIGHT
     val isReps = ex.progression == Progression.REPS
+    // Reps progression: the target per set is the reps you did today (#52); storing other reps waits for schema v3.
+    val repsToday = if (isReps) RepsTarget.forSets(plan.sets.map { it.role }, item.sets.map { PerformedSet(it.role, it.weightKg, it.reps) }) else null
+    val switchTo = ProgressionSwitch.offered(ex.progression, ex.loadType)
     var open by remember(item.se.id) { mutableStateOf(false) }
     // A target warning tapped in the check at finishing (#47) opens the target.
     LaunchedEffect(focus) { if (focus?.first?.kind == FindingKind.WARN) open = true }
@@ -859,10 +875,15 @@ private fun NextTimePlanner(
             Column(Modifier.weight(1f)) {
                 Eyebrow(stringResource(R.string.tr_next_time), color = Gym.Gold)
                 val letters = SetRole.entries.associateWith { roleLabel(it).take(1) }
-                val summary = plan.sets.filter { it.role.isWork }.joinToString("  ·  ") { p ->
+                val summary = plan.sets.withIndex().filter { it.value.role.isWork }.joinToString("  ·  ") { (i, p) ->
                     val role = letters.getValue(p.role)
                     val w = p.weightKg
-                    if (isReps || w == null) role else "$role ${WeightFormat.format(w, unit, signed)}"
+                    val reps = repsToday?.getOrNull(i)
+                    when {
+                        isReps -> if (reps != null) "$role → $reps" else role
+                        w == null -> role
+                        else -> "$role ${WeightFormat.format(w, unit, signed)}"
+                    }
                 }
                 if (!open) Text(summary, style = MaterialTheme.typography.titleMedium, color = Gym.Yellow)
             }
@@ -892,7 +913,7 @@ private fun NextTimePlanner(
                         )
                     } else {
                         Text(
-                            if (p.role == SetRole.WARMUP) warmupHint(item, unit, assistPercent) else (targetOf(p.role)?.let { stringResource(R.string.tr_target, it) } ?: stringResource(R.string.tr_to_failure)),
+                            if (p.role == SetRole.WARMUP) warmupHint(item, unit, assistPercent) else ((if (isReps) repsToday?.getOrNull(i) else targetOf(p.role))?.let { stringResource(R.string.tr_target, it) } ?: stringResource(R.string.tr_to_failure)),
                             color = Gym.Muted, modifier = Modifier.weight(1f),
                         )
                     }
@@ -907,7 +928,7 @@ private fun NextTimePlanner(
                     onClick = {
                         vm.editPlan(item.se.id) { d ->
                             val last = d.sets.lastOrNull { it.role.isWork }
-                            d.copy(sets = d.sets + PlannedSet(SetRole.HEAVY, last?.weightKg ?: if (signed || isReps) 0.0 else null))
+                            d.copy(sets = d.sets + PlannedSet(SetRole.HEAVY, if (isReps) null else last?.weightKg ?: if (signed) 0.0 else null))
                         }
                     },
                     icon = Icons.Filled.Add,
@@ -918,6 +939,14 @@ private fun NextTimePlanner(
                     onClick = { vm.editPlan(item.se.id) { d -> d.copy(sets = listOf(PlannedSet(SetRole.WARMUP, null)) + d.sets) } },
                     icon = Icons.Filled.LocalFireDepartment,
                     modifier = Modifier.weight(1f),
+                )
+            }
+            // "Volgende keer op gewicht / op reps" (#52, ADR 0001): applies from the next session.
+            if (switchTo != null) {
+                LineButton(
+                    stringResource(if (switchTo == Progression.WEIGHT) R.string.tr_next_by_weight else R.string.tr_next_by_reps),
+                    onClick = { vm.switchProgression(item.se.id) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                 )
             }
             Spacer(Modifier.height(8.dp))
