@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
@@ -120,7 +121,8 @@ class AppFlowsTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
             rule.shot("en_07_home_weight_logged")
-            rule.tap("Start") // the big button under today's workout
+            // The workout card under "Other workout": the big button reads "Start" or "Train anyway" depending on the day.
+            rule.onAllNodesWithText("Full body").onLast().performClick()
             rule.waitForText("Back squat")
             rule.shot("en_08_training")
         }
