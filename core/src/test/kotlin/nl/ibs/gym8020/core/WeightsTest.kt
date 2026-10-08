@@ -1,10 +1,12 @@
 package nl.ibs.gym8020.core
 
 import nl.ibs.gym8020.core.logic.EffectiveWeight
+import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.Progression
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -39,5 +41,21 @@ class WeightsTest {
         assertEquals("0", WeightFormat.format(0.0, signed = true))
         assertEquals("220,46", WeightFormat.format(100.0, WeightUnit.LBS))
         assertEquals(100.0, WeightUnit.LBS.toKg(WeightUnit.LBS.fromKg(100.0)), 1e-9)
+    }
+
+    @Test
+    fun `an empty weight means none where weight is optional`() {
+        assertEquals(0.0, PerformanceWeight.orNone(null, Progression.WEIGHT, LoadType.BODYWEIGHT))
+        assertEquals(0.0, PerformanceWeight.orNone(null, Progression.REPS, LoadType.EXTERNAL))
+        assertEquals(null, PerformanceWeight.orNone(null, Progression.WEIGHT, LoadType.EXTERNAL))
+        assertEquals(-20.0, PerformanceWeight.orNone(-20.0, Progression.WEIGHT, LoadType.BODYWEIGHT))
+    }
+
+    @Test
+    fun `a set you did not do keeps its target weight for the advice`() {
+        assertEquals(100.0, PerformanceWeight.forPlan(null, null, 100.0, Progression.WEIGHT, LoadType.EXTERNAL))
+        assertEquals(102.5, PerformanceWeight.forPlan(102.5, 6, 100.0, Progression.WEIGHT, LoadType.EXTERNAL))
+        assertEquals(0.0, PerformanceWeight.forPlan(null, 8, -20.0, Progression.WEIGHT, LoadType.BODYWEIGHT))
+        assertEquals(0.0, PerformanceWeight.forPlan(null, null, null, Progression.REPS, LoadType.EXTERNAL))
     }
 }

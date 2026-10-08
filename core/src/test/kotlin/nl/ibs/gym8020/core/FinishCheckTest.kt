@@ -58,21 +58,21 @@ class FinishCheckTest {
     }
 
     @Test
-    fun `a set with only the weight the app put in from your target counts as empty`() {
-        val findings = FinishCheck.check(listOf(squat(FinishSet(SetRole.HEAVY, 100.0, null, goalWeightKg = 100.0))))
-        assertEquals(listOf(Finding(FindingKind.SKIP, 10, 1, SetRole.HEAVY, 0, Missing.ALL)), findings)
-    }
-
-    @Test
-    fun `a changed weight without reps still blocks`() {
-        val findings = FinishCheck.check(listOf(squat(FinishSet(SetRole.HEAVY, 102.5, null, goalWeightKg = 100.0))))
+    fun `a weight equal to your target without reps blocks`() {
+        val findings = FinishCheck.check(listOf(squat(FinishSet(SetRole.HEAVY, 100.0, null))))
         assertEquals(listOf(Finding(FindingKind.BLOCK, 10, 1, SetRole.HEAVY, 0, Missing.REPS)), findings)
     }
 
     @Test
-    fun `a bodyweight set with no extra and no reps counts as empty`() {
-        val pullUp = squat(FinishSet(SetRole.HEAVY, 0.0, null)).copy(loadType = LoadType.BODYWEIGHT)
+    fun `an empty bodyweight set will be skipped`() {
+        val pullUp = squat(FinishSet(SetRole.HEAVY, null, null)).copy(loadType = LoadType.BODYWEIGHT)
         assertEquals(listOf(Finding(FindingKind.SKIP, 10, 1, SetRole.HEAVY, 0, Missing.ALL)), FinishCheck.check(listOf(pullUp)))
+    }
+
+    @Test
+    fun `an entered extra of zero without reps blocks`() {
+        val pullUp = squat(FinishSet(SetRole.HEAVY, 0.0, null)).copy(loadType = LoadType.BODYWEIGHT)
+        assertEquals(listOf(Finding(FindingKind.BLOCK, 10, 1, SetRole.HEAVY, 0, Missing.REPS)), FinishCheck.check(listOf(pullUp)))
     }
 
     @Test
