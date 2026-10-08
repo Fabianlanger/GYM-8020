@@ -355,4 +355,15 @@
     <string name="rem_bw_daily">Dagelijks</string>
     <string name="home_weight_today">Gewicht vandaag</string>
     <string name="home_weight_log">Gewicht invullen</string>
+    <string name="fc_title_blocked">Nog niet compleet</string>
+    <string name="fc_title">Voor je afrondt</string>
+    <string name="fc_body_blocked">Vul deze sets in of verwijder ze om af te ronden. Tik op een regel om ernaartoe te gaan.</string>
+    <string name="fc_body">Tik op een regel om ernaartoe te gaan.</string>
+    <string name="fc_set_heavy">zware set</string>
+    <string name="fc_set_light">lichte set</string>
+    <string name="fc_missing_reps">%1$s, %2$s: reps ontbreken</string>
+    <string name="fc_missing_weight">%1$s, %2$s: gewicht ontbreekt</string>
+    <string name="fc_skip">%1$s, %2$s: leeg, wordt overgeslagen</string>
+    <string name="fc_target_weight">%1$s, volgend doel %2$s: geen gewicht, het standaard-doel geldt</string>
+    <string name="fc_finish_anyway">Toch afronden</string>
 </resources>

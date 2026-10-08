@@ -101,7 +101,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.core.logic.Finding
+import nl.ibs.gym8020.core.logic.FindingKind
 import nl.ibs.gym8020.core.logic.GoalAdvisor
+import nl.ibs.gym8020.core.logic.Missing
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
@@ -183,6 +186,9 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
     val scope = rememberCoroutineScope()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var confirmFinish by remember { mutableStateOf(false) }
+    // The check at finishing (#47): what is missing, and the line you tapped (with a counter so a second tap works too).
+    var findings by remember { mutableStateOf<List<Finding>>(emptyList()) }
+    var focus by remember { mutableStateOf<Pair<Finding, Int>?>(null) }
     // Survives rotation (B-5): which exercise is counting down and since when.
     var countdownFor by rememberSaveable { mutableStateOf<Long?>(null) }
     var countdownStart by rememberSaveable { mutableStateOf(0L) }
@@ -207,6 +213,10 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
     fun dropFocus() {
         focusManager.clearFocus(force = true)
         keyboard?.hide()
+    }
+    fun askFinish() {
+        val found = vm.finishCheck()
+        if (found.isEmpty()) confirmFinish = true else findings = found
     }
     LaunchedEffect(Unit) {
         while (true) {
@@ -243,7 +253,7 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
                         style = MaterialTheme.typography.bodySmall, color = Gym.Muted,
                     )
                 }
-                IconButton(onClick = { confirmFinish = true }) { Icon(Icons.Filled.Flag, stringResource(R.string.tr_finish), tint = Gym.Yellow) }
+                IconButton(onClick = { askFinish() }) { Icon(Icons.Filled.Flag, stringResource(R.string.tr_finish), tint = Gym.Yellow) }
             }
             if (items.isNotEmpty()) {
                 Box(Modifier.weight(1f)) {
@@ -263,7 +273,8 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
                             assistPercent = state.settings.warmupAssistPercent,
                             isLast = page == items.lastIndex,
                             onGo = { dropFocus(); countdownStart = System.currentTimeMillis(); countdownFor = item.se.id },
-                            onFinish = { confirmFinish = true },
+                            onFinish = { askFinish() },
+                            focus = focus?.takeIf { it.first.sessionExerciseId == item.se.id },
                         )
                     }
                     // Art deco ribbons at the edges: pull them (or tap) to go to the next/previous exercise.
@@ -301,6 +312,79 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
             dismissButton = { TextButton(onClick = { confirmFinish = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
+
+    if (findings.isNotEmpty()) {
+        FinishCheckDialog(
+            findings = findings,
+            items = items,
+            onOpen = { f ->
+                findings = emptyList()
+                focus = f to ((focus?.second ?: 0) + 1)
+                val page = items.indexOfFirst { it.se.id == f.sessionExerciseId }
+                if (page >= 0) scope.launch { pager.animateScrollToPage(page) }
+            },
+            onFinish = { findings = emptyList(); vm.finish { onFinished(sessionId) } },
+            onDismiss = { findings = emptyList() },
+        )
+    }
+}
+
+/** One line of the check at finishing, e.g. "Back squat, heavy set: reps missing". */
+@Composable
+private fun findingText(f: Finding, name: String): String {
+    val set = when (f.role) {
+        SetRole.HEAVY -> stringResource(R.string.fc_set_heavy)
+        SetRole.LIGHT -> stringResource(R.string.fc_set_light)
+        SetRole.WARMUP -> roleLabel(f.role)
+    }
+    return when {
+        f.kind == FindingKind.WARN -> stringResource(R.string.fc_target_weight, name, set)
+        f.kind == FindingKind.SKIP -> stringResource(R.string.fc_skip, name, set)
+        f.missing == Missing.WEIGHT -> stringResource(R.string.fc_missing_weight, name, set)
+        else -> stringResource(R.string.fc_missing_reps, name, set)
+    }
+}
+
+/**
+ * The overview at finishing (#47): one line per finding; tap a line to go to that set.
+ * Anything blocking: no way to finish yet. Only skipped sets or target warnings: finish anyway.
+ */
+@Composable
+private fun FinishCheckDialog(
+    findings: List<Finding>,
+    items: List<TrainingItem>,
+    onOpen: (Finding) -> Unit,
+    onFinish: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val blocked = findings.any { it.kind == FindingKind.BLOCK }
+    val names = items.associate { it.se.id to it.exercise.name }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (blocked) R.string.fc_title_blocked else R.string.fc_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    stringResource(if (blocked) R.string.fc_body_blocked else R.string.fc_body),
+                    style = MaterialTheme.typography.bodySmall, color = Gym.Muted,
+                )
+                Spacer(Modifier.height(4.dp))
+                // Blocking lines first, then skipped sets, then target warnings.
+                findings.sortedBy { it.kind.ordinal }.forEach { f ->
+                    Text(
+                        findingText(f, names[f.sessionExerciseId].orEmpty()),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (f.kind == FindingKind.BLOCK) Gym.Yellow else Gym.Cream,
+                        modifier = Modifier.fillMaxWidth().clickable { onOpen(f) }.padding(vertical = 8.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (!blocked) TextButton(onClick = onFinish) { Text(stringResource(R.string.fc_finish_anyway)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
 }
 
 /** The art deco swipe ribbon at the screen edge (D-71); tap or swipe to change exercise. */
@@ -336,6 +420,7 @@ private fun ExercisePage(
     isLast: Boolean,
     onGo: () -> Unit,
     onFinish: () -> Unit,
+    focus: Pair<Finding, Int>? = null,
 ) {
     val ex = item.exercise
     val se = item.se
@@ -348,6 +433,11 @@ private fun ExercisePage(
     val firstInput = { vm.firstInput(se.id) }
     // One set is open for editing at a time; the rest are compact lines.
     var openSet by remember(se.id) { mutableStateOf(item.sets.firstOrNull { it.reps == null }?.id) }
+    // Tapped in the check at finishing (#47): open that set.
+    LaunchedEffect(focus) {
+        val f = focus?.first ?: return@LaunchedEffect
+        if (f.kind != FindingKind.WARN) item.sets.getOrNull(f.position)?.let { openSet = it.id }
+    }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 22.dp, end = 26.dp, top = 6.dp, bottom = 8.dp),
@@ -422,7 +512,7 @@ private fun ExercisePage(
             LineButton(stringResource(R.string.tr_add_warmup), onClick = { vm.addSet(se.id, SetRole.WARMUP) }, icon = Icons.Filled.LocalFireDepartment, modifier = Modifier.weight(1f))
         }
 
-        item.plan?.let { plan -> NextTimePlanner(item, plan, unit, step, targetOf, vm, assistPercent) }
+        item.plan?.let { plan -> NextTimePlanner(item, plan, unit, step, targetOf, vm, assistPercent, focus) }
 
         Spacer(Modifier.height(4.dp))
         if (isLast) {
@@ -745,11 +835,22 @@ private fun SignalChip(set: SetEntity, target: Int?, goodMargin: Int, isReps: Bo
 
 /** Plan for next time: a one-line summary; tap to adjust (D-18a). */
 @Composable
-private fun NextTimePlanner(item: TrainingItem, plan: PlanDraft, unit: WeightUnit, step: Double, targetOf: (SetRole) -> Int?, vm: TrainingViewModel, assistPercent: Int) {
+private fun NextTimePlanner(
+    item: TrainingItem,
+    plan: PlanDraft,
+    unit: WeightUnit,
+    step: Double,
+    targetOf: (SetRole) -> Int?,
+    vm: TrainingViewModel,
+    assistPercent: Int,
+    focus: Pair<Finding, Int>? = null,
+) {
     val ex = item.exercise
     val signed = ex.loadType == LoadType.BODYWEIGHT
     val isReps = ex.progression == Progression.REPS
     var open by remember(item.se.id) { mutableStateOf(false) }
+    // A target warning tapped in the check at finishing (#47) opens the target.
+    LaunchedEffect(focus) { if (focus?.first?.kind == FindingKind.WARN) open = true }
     DecoCard(corners = true, padding = 14.dp) {
         Row(Modifier.fillMaxWidth().clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

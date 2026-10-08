@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
+import nl.ibs.gym8020.core.logic.FinishCheck
+import nl.ibs.gym8020.core.logic.FinishExercise
+import nl.ibs.gym8020.core.logic.FinishSet
+import nl.ibs.gym8020.core.logic.Finding
 import nl.ibs.gym8020.core.logic.GoalAdvisor
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
@@ -186,6 +190,21 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         if (item.se.skipped || plan.sets.isEmpty() || plan.edited) return
         repo.storeAdvice(seId, item.exercise.id, Target(plan.sets, plan.note))
     }
+
+    /** The check before finishing (#47): what is missing in your performance and your target. */
+    fun finishCheck(): List<Finding> = FinishCheck.check(
+        state.value.items.map { item ->
+            FinishExercise(
+                sessionExerciseId = item.se.id,
+                exerciseId = item.exercise.id,
+                progression = item.exercise.progression,
+                loadType = item.exercise.loadType,
+                sets = item.sets.map { FinishSet(it.role, it.weightKg, it.reps, it.goalWeightKg) },
+                skipped = item.se.skipped,
+                target = item.plan?.sets,
+            )
+        },
+    )
 
     fun finish(onFinished: () -> Unit) = launch {
         state.value.items.forEach { persistPlan(it.se.id) }

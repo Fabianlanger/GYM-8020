@@ -356,4 +356,15 @@
     <string name="rem_bw_daily">Daily</string>
     <string name="home_weight_today">Weight today</string>
     <string name="home_weight_log">Log your weight</string>
+    <string name="fc_title_blocked">Not complete yet</string>
+    <string name="fc_title">Before you finish</string>
+    <string name="fc_body_blocked">Fill in or remove these sets to finish. Tap a line to go there.</string>
+    <string name="fc_body">Tap a line to go there.</string>
+    <string name="fc_set_heavy">heavy set</string>
+    <string name="fc_set_light">light set</string>
+    <string name="fc_missing_reps">%1$s, %2$s: reps missing</string>
+    <string name="fc_missing_weight">%1$s, %2$s: weight missing</string>
+    <string name="fc_skip">%1$s, %2$s: empty, will be skipped</string>
+    <string name="fc_target_weight">%1$s, next target %2$s: no weight, the default target applies</string>
+    <string name="fc_finish_anyway">Finish anyway</string>
 </resources>
