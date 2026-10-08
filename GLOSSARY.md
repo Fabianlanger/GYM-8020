@@ -35,6 +35,18 @@ Een set vóór de werksets om op te warmen; telt niet als werkset.
 **Progressie op gewicht / op reps** (EN: Weight progression / Reps progression):
 Per oefening ingesteld: bij gewicht groei je in kilo's, bij reps groei je in aantal herhalingen.
 
+**Lichaamsgewicht-oefening** (EN: Bodyweight exercise):
+Een oefening waarbij je lichaamsgewicht meetelt (crunches, dips, pull-ups), met een vast aandeel per oefening.
+
+**Plus-of-min-gewicht** (EN: Signed load):
+Het ene getal dat je bij een lichaamsgewicht-oefening invult: min is ondersteuning, plus is extra gewicht,
+0 is alleen lichaamsgewicht.
+_Vermijd_: assistentie-instelling, aparte velden voor extra en ondersteuning
+
+**Effectief gewicht** (EN: Effective weight):
+Bij een lichaamsgewicht-oefening: je lichaamsgewicht maal het aandeel van de oefening, plus of min het
+plus-of-min-gewicht. Daarmee vergelijk je kracht eerlijk door de tijd.
+
 **Materiaal** (EN: Equipment):
 Wat je gebruikt om gewicht te maken (stang, dumbbells, kabel, machine, ondersteuning), met de stappen die
 het toelaat.
