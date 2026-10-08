@@ -32,6 +32,10 @@ _Vermijd_: Z/L in Engelse tekst
 **Warming-up** (EN: Warm-up):
 Een set vóór de werksets om op te warmen; telt niet als werkset.
 
+**Standaard-warming-up** (EN: Default warm-up):
+Per oefening vastgelegde warming-up (waarde en korte notitie), zo licht mogelijk, voor houding en activatie.
+Optioneel; heeft geen laatste keer en telt niet mee.
+
 **Progressie op gewicht / op reps** (EN: Weight progression / Reps progression):
 Per oefening ingesteld: bij gewicht groei je in kilo's, bij reps groei je in aantal herhalingen.
 
