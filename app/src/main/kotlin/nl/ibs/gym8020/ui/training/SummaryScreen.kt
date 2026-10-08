@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.logic.GoalAdvisor
+import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.model.Progression
@@ -87,7 +88,7 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
         for (s in done) {
             val prog = if (ex.progression == Progression.REPS && (s.weightKg ?: 0.0) == 0.0) Progression.REPS else Progression.WEIGHT
             val prev = previousReps?.filter { it.role == s.role }?.maxOfOrNull { it.reps ?: 0 }
-            GoalAdvisor.goalReached(prog, s.goalWeightKg, s.weightKg, prev, s.reps)?.let {
+            GoalAdvisor.goalReached(prog, s.goalWeightKg, PerformanceWeight.orNone(s.weightKg, ex.progression, ex.loadType), prev, s.reps)?.let {
                 total++
                 if (it) reached++
             }

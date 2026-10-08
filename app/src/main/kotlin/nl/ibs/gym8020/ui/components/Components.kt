@@ -207,6 +207,8 @@ fun NumberStepper(
     buttonSize: Dp = 56.dp,
     /** Value the first tap on − or + jumps to when the field is still empty (e.g. the rep target). */
     startFrom: Double? = null,
+    /** Tapping the [placeholder] takes over [startFrom] (e.g. the target weight shown as a hint, #47). */
+    placeholderTakesOver: Boolean = false,
     /** Custom up/down (e.g. next achievable weight); defaults to ± [step]. */
     next: ((Double) -> Double)? = null,
     previous: ((Double) -> Double)? = null,
@@ -267,7 +269,10 @@ fun NumberStepper(
             },
             decorationBox = { inner ->
                 Box(contentAlignment = Alignment.CenterStart) {
-                    if (field.text.isEmpty()) Text(placeholder, color = Gym.Muted, fontSize = textSize, fontFamily = Poppins)
+                    if (field.text.isEmpty()) {
+                        val takeOver = if (placeholderTakesOver && startFrom != null) Modifier.clickable { emit(startFrom) } else Modifier
+                        Text(placeholder, color = Gym.Muted, fontSize = textSize, fontFamily = Poppins, modifier = takeOver)
+                    }
                     inner()
                 }
             },

@@ -15,6 +15,7 @@ import nl.ibs.gym8020.core.logic.FinishExercise
 import nl.ibs.gym8020.core.logic.FinishSet
 import nl.ibs.gym8020.core.logic.Finding
 import nl.ibs.gym8020.core.logic.GoalAdvisor
+import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.Warmup
@@ -129,7 +130,7 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
 
     private fun suggestion(ex: ExerciseEntity, sets: List<SetEntity>, method: MethodSettings, calc: WeightCalculator?): PlanDraft? {
         if (sets.none { it.reps != null }) return null
-        val performed = sets.map { PerformedSet(it.role, it.weightKg, it.reps) }
+        val performed = sets.map { PerformedSet(it.role, PerformanceWeight.forPlan(it.weightKg, it.reps, it.goalWeightKg, ex.progression, ex.loadType), it.reps) }
         val m = method.copy(
             heavyTarget = ex.heavyTarget ?: method.heavyTarget,
             lightTarget = ex.lightTarget ?: method.lightTarget,
@@ -199,7 +200,7 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
                 exerciseId = item.exercise.id,
                 progression = item.exercise.progression,
                 loadType = item.exercise.loadType,
-                sets = item.sets.map { FinishSet(it.role, it.weightKg, it.reps, it.goalWeightKg) },
+                sets = item.sets.map { FinishSet(it.role, it.weightKg, it.reps) },
                 skipped = item.se.skipped,
                 target = item.plan?.sets,
             )

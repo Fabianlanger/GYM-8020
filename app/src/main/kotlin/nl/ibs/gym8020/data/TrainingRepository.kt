@@ -3,6 +3,7 @@ package nl.ibs.gym8020.data
 import androidx.room.withTransaction
 import nl.ibs.gym8020.core.logic.EffectiveWeight
 import nl.ibs.gym8020.core.logic.GoalAdvisor
+import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.Strength
@@ -94,14 +95,13 @@ class TrainingRepository(
             defaultRoles(setCount ?: method.defaultSetCount).map { PlannedSet(it, zero) }
         }
         val isReps = exercise.progression == Progression.REPS
+        // Your performance is never prefilled (#47): the target only goes into goalWeightKg.
         sessions.insertSets(
             planned.mapIndexed { i, p ->
-                val weight = if (p.role == SetRole.WARMUP) null else p.weightKg ?: if (isReps) 0.0 else null
                 SetEntity(
                     sessionExerciseId = seId,
                     position = i,
                     role = p.role,
-                    weightKg = weight,
                     bodyweightKg = if (exercise.loadType == LoadType.BODYWEIGHT) bodyweight else null,
                     goalWeightKg = if (withGoals && p.role.isWork && !isReps) p.weightKg else null,
                 )
@@ -154,10 +154,9 @@ class TrainingRepository(
             sessions.updateSets(sets.map { it.copy(position = it.position + 1) })
             sessions.insertSet(SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.WARMUP, bodyweightKg = bw))
         } else {
-            val lastWork = sets.lastOrNull { it.role.isWork }
-            val weight = lastWork?.weightKg ?: if (exercise.loadType == LoadType.BODYWEIGHT) 0.0 else null
+            // Weight stays empty: you fill in what you did (#47).
             sessions.insertSet(
-                SetEntity(sessionExerciseId = seId, position = (sets.maxOfOrNull { it.position } ?: -1) + 1, role = role, weightKg = weight, bodyweightKg = bw),
+                SetEntity(sessionExerciseId = seId, position = (sets.maxOfOrNull { it.position } ?: -1) + 1, role = role, bodyweightKg = bw),
             )
         }
     }
@@ -215,7 +214,7 @@ class TrainingRepository(
             it.copy(heavyTarget = exercise.heavyTarget ?: it.heavyTarget, lightTarget = exercise.lightTarget ?: it.lightTarget)
         }
         val plan = GoalAdvisor.planNext(
-            sets.map { PerformedSet(it.role, it.weightKg, it.reps) },
+            sets.map { PerformedSet(it.role, PerformanceWeight.forPlan(it.weightKg, it.reps, it.goalWeightKg, exercise.progression, exercise.loadType), it.reps) },
             exercise.loadType, exercise.progression, method, steps,
         )
         savePlan(exercise.id, plan, planNote(exercise.id))
@@ -252,12 +251,13 @@ class TrainingRepository(
     /** Best heavy-set e1RM (effective weight) in earlier sessions. */
     suspend fun bestE1rm(exercise: ExerciseEntity, excludeSession: Long): Double? =
         sessions.historySets(exercise.id, excludeSession)
-            .filter { it.role == SetRole.HEAVY && it.reps != null && it.weightKg != null }
+            .filter { it.role == SetRole.HEAVY && it.reps != null }
             .mapNotNull { s -> effective(exercise, s)?.let { Strength.e1rm(it, s.reps!!) } }
             .maxOrNull()
 
     fun effective(exercise: ExerciseEntity, set: SetEntity): Double? =
-        set.weightKg?.let { EffectiveWeight.of(exercise.loadType, it, set.bodyweightKg, exercise.bodyweightFactor) }
+        PerformanceWeight.orNone(set.weightKg, exercise.progression, exercise.loadType)
+            ?.let { EffectiveWeight.of(exercise.loadType, it, set.bodyweightKg, exercise.bodyweightFactor) }
 
     suspend fun finish(sessionId: Long, now: Long = System.currentTimeMillis()) = db.withTransaction {
         val session = sessions.get(sessionId) ?: return@withTransaction

@@ -105,6 +105,7 @@ import nl.ibs.gym8020.core.logic.Finding
 import nl.ibs.gym8020.core.logic.FindingKind
 import nl.ibs.gym8020.core.logic.GoalAdvisor
 import nl.ibs.gym8020.core.logic.Missing
+import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
@@ -535,7 +536,7 @@ private fun LastTimeLine(item: TrainingItem, unit: WeightUnit) {
     val last = item.extra?.last
     if (last != null) {
         val summary = last.sets.filter { it.role.isWork && it.reps != null }.joinToString("  ·  ") { s ->
-            val w = s.weightKg
+            val w = PerformanceWeight.orNone(s.weightKg, ex.progression, ex.loadType)
             if (ex.progression == Progression.REPS && (w == null || w == 0.0)) "${s.reps}"
             else "${w?.let { WeightFormat.format(it, unit, signed) } ?: "—"} × ${s.reps}"
         }
@@ -684,7 +685,9 @@ private fun SetLine(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         RoleBadge(set.role)
-        val weight = set.weightKg?.takeIf { !(isReps && it == 0.0) }?.let { WeightFormat.format(it, unit, signed) + " " + unit.name.lowercase() }
+        // Not filled in yet: the target weight in grey, like the rep target (#47).
+        val shownKg = set.weightKg ?: set.goalWeightKg.takeIf { set.reps == null }
+        val weight = shownKg?.takeIf { !(isReps && it == 0.0) }?.let { WeightFormat.format(it, unit, signed) + " " + unit.name.lowercase() }
         Text(
             listOfNotNull(weight, set.reps?.let { "× $it" } ?: target?.let { "→ $it" }).joinToString("  "),
             style = MaterialTheme.typography.titleMedium, color = if (set.reps != null) Gym.Cream else Gym.Muted,
@@ -762,6 +765,10 @@ private fun SetEditor(
                         step = step,
                         allowNegative = signed,
                         min = if (signed) null else 0.0,
+                        // Never prefilled (#47): the target is a grey hint; tap it (or − / +) to take it over.
+                        placeholder = set.goalWeightKg?.let { WeightFormat.format(it, unit, signed) } ?: "—",
+                        startFrom = set.goalWeightKg,
+                        placeholderTakesOver = true,
                         next = calc?.let { c -> { v: Double -> c.up(v) } },
                         previous = calc?.let { c -> { v: Double -> c.down(v) } },
                         onFirstInput = onFirstInput,
@@ -796,7 +803,8 @@ private fun SetEditor(
             val info = when {
                 w != null && calc != null && calc.outOfRange(w) -> stringResource(R.string.ld_out_of_range)
                 w != null && calc != null && !calc.isAchievable(w) -> stringResource(R.string.ld_not_achievable, kgText(calc.snap(w), unit, signed))
-                signed -> w?.let { set.bodyweightKg?.let { bw -> stringResource(R.string.tr_effective, kgText(bw * ex.bodyweightFactor + w, unit)) } }
+                // An empty extra means none (#47).
+                signed -> set.bodyweightKg?.let { bw -> stringResource(R.string.tr_effective, kgText(bw * ex.bodyweightFactor + (w ?: 0.0), unit)) }
                     ?: stringResource(R.string.tr_bodyweight_missing)
                 else -> null
             }

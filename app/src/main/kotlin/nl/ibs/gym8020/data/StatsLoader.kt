@@ -1,8 +1,8 @@
 package nl.ibs.gym8020.data
 
 import nl.ibs.gym8020.core.logic.EffectiveWeight
+import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.model.MuscleShare
-import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.stats.SetRecord
 import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.data.db.ExerciseEntity
@@ -30,7 +30,7 @@ suspend fun loadStats(db: AppDatabase): StatsData {
         val se = seById[s.sessionExerciseId] ?: return@mapNotNull null
         val session = sessionById[se.sessionId] ?: return@mapNotNull null
         val ex = exercises[se.exerciseId] ?: return@mapNotNull null
-        val w = s.weightKg ?: if (ex.progression == Progression.REPS) 0.0 else null
+        val w = PerformanceWeight.orNone(s.weightKg, ex.progression, ex.loadType)
         SetRecord(
             sessionId = session.id,
             date = session.startedAt.toLocalDate(),
