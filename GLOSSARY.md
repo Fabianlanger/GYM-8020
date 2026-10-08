@@ -50,6 +50,10 @@ Wat jij voor de volgende keer van een oefening vastzet: per set een gewicht en/o
 zet een doel.
 _Vermijd_: plan, next time, goal
 
+**Standaard-doel** (EN: Default target):
+Het doel dat geldt als je zelf niets zet: de sets uit je laatste eigen doel (of anders uit de workout), met
+per set het gewicht van je prestatie; een set die je niet deed houdt je vorige doel.
+
 **Advies** (EN: Advice):
 Een voorstel van de app voor het doel, op basis van je prestatie. Wordt nooit vanzelf een doel.
 _Vermijd_: suggestie, suggestion
