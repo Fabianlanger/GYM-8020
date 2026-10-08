@@ -83,7 +83,10 @@ Binnen het trainen: per set de meest recente prestatie van een oefening, uit elk
 training; overgeslagen sets tellen niet, dan geldt de keer daarvoor (met datum erbij).
 
 **Vergelijking** (EN: Comparison):
-Buiten het trainen (samenvatting, dashboard): je resultaat naast een eerder resultaat, per oefening, spier,
-spiergroep of workout. Wat "eerder" daar betekent, leggen we per niveau vast; het is niet hetzelfde als
-laatste keer.
+Buiten het trainen (samenvatting, dashboard): je resultaat naast een eerder resultaat, altijd absoluut én in
+procenten. Per oefening: kracht tegenover de laatste keer. Per spier: kracht (alleen wat je deed) of volume
+(tegenover de vorige sessie van dezelfde workout). Per workout: tegenover de vorige sessie van die workout.
 _Vermijd_: vs. last time (als algemene term)
+
+**Volume** (EN: Volume):
+Hoeveel werk je deed: effectief gewicht × reps, per spier naar aandeel; warming-ups tellen niet mee.
