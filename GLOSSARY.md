@@ -40,6 +40,10 @@ Wat je gebruikt om gewicht te maken (stang, dumbbells, kabel, machine, ondersteu
 het toelaat.
 _Vermijd_: material
 
+**Overgeslagen** (EN: Skipped):
+Een oefening of set die je in een sessie niet deed: zelf overgeslagen, of als lege set zo gemarkeerd bij
+afronden. Telt niet als prestatie.
+
 ## Doelen en prestaties
 
 **Prestatie** (EN: Performance):
