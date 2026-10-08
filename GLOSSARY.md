@@ -79,8 +79,8 @@ Een voorstel van de app voor het doel, op basis van je prestatie. Wordt nooit va
 _Vermijd_: suggestie, suggestion
 
 **Laatste keer** (EN: Last time):
-Binnen het trainen: de prestatie van een oefening in de meest recente sessie waarin je die oefening echt
-deed.
+Binnen het trainen: per set de meest recente prestatie van een oefening, uit elke workout, op datum van de
+training; overgeslagen sets tellen niet, dan geldt de keer daarvoor (met datum erbij).
 
 **Vergelijking** (EN: Comparison):
 Buiten het trainen (samenvatting, dashboard): je resultaat naast een eerder resultaat, per oefening, spier,
