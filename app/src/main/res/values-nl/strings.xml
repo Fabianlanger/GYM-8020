@@ -184,16 +184,13 @@
     <string name="ld_belt">Aan de dipriem: %s</string>
     <string name="ld_dumbbells">2× %s</string>
     <string name="ld_no_plates">Geen schijven</string>
-    <string name="ld_not_achievable">Niet haalbaar met je materiaal · dichtstbij %s</string>
     <string name="ld_per_side">Per kant: %s</string>
     <string name="ld_pin">Pin op %s</string>
     <string name="ld_remove">Haal eraf: %s per kant</string>
-    <string name="mat_assist_max">Maximale ondersteuning</string>
     <string name="mat_assist_step">Stap ondersteuning</string>
     <string name="mat_base">Basisgewicht (stang of slede)</string>
     <string name="mat_belt_help">Extra gewicht aan een dipriem of vest gebruikt de schijven van je gym.</string>
     <string name="mat_edit">Materiaal bewerken</string>
-    <string name="mat_max">Maximum</string>
     <string name="mat_min">Minimum</string>
     <string name="mat_new">Nieuw materiaal</string>
     <string name="mat_open">Materiaal en schijven</string>
@@ -203,8 +200,9 @@
     <string name="mat_profiles">Materiaalprofielen</string>
     <string name="mat_settings_help">Je schijven en apparaten bepalen welke gewichten haalbaar zijn en hoe je ze laadt.</string>
     <string name="mat_step">Stap</string>
-    <string name="mat_summary_bodyweight">ondersteuning per %1$s tot %2$s</string>
+    <string name="mat_summary_bodyweight">ondersteuning per %1$s</string>
     <string name="mat_summary_plates">basis %1$s · %2$d laadpunt(en)</string>
+    <string name="mat_summary_stack">vanaf %1$s · stap %2$s</string>
     <string name="mat_title">Materiaal</string>
     <string name="tr_edit_plan">Aanpassen</string>
     <string name="tr_extra_short">Extra ±</string>
@@ -348,7 +346,6 @@
     </plurals>
     <string name="tr_warmup_hint_assist">Met ondersteuning: %1$s</string>
     <string name="tr_warmup_hint_assist_pct">Met ondersteuning, ongeveer %1$d%% van je gewicht</string>
-    <string name="ld_out_of_range">Buiten het bereik van dit materiaal. Prima als je gym het heeft; pas het materiaal aan onder Instellingen.</string>
     <string name="settings_warmup_assist" formatted="false">Warming-up-ondersteuning bij optrekken en dippen (% van je gewicht)</string>
     <string name="settings_language">Taal</string>
     <string name="rem_bw_weekly">Wekelijks</string>

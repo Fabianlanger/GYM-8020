@@ -185,16 +185,13 @@
     <string name="ld_belt">On the belt: %s</string>
     <string name="ld_dumbbells">2× %s</string>
     <string name="ld_no_plates">No plates</string>
-    <string name="ld_not_achievable">Not possible with your equipment · nearest %s</string>
     <string name="ld_per_side">Per side: %s</string>
     <string name="ld_pin">Pin at %s</string>
     <string name="ld_remove">Take off: %s per side</string>
-    <string name="mat_assist_max">Maximum assistance</string>
     <string name="mat_assist_step">Assistance step</string>
     <string name="mat_base">Base weight (bar or sled)</string>
     <string name="mat_belt_help">Extra weight on a belt or vest uses the plates of your gym.</string>
     <string name="mat_edit">Edit equipment</string>
-    <string name="mat_max">Maximum</string>
     <string name="mat_min">Minimum</string>
     <string name="mat_new">New equipment</string>
     <string name="mat_open">Equipment and plates</string>
@@ -204,8 +201,9 @@
     <string name="mat_profiles">Equipment profiles</string>
     <string name="mat_settings_help">Your plates and equipment decide which weights are possible and how to load them.</string>
     <string name="mat_step">Step</string>
-    <string name="mat_summary_bodyweight">assistance per %1$s up to %2$s</string>
+    <string name="mat_summary_bodyweight">assistance per %1$s</string>
     <string name="mat_summary_plates">base %1$s · %2$d loading point(s)</string>
+    <string name="mat_summary_stack">from %1$s · step %2$s</string>
     <string name="mat_title">Equipment</string>
     <string name="tr_edit_plan">Adjust</string>
     <string name="tr_extra_short">Extra ±</string>
@@ -349,7 +347,6 @@
     </plurals>
     <string name="tr_warmup_hint_assist">With assistance: %1$s</string>
     <string name="tr_warmup_hint_assist_pct">With assistance, about %1$d%% of your body weight</string>
-    <string name="ld_out_of_range">Outside the range of this equipment. Fine if your gym has it; adjust the equipment under Settings.</string>
     <string name="settings_warmup_assist" formatted="false">Warm-up assistance for pull-ups and dips (% of body weight)</string>
     <string name="settings_language">Language</string>
     <string name="rem_bw_weekly">Weekly</string>
