@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,6 +51,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -188,7 +190,8 @@ fun WeekPips(done: Int, target: Int, modifier: Modifier = Modifier) {
  * A number field where typing comes first (V-11, variant A): a clear input box, tap anywhere to type (the
  * number is selected, so typing replaces it), with small quiet − / + inside the box for one step, e.g. the next
  * achievable weight. `,` and `.` both work. [allowNegative] enables the sign for bodyweight extra (assistance);
- * typing `-` makes it negative.
+ * typing `-` makes it negative. An empty field shows a muted pencil ("tap to type", #49) unless a [placeholder]
+ * text is given.
  */
 @Composable
 fun NumberStepper(
@@ -199,7 +202,8 @@ fun NumberStepper(
     decimals: Boolean = true,
     allowNegative: Boolean = false,
     min: Double? = null,
-    placeholder: String = "—",
+    /** Grey hint text in an empty field (e.g. the target weight); null shows the pencil. */
+    placeholder: String? = null,
     minusLabel: String = "−",
     plusLabel: String = "+",
     textSize: TextUnit = 28.sp,
@@ -270,8 +274,14 @@ fun NumberStepper(
             decorationBox = { inner ->
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (field.text.isEmpty()) {
-                        val takeOver = if (placeholderTakesOver && startFrom != null) Modifier.clickable { emit(startFrom) } else Modifier
-                        Text(placeholder, color = Gym.Muted, fontSize = textSize, fontFamily = Poppins, modifier = takeOver)
+                        if (placeholder == null) {
+                            // Not a dash: that looks like the − button next to it (#49).
+                            val iconSize = with(LocalDensity.current) { textSize.toDp() }
+                            Icon(Icons.Filled.Edit, contentDescription = null, tint = Gym.Muted.copy(alpha = .6f), modifier = Modifier.size(iconSize))
+                        } else {
+                            val takeOver = if (placeholderTakesOver && startFrom != null) Modifier.clickable { emit(startFrom) } else Modifier
+                            Text(placeholder, color = Gym.Muted, fontSize = textSize, fontFamily = Poppins, modifier = takeOver)
+                        }
                     }
                     inner()
                 }

@@ -562,9 +562,6 @@ private fun loadText(weightKg: Double?, calc: WeightCalculator?, step: LoadStep?
     val p = calc.profile
     val w: Double = weightKg
     fun plates(l: List<Double>) = l.joinToString(" · ") { WeightFormat.format(it, unit) }
-    // Outside the profile: say so, never correct it (D-79).
-    if (calc.outOfRange(w)) return stringResource(R.string.ld_out_of_range)
-    if (calc.isAchievable(w).not()) return stringResource(R.string.ld_not_achievable, kgText(calc.snap(w), unit, p.kind == MaterialKind.BODYWEIGHT))
     return when (p.kind) {
         MaterialKind.PLATES -> when {
             step == null -> null
@@ -766,7 +763,7 @@ private fun SetEditor(
                         allowNegative = signed,
                         min = if (signed) null else 0.0,
                         // Never prefilled (#47): the target is a grey hint; tap it (or − / +) to take it over.
-                        placeholder = set.goalWeightKg?.let { WeightFormat.format(it, unit, signed) } ?: "—",
+                        placeholder = set.goalWeightKg?.let { WeightFormat.format(it, unit, signed) },
                         startFrom = set.goalWeightKg,
                         placeholderTakesOver = true,
                         next = calc?.let { c -> { v: Double -> c.up(v) } },
@@ -801,8 +798,6 @@ private fun SetEditor(
         if (set.role != SetRole.WARMUP && showWeight) {
             val w = set.weightKg
             val info = when {
-                w != null && calc != null && calc.outOfRange(w) -> stringResource(R.string.ld_out_of_range)
-                w != null && calc != null && !calc.isAchievable(w) -> stringResource(R.string.ld_not_achievable, kgText(calc.snap(w), unit, signed))
                 // An empty extra means none (#47).
                 signed -> set.bodyweightKg?.let { bw -> stringResource(R.string.tr_effective, kgText(bw * ex.bodyweightFactor + (w ?: 0.0), unit)) }
                     ?: stringResource(R.string.tr_bodyweight_missing)

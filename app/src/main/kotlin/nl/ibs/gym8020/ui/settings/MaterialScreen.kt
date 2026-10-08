@@ -74,8 +74,9 @@ fun profileSummary(m: MaterialProfileEntity, unit: WeightUnit): String {
     fun w(kg: Double) = WeightFormat.format(kg, unit) + " " + unit.name.lowercase()
     return when (m.kind) {
         MaterialKind.PLATES -> stringResource(R.string.mat_summary_plates, w(m.baseKg), m.loadingPoints)
-        MaterialKind.STACK, MaterialKind.DUMBBELLS -> "${w(m.minKg)} – ${w(m.maxKg)} · ${stringResource(R.string.mat_step)} ${w(m.stepKg)}"
-        MaterialKind.BODYWEIGHT -> stringResource(R.string.mat_summary_bodyweight, w(m.stepKg), w(m.maxKg))
+        // No maximum (#51): the profile does not limit, + keeps going (D-79).
+        MaterialKind.STACK, MaterialKind.DUMBBELLS -> stringResource(R.string.mat_summary_stack, w(m.minKg), w(m.stepKg))
+        MaterialKind.BODYWEIGHT -> stringResource(R.string.mat_summary_bodyweight, w(m.stepKg))
     }
 }
 
@@ -193,11 +194,9 @@ private fun ProfileDialog(
                     MaterialKind.STACK, MaterialKind.DUMBBELLS -> {
                         field(stringResource(R.string.mat_min), p.minKg, 0.5) { p = p.copy(minKg = it) }
                         field(stringResource(R.string.mat_step), p.stepKg, 0.5) { p = p.copy(stepKg = it.coerceAtLeast(0.25)) }
-                        field(stringResource(R.string.mat_max), p.maxKg, 5.0) { p = p.copy(maxKg = it) }
                     }
                     MaterialKind.BODYWEIGHT -> {
                         field(stringResource(R.string.mat_assist_step), p.stepKg, 0.5) { p = p.copy(stepKg = it) }
-                        field(stringResource(R.string.mat_assist_max), p.maxKg, 5.0) { p = p.copy(maxKg = it) }
                         Text(stringResource(R.string.mat_belt_help), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
                     }
                 }
