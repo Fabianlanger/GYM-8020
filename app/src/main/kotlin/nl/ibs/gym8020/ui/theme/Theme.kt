@@ -27,6 +27,8 @@ object Gym {
     val Glow = Color(0xFF613F0F)
     val Positive = Color(0xFF7FB77E)
     val Negative = Color(0xFFD9725B)
+    /** The app's advice (#63): light blue, apart from the yellow of your target. */
+    val Advice = Color(0xFF8FB3D9)
 }
 
 val Poppins = FontFamily(

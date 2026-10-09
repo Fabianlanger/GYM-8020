@@ -48,6 +48,9 @@ data class ExerciseExtra(
 /** The plan for next time as edited on the training screen. */
 data class PlanDraft(val sets: List<PlannedSet>, val note: String = "", val edited: Boolean = false)
 
+/** An advice you took over (#63): the weight it set and the target it replaced, for "Ongedaan". */
+data class TakenAdvice(val adviceKg: Double, val previousKg: Double?)
+
 data class TrainingItem(
     val se: SessionExerciseEntity,
     val exercise: ExerciseEntity,
@@ -92,6 +95,9 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     private val notes = MutableStateFlow<Map<Long, String>>(emptyMap())
     /** Targets you set yourself earlier in this session, read back after leaving the screen (B-6). */
     private val ownTargets = MutableStateFlow<Map<Long, PlanDraft>>(emptyMap())
+    /** Advice you took over on this screen (#63): per session exercise, per set of the target. */
+    private val taken = MutableStateFlow<Map<Long, Map<Int, TakenAdvice>>>(emptyMap())
+    val takenAdvice: StateFlow<Map<Long, Map<Int, TakenAdvice>>> = taken
 
     val state: StateFlow<TrainingState> = combine(
         c.db.sessions().observe(sessionId),
@@ -193,6 +199,20 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         val next = transform(current).copy(note = item.note, edited = true)
         drafts.update { it + (seId to next) }
         launch { repo.setTarget(seId, item.exercise.id, Target(next.sets, next.note)) }
+    }
+
+    /** Overnemen (#63): the advice becomes your target for set [index], set by you and stored right away. */
+    fun takeAdvice(seId: Long, index: Int, advice: Double) {
+        val previous = state.value.items.firstOrNull { it.se.id == seId }?.plan?.sets?.getOrNull(index) ?: return
+        taken.update { it + (seId to (it[seId].orEmpty() + (index to TakenAdvice(advice, previous.weightKg)))) }
+        editPlan(seId) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = advice) else s }) }
+    }
+
+    /** Ongedaan (#63): set [index] gets back the target it had before you took over the advice. */
+    fun undoAdvice(seId: Long, index: Int) {
+        val undone = taken.value[seId]?.get(index) ?: return
+        taken.update { it + (seId to (it[seId].orEmpty() - index)) }
+        editPlan(seId) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = undone.previousKg) else s }) }
     }
 
     /** A note is part of your target, so it is stored right away as well. */
