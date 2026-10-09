@@ -77,6 +77,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -99,8 +100,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.core.logic.Advice
 import nl.ibs.gym8020.core.logic.Finding
 import nl.ibs.gym8020.core.logic.FindingKind
 import nl.ibs.gym8020.core.logic.GoalAdvisor
@@ -517,7 +520,7 @@ private fun ExercisePage(
             LineButton(stringResource(R.string.tr_add_warmup), onClick = { vm.addSet(se.id, SetRole.WARMUP) }, icon = Icons.Filled.LocalFireDepartment, modifier = Modifier.weight(1f))
         }
 
-        item.plan?.let { plan -> NextTimePlanner(item, plan, unit, step, targetOf, vm, assistPercent, focus) }
+        item.plan?.let { plan -> NextTimePlanner(item, plan, unit, step, targetOf, goodMargin, vm, assistPercent, focus) }
 
         Spacer(Modifier.height(4.dp))
         if (isLast) {
@@ -857,6 +860,7 @@ private fun NextTimePlanner(
     unit: WeightUnit,
     step: Double,
     targetOf: (SetRole) -> Int?,
+    goodMargin: Int,
     vm: TrainingViewModel,
     assistPercent: Int,
     focus: Pair<Finding, Int>? = null,
@@ -864,6 +868,12 @@ private fun NextTimePlanner(
     val ex = item.exercise
     val signed = ex.loadType == LoadType.BODYWEIGHT
     val isReps = ex.progression == Progression.REPS
+    // Advice per set (#63), only where it differs from your target; on weight, today and next time.
+    val advice = Advice.perSet(
+        plan.sets, item.sets.map { PerformedSet(it.role, it.weightKg, it.reps) },
+        if (isReps) Progression.REPS else item.progressionToday, ex.loadType, targetOf, goodMargin, step, item.calc,
+    )
+    val taken = vm.takenAdvice.collectAsStateWithLifecycle().value[item.se.id].orEmpty()
     // Reps progression: the target per set is the reps you did today (#52); storing other reps waits for schema v3.
     val repsToday = if (isReps) RepsTarget.forSets(plan.sets.map { it.role }, item.sets.map { PerformedSet(it.role, it.weightKg, it.reps) }) else null
     val switchTo = ProgressionSwitch.offered(ex.progression, ex.loadType)
@@ -886,6 +896,11 @@ private fun NextTimePlanner(
                     }
                 }
                 if (!open) Text(summary, style = MaterialTheme.typography.titleMedium, color = Gym.Yellow)
+                // Collapsed: a hint that there is advice; open the target to take it over.
+                val hint = plan.sets.withIndex().mapNotNull { (i, p) -> advice.getOrNull(i)?.let { "${letters.getValue(p.role)} ${WeightFormat.format(it, unit, signed)}" } }
+                if (!open && hint.isNotEmpty()) {
+                    Text(stringResource(R.string.tr_advice, hint.joinToString("  ·  ")), style = MaterialTheme.typography.bodySmall, color = Gym.Advice)
+                }
             }
             Icon(if (open) Icons.Filled.Check else Icons.Filled.Edit, stringResource(R.string.tr_edit_plan), tint = Gym.Gold, modifier = Modifier.size(20.dp))
         }
@@ -920,6 +935,22 @@ private fun NextTimePlanner(
                     IconButton(onClick = { vm.editPlan(item.se.id) { d -> d.copy(sets = d.sets.filterIndexed { j, _ -> j != i }) } }, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Filled.Close, stringResource(R.string.remove), tint = Gym.Muted, modifier = Modifier.size(18.dp))
                     }
+                }
+                // Under the target of the set: the advice, or the advice you took over while it is still your target.
+                val took = taken[i]?.takeIf { t -> p.weightKg?.let { abs(it - t.adviceKg) < 1e-9 } == true }
+                val proposed = advice.getOrNull(i)
+                if (took != null) {
+                    AdviceChip(
+                        stringResource(R.string.tr_advice_taken, took.previousKg?.let { kgText(it, unit, signed) } ?: "–"),
+                        stringResource(R.string.tr_advice_undo),
+                        onClick = { vm.undoAdvice(item.se.id, i) },
+                    )
+                } else if (proposed != null) {
+                    AdviceChip(
+                        stringResource(R.string.tr_advice, kgText(proposed, unit, signed)),
+                        stringResource(R.string.tr_advice_take),
+                        onClick = { vm.takeAdvice(item.se.id, i, proposed) },
+                    )
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
@@ -957,6 +988,30 @@ private fun NextTimePlanner(
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             )
+        }
+    }
+}
+
+/** The advice under a set of your target (#63): a light-blue dashed chip, apart from the yellow of your target. */
+@Composable
+private fun AdviceChip(text: String, action: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .padding(start = 4.dp, bottom = 4.dp)
+            .drawBehind {
+                drawRoundRect(
+                    color = Gym.Advice,
+                    cornerRadius = CornerRadius(10.dp.toPx()),
+                    style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))),
+                )
+            }
+            .padding(start = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(text, color = Gym.Advice, style = MaterialTheme.typography.labelMedium)
+        TextButton(onClick = onClick) {
+            Text(action, color = Gym.Advice, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
         }
     }
 }

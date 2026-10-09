@@ -155,6 +155,10 @@
     <string name="tr_target">doel %d</string>
     <string name="tr_next_by_weight">Volgende keer op gewicht</string>
     <string name="tr_next_by_reps">Volgende keer op reps</string>
+    <string name="tr_advice">Advies %s</string>
+    <string name="tr_advice_take">Overnemen</string>
+    <string name="tr_advice_taken">Advies overgenomen (was %s)</string>
+    <string name="tr_advice_undo">Ongedaan</string>
     <string name="tr_to_failure">Tot failure</string>
     <string name="tr_total">Training %s</string>
     <string name="tr_unskip">Toch doen</string>

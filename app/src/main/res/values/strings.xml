@@ -156,6 +156,10 @@
     <string name="tr_target">target %d</string>
     <string name="tr_next_by_weight">Next time by weight</string>
     <string name="tr_next_by_reps">Next time by reps</string>
+    <string name="tr_advice">Advice %s</string>
+    <string name="tr_advice_take">Take over</string>
+    <string name="tr_advice_taken">Advice taken (was %s)</string>
+    <string name="tr_advice_undo">Undo</string>
     <string name="tr_to_failure">To failure</string>
     <string name="tr_total">Session %s</string>
     <string name="tr_unskip">Do it after all</string>

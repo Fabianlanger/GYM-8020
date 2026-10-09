@@ -31,6 +31,7 @@
 | `glow` | `#613F0F` | radiale achtergrondgloed |
 | `positive` | `#7FB77E` | vooruitgang (heatmap, records) |
 | `negative` | `#D9725B` | achteruitgang (heatmap) — spaarzaam, D-22: motiverend |
+| `advice` | `#8FB3D9` | advies van de app (stippel-chip in "Volgend doel", #63), los van het geel van je doel |
 
 Contrast: `text` op `bg` en `onPrimary` op `primary` ruim boven WCAG AA.
 
