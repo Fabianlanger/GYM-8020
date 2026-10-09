@@ -3,9 +3,9 @@
 Android-app voor krachttraining (Kotlin, Jetpack Compose, Room). Lokaal, geen server. Communicatie met de
 eigenaar in het **Nederlands**.
 
-**Volg altijd de werkwijze in `.claude/skills/werkwijze/SKILL.md`**: input vastleggen in `docs/BACKLOG.md` en
-`docs/SPEC.md`, releases indelen in `docs/ROADMAP.md` met genummerde vragen per release, afhankelijkheden
-checken, bugs test-first.
+**Volg altijd de werkwijze in `.claude/skills/werkwijze/SKILL.md`**: welke skill van Matt Pocock je per
+situatie gebruikt, waar wat staat (GitHub Issues, epics, mijlpalen), de check op afhankelijkheden en de
+tussenweg bij testen.
 
 Snel:
 - `core/` = pure Kotlin-logica met tests: `./gradlew -PcoreOnly :core:test`.

@@ -42,6 +42,11 @@ Create a GitHub issue.
 
 Run `gh issue view <number> --comments`.
 
+## Epics and releases
+
+- **Epic**: an issue labelled `epic` for one goal; its tickets are sub-issues. A ticket that already hangs under the wayfinder map stays there, and the epic body links it.
+- **Release**: a milestone, one epic per release. Set the milestone on the epic and on every ticket under it. Overview in `docs/ROADMAP.md`.
+
 ## Wayfinding operations
 
 Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets.

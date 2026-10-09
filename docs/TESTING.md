@@ -26,6 +26,13 @@ zou opmerken. We sturen op wat wel iets zegt: de risicolijst en mutatietesten (z
 
 ---
 
+## Testplekken (tussenweg met `tdd`) — *afgesproken oktober 2026*
+
+De skill `tdd` wil vóór elke test met de eigenaar afspreken waar getest wordt. Wij gebruiken vier vaste
+plekken zonder te vragen: de rekenlogica in `core`, het opslaan van gegevens (repository), een schermroute uit
+de risicolijst (F-nummers, sectie 3) en een screenshot. Alleen bij een nieuwe plek, of als iets niet
+automatisch te testen is, vragen we het de eigenaar. Elk bouwticket zegt in één zin wat getest wordt.
+
 ## 1. Bugs: eerst een test die faalt, dan de fix — *afgesproken*
 
 1. De bug krijgt een backlognummer (B-x) met een beschrijving hoe je hem kunt nabootsen.

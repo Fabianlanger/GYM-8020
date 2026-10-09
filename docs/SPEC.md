@@ -1,3 +1,7 @@
+> **Archief sinds oktober 2026.** D-1 t/m D-98 blijven geldig, maar er komen geen nieuwe besluiten bij. Nieuwe
+> besluiten staan in het afgesloten GitHub-issue, woorden in `GLOSSARY.md`, moeilijk omkeerbare keuzes in
+> `docs/adr/`. Zie `.claude/skills/werkwijze/SKILL.md`.
+
 # Specificatie — GYM-8020
 
 > Status: **v0.5 — goedgekeurd** (zie sectie 18 voor wat nog openstaat) — nog niet goedgekeurd. Er wordt niets gebouwd voordat de eigenaar dit document heeft goedgekeurd.
