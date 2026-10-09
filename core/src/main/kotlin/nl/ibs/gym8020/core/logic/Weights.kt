@@ -1,30 +1,7 @@
 package nl.ibs.gym8020.core.logic
 
-import nl.ibs.gym8020.core.model.LoadType
 import kotlin.math.abs
 import kotlin.math.roundToLong
-
-object EffectiveWeight {
-    /**
-     * The weight actually moved.
-     * For [LoadType.BODYWEIGHT], [input] is the signed extra weight (negative = assistance)
-     * and [bodyweightKg] the body weight at the time of the set.
-     */
-    fun of(loadType: LoadType, input: Double, bodyweightKg: Double?, factor: Double): Double? =
-        when (loadType) {
-            LoadType.EXTERNAL -> input
-            LoadType.BODYWEIGHT -> bodyweightKg?.let { it * factor + input }
-        }
-}
-
-object Strength {
-    /** Estimated one-rep max (Epley). Reliable up to ~10–12 reps; used on heavy sets only. */
-    fun e1rm(weightKg: Double, reps: Int): Double =
-        if (reps <= 0) 0.0 else if (reps == 1) weightKg else weightKg * (1 + reps / 30.0)
-
-    /** Volume of a set: moved weight × reps × muscle share. */
-    fun volume(weightKg: Double, reps: Int, percent: Int = 100): Double = weightKg * reps * percent / 100.0
-}
 
 enum class WeightUnit(val perKg: Double) {
     KG(1.0), LBS(2.2046226218);
