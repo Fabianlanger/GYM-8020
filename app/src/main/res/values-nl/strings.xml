@@ -307,8 +307,8 @@
     <string name="log_remove_exercise_confirm">Deze oefening en haar sets uit de training halen?</string>
     <string name="log_next_target">Doel volgende keer</string>
     <string name="log_was">was %1$s</string>
-    <string name="log_session_target">doel %1$s</string>
-    <string name="log_session_target_none">geen doel</string>
+    <string name="log_session_target">sessiedoel %1$s</string>
+    <string name="log_session_target_none">geen sessiedoel</string>
     <string name="log_skipped">Overgeslagen</string>
     <string name="log_unskip">Terugzetten</string>
     <string name="log_tap_role">Tik om te wisselen: zwaar / licht / warming-up</string>

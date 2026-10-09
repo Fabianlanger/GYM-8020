@@ -308,8 +308,8 @@
     <string name="log_remove_exercise_confirm">Remove this exercise and its sets from the session?</string>
     <string name="log_next_target">Next target</string>
     <string name="log_was">was %1$s</string>
-    <string name="log_session_target">target %1$s</string>
-    <string name="log_session_target_none">no target</string>
+    <string name="log_session_target">session target %1$s</string>
+    <string name="log_session_target_none">no session target</string>
     <string name="log_skipped">Skipped</string>
     <string name="log_unskip">Restore</string>
     <string name="log_tap_role">Tap to change heavy / light / warm-up</string>

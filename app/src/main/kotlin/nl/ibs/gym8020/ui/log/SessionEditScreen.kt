@@ -143,7 +143,11 @@ class SessionEditViewModel(private val c: AppContainer, private val sessionId: L
     fun setSkipped(item: EditItem, skipped: Boolean) = viewModelScope.launch { repo.setSkipped(item.se.id, skipped); touched(item.exercise.id) }
     fun removeExercise(item: EditItem) = viewModelScope.launch { repo.removeExercise(item.se.id); touched(item.exercise.id) }
     fun addExercise(ex: ExerciseEntity) = viewModelScope.launch { repo.addExercise(sessionId, ex.id, withGoals = false); touched(ex.id) }
-    fun updateTimes(startedAt: Long, endedAt: Long) = viewModelScope.launch { repo.updateTimes(sessionId, startedAt, endedAt) }
+    /** A new date can make this the latest training for its exercises, so all of them count as changed (#9). */
+    fun updateTimes(startedAt: Long, endedAt: Long) = viewModelScope.launch {
+        repo.updateTimes(sessionId, startedAt, endedAt)
+        changed.update { it + state.value.items.map { i -> i.exercise.id } }
+    }
     fun delete(onDone: () -> Unit) = viewModelScope.launch {
         changed.value = emptySet()
         repo.discard(sessionId)
