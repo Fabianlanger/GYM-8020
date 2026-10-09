@@ -98,6 +98,8 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     /** Advice you took over on this screen (#63): per session exercise, per set of the target. */
     private val taken = MutableStateFlow<Map<Long, Map<Int, TakenAdvice>>>(emptyMap())
     val takenAdvice: StateFlow<Map<Long, Map<Int, TakenAdvice>>> = taken
+    /** Session exercises whose target was the default target before you took over advice. */
+    private val wasDefault = HashSet<Long>()
 
     val state: StateFlow<TrainingState> = combine(
         c.db.sessions().observe(sessionId),
@@ -203,15 +205,29 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
 
     /** Overnemen (#63): the advice becomes your target for set [index], set by you and stored right away. */
     fun takeAdvice(seId: Long, index: Int, advice: Double) {
-        val previous = state.value.items.firstOrNull { it.se.id == seId }?.plan?.sets?.getOrNull(index) ?: return
+        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
+        val previous = item.plan?.sets?.getOrNull(index) ?: return
+        // The first advice taken over a default target: remember that, so undoing it brings the default back.
+        if (item.plan?.edited != true && taken.value[seId].isNullOrEmpty()) wasDefault += seId
         taken.update { it + (seId to (it[seId].orEmpty() + (index to TakenAdvice(advice, previous.weightKg)))) }
         editPlan(seId) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = advice) else s }) }
     }
 
-    /** Ongedaan (#63): set [index] gets back the target it had before you took over the advice. */
+    /**
+     * Ongedaan (#63): set [index] gets back the target it had before you took over the advice. When that was the
+     * default target and no other advice is still taken, the target is no longer yours: the default applies again.
+     */
     fun undoAdvice(seId: Long, index: Int) {
         val undone = taken.value[seId]?.get(index) ?: return
         taken.update { it + (seId to (it[seId].orEmpty() - index)) }
+        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
+        if (seId in wasDefault && taken.value[seId].isNullOrEmpty()) {
+            wasDefault -= seId
+            drafts.update { it - seId }
+            ownTargets.update { it - seId }
+            launch { repo.withdrawTarget(seId, item.exercise.id, Target(item.extra?.stored.orEmpty(), item.extra?.lastNote)) }
+            return
+        }
         editPlan(seId) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = undone.previousKg) else s }) }
     }
 

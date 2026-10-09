@@ -187,6 +187,15 @@ class TrainingRepository(
         marks.markSetByYou(seId)
     }
 
+    /**
+     * Undoes a target you set during [seId] (Ongedaan, #63): [before] is stored again and the target no longer
+     * counts as yours, so the default target applies when moving on.
+     */
+    suspend fun withdrawTarget(seId: Long, exerciseId: Long, before: Target) {
+        savePlan(exerciseId, before.sets, before.note)
+        marks.unmarkSetByYou(seId)
+    }
+
     /** The target you set yourself during session exercise [seId], or null if you did not. */
     suspend fun targetSetIn(seId: Long, exerciseId: Long): Target? =
         if (marks.isSetByYou(seId)) target(exerciseId) else null

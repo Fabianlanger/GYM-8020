@@ -82,6 +82,16 @@ class TargetTest {
         assertNull(repository().targetSetIn(seId = 3, exerciseId = exerciseId))
     }
 
+    @Test
+    fun `undoing advice taken over the default target makes the target no longer yours`() = runBlocking {
+        repository().setTarget(seId = 4, exerciseId = exerciseId, target = heavy(82.5))
+
+        repository().withdrawTarget(seId = 4, exerciseId = exerciseId, before = heavy(80.0))
+
+        assertNull(repository().targetSetIn(seId = 4, exerciseId = exerciseId))
+        assertEquals(heavy(80.0), repository().target(exerciseId))
+    }
+
     /** A finished training with one heavy set of [kg] × 6 and a light set you did not do; returns (session, se). */
     private suspend fun finishedSession(kg: Double, startedAt: Long = 1_000L): Pair<Long, Long> {
         val sessionId = db.sessions().insert(SessionEntity(schemaName = "Pull", startedAt = startedAt, endedAt = startedAt + 1_000L))

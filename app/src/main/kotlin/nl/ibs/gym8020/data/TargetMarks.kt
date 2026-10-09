@@ -9,6 +9,7 @@ import android.content.Context
 interface TargetMarks {
     fun isSetByYou(sessionExerciseId: Long): Boolean
     fun markSetByYou(sessionExerciseId: Long)
+    fun unmarkSetByYou(sessionExerciseId: Long)
 }
 
 class PrefsTargetMarks(context: Context) : TargetMarks {
@@ -18,5 +19,9 @@ class PrefsTargetMarks(context: Context) : TargetMarks {
 
     override fun markSetByYou(sessionExerciseId: Long) {
         prefs.edit().putBoolean(sessionExerciseId.toString(), true).apply()
+    }
+
+    override fun unmarkSetByYou(sessionExerciseId: Long) {
+        prefs.edit().remove(sessionExerciseId.toString()).apply()
     }
 }
