@@ -305,10 +305,10 @@
     <string name="log_delete_training">Training verwijderen</string>
     <string name="log_delete_confirm">Deze training en al zijn sets worden verwijderd. Dit kan niet ongedaan worden.</string>
     <string name="log_remove_exercise_confirm">Deze oefening en haar sets uit de training halen?</string>
-    <string name="log_goal_title">Doel opnieuw berekenen?</string>
-    <string name="log_goal_body">Dit is je laatste training voor: %1$s. Het gewicht voor de volgende keer opnieuw berekenen uit de gecorrigeerde sets?</string>
-    <string name="log_goal_yes">Opnieuw berekenen</string>
-    <string name="log_goal_no">Doel houden</string>
+    <string name="log_next_target">Doel volgende keer</string>
+    <string name="log_was">was %1$s</string>
+    <string name="log_session_target">doel %1$s</string>
+    <string name="log_session_target_none">geen doel</string>
     <string name="log_skipped">Overgeslagen</string>
     <string name="log_unskip">Terugzetten</string>
     <string name="log_tap_role">Tik om te wisselen: zwaar / licht / warming-up</string>
