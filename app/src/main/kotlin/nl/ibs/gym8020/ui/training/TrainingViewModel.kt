@@ -15,6 +15,9 @@ import nl.ibs.gym8020.core.logic.FinishCheck
 import nl.ibs.gym8020.core.logic.FinishExercise
 import nl.ibs.gym8020.core.logic.FinishSet
 import nl.ibs.gym8020.core.logic.Finding
+import nl.ibs.gym8020.core.logic.LastSet
+import nl.ibs.gym8020.core.logic.LastTime
+import nl.ibs.gym8020.core.logic.PastSession
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.ProgressionSwitch
@@ -43,6 +46,8 @@ data class ExerciseExtra(
     val stored: List<PlannedSet>? = null,
     /** The set roles from the workout, for the default target when there is no stored target. */
     val workout: List<SetRole> = emptyList(),
+    /** Earlier trainings of this exercise, for "Laatste keer" per set (#65). */
+    val history: List<PastSession> = emptyList(),
 )
 
 /** The plan for next time as edited on the training screen. */
@@ -67,6 +72,8 @@ data class TrainingItem(
     val progressionToday: Progression = exercise.progression,
     /** Reps progression: per set the reps of its role last time, the number in its header (#52). Null on weight. */
     val repsTargets: List<Int?>? = null,
+    /** "Laatste keer" (#65): per set in [sets] its most recent performance with the date; null for warm-ups. */
+    val lastPerSet: List<LastSet?> = emptyList(),
 ) {
     val hasInput: Boolean get() = sets.any { it.reps != null }
 }
@@ -115,7 +122,8 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             val repsTargets = if (today == Progression.REPS) {
                 RepsTarget.forSets(list.map { it.role }, extraMap[ex.id]?.last?.sets?.map { PerformedSet(it.role, it.weightKg, it.reps) })
             } else null
-            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist, today, repsTargets)
+            val lastPerSet = extraMap[ex.id]?.let { e -> LastTime.perSet(list.map { it.role }, e.history) }.orEmpty()
+            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist, today, repsTargets, lastPerSet)
         }
         items.forEach {
             if (it.extra == null) loadExtra(it.exercise.id)
@@ -146,6 +154,7 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
                 last, repo.planNote(exerciseId), similar,
                 stored = repo.target(exerciseId)?.sets,
                 workout = repo.workoutRoles(sessionId, exerciseId),
+                history = repo.lastTimeHistory(exerciseId, sessionId),
             )
             extras.update { it + (exerciseId to extra) }
         }

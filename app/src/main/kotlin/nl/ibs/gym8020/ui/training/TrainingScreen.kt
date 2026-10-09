@@ -104,6 +104,7 @@ import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.logic.Finding
 import nl.ibs.gym8020.core.logic.FindingKind
 import nl.ibs.gym8020.core.logic.GoalAdvisor
+import nl.ibs.gym8020.core.logic.LastTime
 import nl.ibs.gym8020.core.logic.Missing
 import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
@@ -136,6 +137,7 @@ import nl.ibs.gym8020.ui.deco.drawRibbon
 import nl.ibs.gym8020.ui.exercises.ExercisePickerDialog
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
+import java.time.format.DateTimeFormatter
 
 fun formatDuration(ms: Long): String {
     val total = (ms / 1000).coerceAtLeast(0)
@@ -533,18 +535,34 @@ private fun ExercisePage(
     }
 }
 
+/** Short training date in "Laatste keer", e.g. "2 okt" (#65). */
+private val lastTimeDate = DateTimeFormatter.ofPattern("d MMM")
+
 @Composable
 private fun LastTimeLine(item: TrainingItem, unit: WeightUnit) {
     val ex = item.exercise
     val signed = ex.loadType == LoadType.BODYWEIGHT
     val last = item.extra?.last
-    if (last != null) {
-        val summary = last.sets.filter { it.role.isWork && it.reps != null }.joinToString("  ·  ") { s ->
+    // "Laatste keer" per set (#65): from any workout, by training date; one date, or a date per set when they differ.
+    val perSet = item.lastPerSet.filterNotNull()
+    if (perSet.isNotEmpty()) {
+        val heavy = stringResource(R.string.role_heavy_short)
+        val light = stringResource(R.string.role_light_short)
+        val shared = LastTime.sharedDate(perSet)
+        val summary = perSet.joinToString("  ·  ") { l ->
+            val s = l.set
             val w = PerformanceWeight.orNone(s.weightKg, ex.progression, ex.loadType)
-            if (ex.progression == Progression.REPS && (w == null || w == 0.0)) "${s.reps}"
+            val value = if (ex.progression == Progression.REPS && (w == null || w == 0.0)) "${s.reps}"
             else "${w?.let { WeightFormat.format(it, unit, signed) } ?: "—"} × ${s.reps}"
+            val role = if (s.role == SetRole.LIGHT) light else heavy
+            if (shared == null) "$role $value · ${l.date.format(lastTimeDate)}" else "$role $value"
         }
-        if (summary.isNotEmpty()) Text(stringResource(R.string.tr_last_time, summary), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
+        val text = if (shared != null) {
+            stringResource(R.string.tr_last_time_on, shared.format(lastTimeDate), summary)
+        } else {
+            stringResource(R.string.tr_last_time, summary)
+        }
+        Text(text, color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
     }
     item.extra?.lastNote?.let { Text(stringResource(R.string.tr_note_last, it), color = Gym.Gold, style = MaterialTheme.typography.bodySmall) }
     // No history yet: show similar exercises as a reference (D-68).

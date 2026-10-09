@@ -90,7 +90,9 @@
     <string name="progression_weight">Progress on weight</string>
     <string name="remove">Remove</string>
     <string name="role_heavy">Heavy</string>
+    <string name="role_heavy_short">H</string>
     <string name="role_light">Light</string>
+    <string name="role_light_short">L</string>
     <string name="role_warmup">Warm-up</string>
     <string name="schema_copy_suffix">%s (copy)</string>
     <string name="schema_delete_confirm">Delete %s? Past sessions are kept.</string>
@@ -140,6 +142,7 @@
     <string name="tr_go">Go</string>
     <string name="tr_goal_reached">Target reached</string>
     <string name="tr_last_time">Last time: %s</string>
+    <string name="tr_last_time_on">Last time (%1$s): %2$s</string>
     <string name="tr_menu">More options</string>
     <string name="tr_move_end">Do later</string>
     <string name="tr_next_time">Next target</string>

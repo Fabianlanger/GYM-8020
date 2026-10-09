@@ -3,6 +3,7 @@ package nl.ibs.gym8020.data
 import androidx.room.withTransaction
 import nl.ibs.gym8020.core.logic.EffectiveWeight
 import nl.ibs.gym8020.core.logic.DefaultTarget
+import nl.ibs.gym8020.core.logic.PastSession
 import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
@@ -243,6 +244,21 @@ class TrainingRepository(
         val se = sessions.historyExercises(exerciseId, excludeSession).firstOrNull() ?: return null
         val session = sessions.get(se.sessionId) ?: return null
         return LastPerformance(session.startedAt.toLocalDate(), sessions.setsOf(se.id))
+    }
+
+    /**
+     * The earlier trainings of an exercise for "Laatste keer" per set (#65): from any workout, with the training
+     * date (also for a training entered afterwards), skipped ones marked. LastTime picks per set from these.
+     */
+    suspend fun lastTimeHistory(exerciseId: Long, excludeSession: Long): List<PastSession> {
+        val sets = sessions.historySets(exerciseId, excludeSession).groupBy { it.sessionExerciseId }
+        return sessions.historyDates(exerciseId, excludeSession).map { row ->
+            PastSession(
+                date = row.startedAt.toLocalDate(),
+                sets = sets[row.sessionExerciseId].orEmpty().map { PerformedSet(it.role, it.weightKg, it.reps) },
+                skipped = row.skipped,
+            )
+        }
     }
 
     /**
