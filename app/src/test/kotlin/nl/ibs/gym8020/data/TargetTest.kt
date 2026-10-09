@@ -83,8 +83,8 @@ class TargetTest {
     }
 
     /** A finished training with one heavy set of [kg] × 6 and a light set you did not do; returns (session, se). */
-    private suspend fun finishedSession(kg: Double): Pair<Long, Long> {
-        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Pull", startedAt = 1_000L, endedAt = 2_000L))
+    private suspend fun finishedSession(kg: Double, startedAt: Long = 1_000L): Pair<Long, Long> {
+        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Pull", startedAt = startedAt, endedAt = startedAt + 1_000L))
         val seId = db.sessions().insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exerciseId, position = 0))
         db.sessions().insertSets(
             listOf(
@@ -113,5 +113,56 @@ class TargetTest {
         repository().recomputeTarget(db.exercises().get(exerciseId)!!, sessionId)
 
         assertEquals(heavy(80.0), repository().target(exerciseId))
+    }
+
+    // ---- #64: the edit screen ----
+
+    private fun corrected(kg: Double) = Target(listOf(PlannedSet(SetRole.HEAVY, kg), PlannedSet(SetRole.LIGHT, 40.0)))
+
+    @Test
+    fun `correcting your latest training lets the default target follow`() = runBlocking {
+        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        val (sessionId, _) = finishedSession(85.0)
+
+        repository().applyCorrection(sessionId, listOf(exerciseId))
+
+        assertEquals(corrected(85.0), repository().target(exerciseId))
+    }
+
+    @Test
+    fun `correcting your latest training keeps the target you set yourself`() = runBlocking {
+        val (sessionId, seId) = finishedSession(85.0)
+        repository().setTarget(seId = seId, exerciseId = exerciseId, target = heavy(80.0))
+
+        repository().applyCorrection(sessionId, listOf(exerciseId))
+
+        assertEquals(heavy(80.0), repository().target(exerciseId))
+    }
+
+    @Test
+    fun `a target you change in the edit screen is yours`() = runBlocking {
+        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        val (sessionId, seId) = finishedSession(85.0)
+        val exercise = db.exercises().get(exerciseId)!!
+        assertEquals(corrected(85.0), repository().nextTargetIn(sessionId, exercise))
+
+        repository().setTarget(seId = seId, exerciseId = exerciseId, target = heavy(90.0))
+        repository().applyCorrection(sessionId, listOf(exerciseId))
+
+        assertEquals(heavy(90.0), repository().targetSetIn(seId = seId, exerciseId = exerciseId))
+        assertEquals(heavy(90.0), repository().nextTargetIn(sessionId, exercise))
+        assertEquals(heavy(90.0), repository().target(exerciseId))
+    }
+
+    @Test
+    fun `correcting an older training does not change the target`() = runBlocking {
+        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        val (older, _) = finishedSession(70.0, startedAt = 1_000L)
+        finishedSession(80.0, startedAt = 10_000L)
+
+        repository().applyCorrection(older, listOf(exerciseId))
+
+        assertEquals(heavy(80.0), repository().target(exerciseId))
+        assertNull(repository().nextTargetIn(older, db.exercises().get(exerciseId)!!))
     }
 }

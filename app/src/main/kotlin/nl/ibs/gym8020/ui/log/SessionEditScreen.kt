@@ -33,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,13 +54,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.core.logic.PerformedSet
+import nl.ibs.gym8020.core.logic.PlannedSet
+import nl.ibs.gym8020.core.logic.RepsTarget
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.WeightCalculator
 import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Calculators
+import nl.ibs.gym8020.data.Target
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.SessionExerciseEntity
@@ -82,7 +86,19 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-data class EditItem(val se: SessionExerciseEntity, val exercise: ExerciseEntity, val sets: List<SetEntity>, val calc: WeightCalculator?)
+/**
+ * "Doel volgende keer" (#64), only in your latest training with the exercise: the [sets] as they are now, and
+ * [was] the sets before your first change in this screen visit (null while you changed nothing).
+ */
+data class NextTarget(val sets: List<PlannedSet>, val note: String?, val was: List<PlannedSet>? = null)
+
+data class EditItem(
+    val se: SessionExerciseEntity,
+    val exercise: ExerciseEntity,
+    val sets: List<SetEntity>,
+    val calc: WeightCalculator?,
+    val next: NextTarget? = null,
+)
 
 data class EditState(
     val session: SessionEntity? = null,
@@ -95,22 +111,26 @@ data class EditState(
 /** Correcting a finished training. Every change is saved right away, like during the training. */
 class SessionEditViewModel(private val c: AppContainer, private val sessionId: Long) : ViewModel() {
     private val repo = c.training
-    /** Exercises whose sets were changed here, for the "recalculate goal" question. */
+    /** Exercises whose sets were changed here: on saving, their default target follows the correction (#64). */
     private val changed = MutableStateFlow<Set<Long>>(emptySet())
+    /** Per session exercise the target you set here (shown at once) and the target before your first change. */
+    private val ownEdits = MutableStateFlow<Map<Long, NextTarget>>(emptyMap())
 
     val state: StateFlow<EditState> = combine(
         c.db.sessions().observe(sessionId),
         c.db.sessions().observeExercises(sessionId),
         c.db.sessions().observeSets(sessionId),
         c.db.exercises().observeAll(),
-        combine(c.settings.settings, c.db.materials().observeAll()) { s, m -> s to m },
-    ) { session, ses, sets, exercises, (settings, materials) ->
+        combine(c.settings.settings, c.db.materials().observeAll(), ownEdits) { s, m, e -> Triple(s, m, e) },
+    ) { session, ses, sets, exercises, (settings, materials, edits) ->
         val byId = exercises.associateBy { it.id }
         val profiles = materials.associateBy { it.id }
         val bySe = sets.groupBy { it.sessionExerciseId }
         val items = ses.mapNotNull { se ->
             val ex = byId[se.exerciseId] ?: return@mapNotNull null
-            EditItem(se, ex, bySe[se.id].orEmpty(), Calculators.forExercise(ex, profiles, settings.plateStock))
+            // Asked again on every change, so the default target follows your corrected performance at once.
+            val next = edits[se.id] ?: if (se.skipped || session?.endedAt == null) null else repo.nextTargetIn(sessionId, ex)?.let { NextTarget(it.sets, it.note) }
+            EditItem(se, ex, bySe[se.id].orEmpty(), Calculators.forExercise(ex, profiles, settings.plateStock), next)
         }
         EditState(session, items, exercises.filter { !it.archived }, settings, loaded = true)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EditState())
@@ -124,17 +144,40 @@ class SessionEditViewModel(private val c: AppContainer, private val sessionId: L
     fun removeExercise(item: EditItem) = viewModelScope.launch { repo.removeExercise(item.se.id); touched(item.exercise.id) }
     fun addExercise(ex: ExerciseEntity) = viewModelScope.launch { repo.addExercise(sessionId, ex.id, withGoals = false); touched(ex.id) }
     fun updateTimes(startedAt: Long, endedAt: Long) = viewModelScope.launch { repo.updateTimes(sessionId, startedAt, endedAt) }
-    fun delete(onDone: () -> Unit) = viewModelScope.launch { repo.discard(sessionId); c.autoBackup.runSoon(); onDone() }
-
-    /** Changed exercises for which this training is the latest one, so their goal comes from here. */
-    suspend fun goalCandidates(): List<ExerciseEntity> =
-        state.value.items.map { it.exercise }.distinctBy { it.id }
-            .filter { it.id in changed.value && repo.isLatestFor(it.id, sessionId) }
-
-    fun recompute(exercises: List<ExerciseEntity>, onDone: () -> Unit) = viewModelScope.launch {
-        exercises.forEach { repo.recomputeTarget(it, sessionId) }
+    fun delete(onDone: () -> Unit) = viewModelScope.launch {
+        changed.value = emptySet()
+        repo.discard(sessionId)
         c.autoBackup.runSoon()
         onDone()
+    }
+
+    /** The session target of a set (what you aimed at that day): a correction like any other. */
+    fun updateSessionTarget(set: SetEntity, kg: Double?) = viewModelScope.launch { repo.updateSet(set.copy(goalWeightKg = kg)) }
+
+    /** You change the weight of target set [index] for next time: stored right away as your own target (#64). */
+    fun editNextTarget(item: EditItem, index: Int, kg: Double?) {
+        val current = item.next ?: return
+        val sets = current.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = kg) else s }
+        ownEdits.update { it + (item.se.id to current.copy(sets = sets, was = current.was ?: current.sets)) }
+        viewModelScope.launch { repo.setTarget(item.se.id, item.exercise.id, Target(sets, current.note)) }
+    }
+
+    /**
+     * Saving (#64): the default target of each changed exercise follows the correction when this is the latest
+     * training with it. Runs in the app scope, so leaving the screen does not cut it off.
+     */
+    fun save() {
+        val exerciseIds = changed.value
+        changed.value = emptySet()
+        c.appScope.launch {
+            if (exerciseIds.isNotEmpty()) repo.applyCorrection(sessionId, exerciseIds)
+            c.autoBackup.runSoon()
+        }
+    }
+
+    /** Leaving with the back button saves as well. */
+    override fun onCleared() {
+        if (changed.value.isNotEmpty()) save()
     }
 }
 
@@ -142,19 +185,16 @@ class SessionEditViewModel(private val c: AppContainer, private val sessionId: L
 fun SessionEditScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, onDeleted: () -> Unit) {
     val vm: SessionEditViewModel = viewModel(key = "edit-$sessionId") { SessionEditViewModel(container, sessionId) }
     val state by vm.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val session = state.session
     val unit = state.settings.unit
     var picking by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf<EditItem?>(null) }
-    var goalQuestion by remember { mutableStateOf<List<ExerciseEntity>>(emptyList()) }
 
-    fun finish() = scope.launch {
-        container.autoBackup.runSoon()
-        val candidates = vm.goalCandidates()
-        if (candidates.isEmpty()) onDone() else goalQuestion = candidates
+    fun finish() {
+        vm.save()
+        onDone()
     }
 
     Column(
@@ -233,21 +273,13 @@ fun SessionEditScreen(container: AppContainer, sessionId: Long, onDone: () -> Un
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
-    if (goalQuestion.isNotEmpty()) {
-        AlertDialog(
-            onDismissRequest = { goalQuestion = emptyList(); onDone() },
-            title = { Text(stringResource(R.string.log_goal_title)) },
-            text = { Text(stringResource(R.string.log_goal_body, goalQuestion.joinToString(", ") { it.name })) },
-            confirmButton = { TextButton(onClick = { val list = goalQuestion; goalQuestion = emptyList(); vm.recompute(list, onDone) }) { Text(stringResource(R.string.log_goal_yes)) } },
-            dismissButton = { TextButton(onClick = { goalQuestion = emptyList(); onDone() }) { Text(stringResource(R.string.log_goal_no)) } },
-        )
-    }
 }
 
 @Composable
 private fun ExerciseBlock(item: EditItem, unit: WeightUnit, step: Double, vm: SessionEditViewModel, onRemove: () -> Unit) {
     val ex = item.exercise
     val signed = ex.loadType == LoadType.BODYWEIGHT
+    val isReps = ex.progression == Progression.REPS
     DecoCard(Modifier.alpha(if (item.se.skipped) .55f else 1f), padding = 14.dp) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ExerciseIcon(ex, size = 36)
@@ -305,12 +337,89 @@ private fun ExerciseBlock(item: EditItem, unit: WeightUnit, step: Double, vm: Se
                             )
                         }
                     }
+                    // Reps in the session target wait for schema v3.
+                    if (set.role.isWork && !isReps) SessionTarget(item, set, unit, step, vm)
                 }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
             LineButton(stringResource(R.string.tr_add_set), onClick = { vm.addSet(item, SetRole.HEAVY) }, icon = Icons.Filled.Add, modifier = Modifier.weight(1f))
             LineButton(stringResource(R.string.tr_add_warmup), onClick = { vm.addSet(item, SetRole.WARMUP) }, icon = Icons.Filled.LocalFireDepartment, modifier = Modifier.weight(1f))
+        }
+        item.next?.let { next -> NextTargetEditor(item, next, unit, step, vm) }
+    }
+}
+
+/** The session target (#64): editable, but not inviting. Small grey text; a tap reveals the stepper. */
+@Composable
+private fun SessionTarget(item: EditItem, set: SetEntity, unit: WeightUnit, step: Double, vm: SessionEditViewModel) {
+    val signed = item.exercise.loadType == LoadType.BODYWEIGHT
+    var open by remember(set.id) { mutableStateOf(false) }
+    val goal = set.goalWeightKg
+    Text(
+        if (goal != null) stringResource(R.string.log_session_target, WeightFormat.format(goal, unit, signed)) else stringResource(R.string.log_session_target_none),
+        color = Gym.Muted, style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier.clickable { open = !open }.padding(vertical = 2.dp),
+    )
+    if (open) {
+        NumberStepper(
+            value = goal,
+            onValueChange = { vm.updateSessionTarget(set, it) },
+            step = step, allowNegative = signed, min = if (signed) null else 0.0,
+            next = item.calc?.let { c -> { v: Double -> c.up(v) } },
+            previous = item.calc?.let { c -> { v: Double -> c.down(v) } },
+            formatter = { WeightFormat.format(it, unit, signed) }, parser = unit::toKg,
+            textSize = 14.sp, buttonSize = 32.dp,
+        )
+    }
+}
+
+/**
+ * "Doel volgende keer" (#64), only in your latest training with the exercise: as visible as the performance.
+ * Changing a weight makes it your own target; "was 80 kg" shows the weight before your first change here.
+ * With reps progression the target is reps, read-only as in the training screen.
+ */
+@Composable
+private fun NextTargetEditor(item: EditItem, next: NextTarget, unit: WeightUnit, step: Double, vm: SessionEditViewModel) {
+    val ex = item.exercise
+    val signed = ex.loadType == LoadType.BODYWEIGHT
+    val isReps = ex.progression == Progression.REPS
+    val repsTargets = if (isReps) RepsTarget.forSets(next.sets.map { it.role }, item.sets.map { PerformedSet(it.role, it.weightKg, it.reps) }) else null
+    Column(
+        Modifier.fillMaxWidth().padding(top = 10.dp).background(Gym.Bg.copy(alpha = .35f), RoundedCornerShape(14.dp)).padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Eyebrow(stringResource(R.string.log_next_target), color = Gym.Gold)
+        next.sets.forEachIndexed { i, p ->
+            if (!p.role.isWork) return@forEachIndexed
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RoleBadge(p.role)
+                if (isReps) {
+                    Text(
+                        repsTargets?.getOrNull(i)?.let { stringResource(R.string.tr_target, it) } ?: stringResource(R.string.tr_to_failure),
+                        color = Gym.Muted, modifier = Modifier.weight(1f),
+                    )
+                } else {
+                    Column(Modifier.weight(1f)) {
+                        NumberStepper(
+                            value = p.weightKg,
+                            onValueChange = { vm.editNextTarget(item, i, it) },
+                            step = step, allowNegative = signed, min = if (signed) null else 0.0,
+                            next = item.calc?.let { c -> { v: Double -> c.up(v) } },
+                            previous = item.calc?.let { c -> { v: Double -> c.down(v) } },
+                            formatter = { WeightFormat.format(it, unit, signed) }, parser = unit::toKg,
+                            textSize = 18.sp, buttonSize = 38.dp,
+                        )
+                        val was = next.was?.getOrNull(i)
+                        if (was != null && was.weightKg != p.weightKg) {
+                            Text(
+                                stringResource(R.string.log_was, was.weightKg?.let { WeightFormat.format(it, unit, signed) } ?: "–"),
+                                color = Gym.Muted, style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

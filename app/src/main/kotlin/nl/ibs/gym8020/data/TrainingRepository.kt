@@ -224,17 +224,48 @@ class TrainingRepository(
     suspend fun recomputeTarget(exercise: ExerciseEntity, sessionId: Long) {
         val se = sessions.exercises(sessionId).firstOrNull { it.exerciseId == exercise.id && !it.skipped } ?: return
         if (marks.isSetByYou(se.id)) return
-        val sets = sessions.setsOf(se.id)
-        if (sets.none { it.reps != null }) return
+        val target = defaultTargetFrom(exercise, sessionId, se.id) ?: return
+        savePlan(exercise.id, target, planNote(exercise.id))
+    }
+
+    /** The default target from the sets of session exercise [seId]; null while it has no reps. Not stored. */
+    private suspend fun defaultTargetFrom(exercise: ExerciseEntity, sessionId: Long, seId: Long): List<PlannedSet>? {
+        val sets = sessions.setsOf(seId)
+        if (sets.none { it.reps != null }) return null
         val stored = target(exercise.id)?.sets
-        val target = DefaultTarget.of(
+        return DefaultTarget.of(
             stored,
             if (stored.isNullOrEmpty()) workoutRoles(sessionId, exercise.id) else emptyList(),
             sets.map { PerformedSet(it.role, it.weightKg, it.reps) },
             exercise.progression,
             exercise.loadType,
         )
-        savePlan(exercise.id, target, planNote(exercise.id))
+    }
+
+    /**
+     * Saving a corrected training (#64): for each changed exercise for which [sessionId] is the latest training
+     * (counted now, also after moving its date), the default target follows the corrected performance. A target
+     * you set yourself is never changed by a correction.
+     */
+    suspend fun applyCorrection(sessionId: Long, exerciseIds: Collection<Long>) {
+        exerciseIds.distinct().forEach { id ->
+            val exercise = db.exercises().get(id) ?: return@forEach
+            if (isLatestFor(id, sessionId)) recomputeTarget(exercise, sessionId)
+        }
+    }
+
+    /**
+     * "Doel volgende keer" in the edit screen (#64): null when [sessionId] is not the latest training with this
+     * exercise. Otherwise the target you set yourself in it, or else the default target the (corrected)
+     * performance gives, or else the stored target.
+     */
+    suspend fun nextTargetIn(sessionId: Long, exercise: ExerciseEntity): Target? {
+        if (!isLatestFor(exercise.id, sessionId)) return null
+        val se = sessions.exercises(sessionId).firstOrNull { it.exerciseId == exercise.id && !it.skipped } ?: return null
+        targetSetIn(se.id, exercise.id)?.let { return it }
+        val note = planNote(exercise.id)
+        defaultTargetFrom(exercise, sessionId, se.id)?.let { return Target(it, note) }
+        return target(exercise.id)
     }
 
     // ---- history ----
