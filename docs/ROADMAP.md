@@ -12,7 +12,7 @@ klein: één epic per release, en elke afgeronde ticketgroep levert meteen een d
 | Release | Epic | Doel |
 |---|---|---|
 | 0.6.2 | – | Stabiel, zichtbaar en Engels. *Gebouwd.* |
-| 0.7 | [E1 · Het doel is van jou](https://github.com/Fabianlanger/GYM-8020/issues/54) | Trainen zonder ergernis: jij beslist, de app helpt. Rondt de kaart #1 af. |
+| 0.7 | [E1 · Het doel is van jou](https://github.com/Fabianlanger/GYM-8020/issues/54) | Trainen zonder ergernis: jij beslist, de app helpt. Uitkomst van kaart #1, plus het krachtmodel (A-3) voor de samenvatting. |
 | 0.8 | [E2 · Datamodel (schema v3)](https://github.com/Fabianlanger/GYM-8020/issues/55) | Eén database-aanpassing voor alles wat erop wacht (A-1). |
 | 1.0 | [E9 · Publicatie](https://github.com/Fabianlanger/GYM-8020/issues/56) | Naam, eigen sleutel, versierelease, README, repo publiek. |
 | 1.1 | [E6 · Eerste indruk](https://github.com/Fabianlanger/GYM-8020/issues/57) | Een nieuwe gebruiker snapt het meteen (rondleiding). |
