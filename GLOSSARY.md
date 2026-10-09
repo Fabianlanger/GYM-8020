@@ -67,8 +67,16 @@ Wat je in een sessie bij een oefening echt deed: per set gewicht en reps.
 
 **Doel** (EN: Target):
 Wat jij voor de volgende keer van een oefening vastzet: per set een gewicht en/of aantal reps. Alleen jij
-zet een doel.
+zet een doel. Elke sessie bewaart het doel dat erin gezet is, ook als een latere sessie het vervangt.
 _Vermijd_: plan, next time, goal
+
+**Sessiedoel** (EN: Session target):
+Het doel dat gold toen je een sessie begon: waar je die dag op mikte, per set. Blijft per sessie bewaard,
+naast je prestatie, zodat je later ziet hoe goed je jezelf inschat.
+_Vermijd_: oud doel, vorig doel
+
+**Inschatting** (EN: Calibration):
+Je sessiedoel tegenover je prestatie, door de tijd: overschat (prestatie onder je doel) of onderschat (erboven).
 
 **Standaard-doel** (EN: Default target):
 Het doel dat geldt als je zelf niets zet: de sets uit je laatste eigen doel (of anders uit de workout), met
