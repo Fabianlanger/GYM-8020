@@ -176,6 +176,9 @@ interface BodyweightDao {
 /** Row of [SessionDao.observeWorkSetCounts]. */
 data class SessionSetCount(val sessionId: Long, val workSets: Int)
 
+/** Row of [SessionDao.historyDates]: a session exercise with the training date of its session. */
+data class SessionExerciseDate(val sessionExerciseId: Long, val startedAt: Long, val skipped: Boolean)
+
 @Dao
 interface SessionDao {
     @Query("SELECT * FROM sessions WHERE endedAt IS NULL ORDER BY startedAt DESC LIMIT 1")
@@ -282,6 +285,15 @@ interface SessionDao {
             "ORDER BY ss.startedAt DESC",
     )
     suspend fun historyExercises(exerciseId: Long, excludeSession: Long): List<SessionExerciseEntity>
+
+    /** Session exercises of finished sessions for an exercise with their training date, skipped ones too, newest first. */
+    @Query(
+        "SELECT se.id AS sessionExerciseId, ss.startedAt AS startedAt, se.skipped AS skipped " +
+            "FROM session_exercises se JOIN sessions ss ON se.sessionId = ss.id " +
+            "WHERE se.exerciseId = :exerciseId AND ss.endedAt IS NOT NULL AND ss.id != :excludeSession " +
+            "ORDER BY ss.startedAt DESC",
+    )
+    suspend fun historyDates(exerciseId: Long, excludeSession: Long): List<SessionExerciseDate>
 }
 
 @Dao

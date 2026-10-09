@@ -89,7 +89,9 @@
     <string name="progression_weight">Progressie op gewicht</string>
     <string name="remove">Weghalen</string>
     <string name="role_heavy">Zwaar</string>
+    <string name="role_heavy_short">Z</string>
     <string name="role_light">Licht</string>
+    <string name="role_light_short">L</string>
     <string name="role_warmup">Warm-up</string>
     <string name="schema_copy_suffix">%s (kopie)</string>
     <string name="schema_delete_confirm">%s verwijderen? Eerdere trainingen blijven bewaard.</string>
@@ -138,7 +140,8 @@
     <string name="tr_finish">Training afronden</string>
     <string name="tr_go">Go</string>
     <string name="tr_goal_reached">Doel gehaald</string>
-    <string name="tr_last_time">Vorige keer: %s</string>
+    <string name="tr_last_time">Laatste keer: %s</string>
+    <string name="tr_last_time_on">Laatste keer (%1$s): %2$s</string>
     <string name="tr_menu">Meer opties</string>
     <string name="tr_move_end">Later doen</string>
     <string name="tr_next_time">Volgend doel</string>
