@@ -1,0 +1,230 @@
+<title>Advies naast je doel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+<style>
+/* PROTOTYPE, weggooicode voor kaart-ticket #3. Drie varianten van het trainingsscherm, wisselbaar via de balk onderaan (#A, #B, #C).
+   Layout: één telefoonkolom zoals de app; huisstijl uit docs/DESIGN.md (bewust alleen donker, zoals de app). */
+:root {
+  --bg: #171717; --surface: #232323; --surface-high: #3a3a3a;
+  --yellow: #f9c852; --on-yellow: #171717; --cream: #fef9ed; --muted: #9a958c;
+  --gold: #c9a24a; --positive: #7fb77e; --negative: #d9725b; --advice: #8fb3d9;
+  --font: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--cream); }
+body { font-family: var(--font); font-size: 15px; line-height: 1.45; padding-inline: 16px; padding-block: 12px 96px; }
+.phone { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+.gold { color: var(--gold); }
+h1 { font-weight: 300; font-size: 28px; margin: 0; text-wrap: balance; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--surface); border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.deco { border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.badge { font-size: 12px; font-weight: 700; border-radius: 8px; padding: 2px 8px; background: var(--surface-high); color: var(--cream); }
+.badge.h { background: var(--yellow); color: var(--on-yellow); }
+.stepper { display: flex; align-items: center; gap: 6px; background: var(--surface-high); border-radius: 14px; padding: 4px; }
+.stepper button { width: 36px; height: 36px; border-radius: 10px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 20px; cursor: pointer; }
+.stepper .val { min-width: 64px; text-align: center; font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; }
+.stepper .val.empty { color: var(--muted); font-weight: 400; font-size: 15px; }
+.signal { font-size: 13px; font-weight: 600; }
+.signal.light { color: var(--positive); } .signal.heavy { color: var(--negative); } .signal.good { color: var(--muted); }
+.btn { border: 1.5px solid var(--cream); background: transparent; color: var(--cream); border-radius: 12px; padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.btn.yellow { background: var(--yellow); color: var(--on-yellow); border-color: var(--yellow); font-weight: 600; }
+.btn.link { border: 0; color: var(--yellow); padding: 4px 6px; }
+.btn:focus-visible, .stepper button:focus-visible, .cell:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.advice { color: var(--advice); }
+.chip { display: inline-flex; align-items: center; gap: 8px; border: 1px dashed color-mix(in srgb, var(--advice) 70%, transparent); border-radius: 12px; padding: 4px 6px 4px 10px; font-size: 13px; color: var(--advice); }
+.chip.done { border-style: solid; color: var(--muted); border-color: var(--surface-high); }
+.target-sum { font-size: 18px; font-weight: 600; color: var(--yellow); font-variant-numeric: tabular-nums; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 4px 4px; }
+td { padding: 6px 4px; vertical-align: middle; }
+.cell { border: 0; background: transparent; font: inherit; color: var(--advice); cursor: pointer; padding: 6px 8px; border-radius: 10px; border: 1px dashed color-mix(in srgb, var(--advice) 60%, transparent); }
+.cell[disabled] { border-color: transparent; color: var(--muted); cursor: default; }
+.mini { display: flex; align-items: center; gap: 4px; }
+.mini button { width: 28px; height: 28px; border-radius: 8px; border: 0; background: var(--surface-high); color: var(--muted); font: inherit; cursor: pointer; }
+.mini span { min-width: 46px; text-align: center; font-weight: 700; color: var(--yellow); }
+.scen { display: flex; gap: 8px; flex-wrap: wrap; }
+.state { background: transparent; border: 1px solid var(--surface-high); }
+.state table td, .state table th { font-size: 12px; padding: 3px 4px; }
+.why { font-size: 13px; color: var(--muted); }
+.bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 6px; background: var(--cream); color: var(--bg); border-radius: 999px; padding: 6px; box-shadow: 0 6px 24px rgba(0,0,0,.5); z-index: 10; max-width: calc(100% - 32px); }
+.bar button { width: 40px; height: 40px; border-radius: 999px; border: 0; background: var(--bg); color: var(--cream); font-size: 18px; cursor: pointer; }
+.bar .lbl { font-size: 13px; font-weight: 600; padding-inline: 6px; text-align: center; min-width: 0; }
+@media (prefers-reduced-motion: no-preference) { .flash { animation: f .6s ease; } @keyframes f { from { background: color-mix(in srgb, var(--advice) 30%, transparent); } } }
+</style>
+
+<div class="phone">
+  <div class="card state" style="gap:6px">
+    <span class="eyebrow">Prototype · kaart-ticket #3</span>
+    <span class="why" id="question"></span>
+    <span class="why">Probeer een situatie of vul zelf reps in. Wissel van variant met de balk onderaan.</span>
+    <div class="scen">
+      <button class="btn" data-scen="light">Te licht (9 en 20 reps)</button>
+      <button class="btn" data-scen="good">Goed (6 en 16)</button>
+      <button class="btn" data-scen="heavy">Te zwaar (3 en 11)</button>
+      <button class="btn" data-scen="reset">Opnieuw</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="grow">
+      <div class="eyebrow">Oefening 2 van 6 · Push</div>
+      <h1>Bench press</h1>
+    </div>
+  </div>
+  <div class="small muted">Laatste keer · 2 okt: Z 80 kg × 7 · L 40 kg × 15</div>
+
+  <div id="sets" style="display:flex;flex-direction:column;gap:10px"></div>
+  <div id="target"></div>
+
+  <details class="card state">
+    <summary class="eyebrow" style="cursor:pointer">Wat de app nu bewaart</summary>
+    <div id="state"></div>
+  </details>
+</div>
+
+<div class="bar" role="toolbar" aria-label="Variant wisselen">
+  <button id="prev" aria-label="Vorige variant">‹</button>
+  <span class="lbl" id="vlabel"></span>
+  <button id="next" aria-label="Volgende variant">›</button>
+</div>
+
+<script>
+const VARIANTS = {
+  A: { name: "Advies in je doel", q: "A · Het advies staat als chip onder elk doel in ‘Volgend doel’. Eén tik neemt het over; niets doen = negeren." },
+  B: { name: "Kolom vandaag · advies · doel", q: "B · ‘Volgend doel’ is een tabel: wat je vandaag deed, het advies en jouw doel naast elkaar. Tik het advies om het over te nemen." },
+  C: { name: "Bij de set zelf", q: "C · Het advies verschijnt direct onder de set zodra je reps invult, met ‘Zet als doel’. ‘Volgend doel’ zelf blijft kaal." },
+};
+const KEYS = Object.keys(VARIANTS);
+const STEP = 2.5, MARGIN = 1;
+const ROLES = [{ role: "Z", name: "Zware set", repsTarget: 6, goal: 80 }, { role: "L", name: "Lichte set", repsTarget: 16, goal: 40 }];
+let s;
+function reset() {
+  s = { sets: ROLES.map(r => ({ ...r, kg: r.goal, reps: null })), target: ROLES.map(r => ({ kg: r.goal, source: "standaard" })), dismissed: [false, false] };
+}
+reset();
+let variant = (location.hash || "#A").slice(1); if (!VARIANTS[variant]) variant = "A";
+
+const fmt = kg => (Math.round(kg * 10) / 10).toString().replace(".", ",") + " kg";
+function signal(i) {
+  const st = s.sets[i]; if (st.reps == null) return null;
+  if (st.reps > st.repsTarget + MARGIN) return "light";
+  if (st.reps < st.repsTarget - MARGIN) return "heavy";
+  return "good";
+}
+const SIG = { light: "Te licht", heavy: "Te zwaar", good: "Goed" };
+function advice(i) {
+  const g = signal(i); if (!g) return null;
+  const kg = s.sets[i].kg;
+  return g === "light" ? kg + STEP : g === "heavy" ? Math.max(0, kg - STEP) : kg;
+}
+// Standard target follows what you lifted, unless you set the target yourself (#2, D-97).
+function syncDefault(i) { if (s.target[i].source === "standaard") s.target[i].kg = s.sets[i].kg; }
+function take(i) { s.target[i] = { kg: advice(i), source: "advies overgenomen", prev: s.target[i].kg }; render(i); }
+function undo(i) { s.target[i] = { kg: s.target[i].prev, source: "standaard" }; syncDefault(i); render(); }
+function setTarget(i, d) { s.target[i] = { kg: s.target[i].kg + d, source: "zelf gezet" }; render(); }
+function hasAdvice(i) { const a = advice(i); return a != null && signal(i) !== "good" && Math.abs(a - s.target[i].kg) > 1e-9; }
+
+function stepper(val, empty, onMinus, onPlus, label) {
+  const w = document.createElement("div"); w.className = "stepper";
+  const m = document.createElement("button"); m.textContent = "−"; m.setAttribute("aria-label", label + " minder"); m.onclick = onMinus;
+  const v = document.createElement("span"); v.className = "val" + (empty ? " empty" : ""); v.textContent = val;
+  const p = document.createElement("button"); p.textContent = "+"; p.setAttribute("aria-label", label + " meer"); p.onclick = onPlus;
+  w.append(m, v, p); return w;
+}
+function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; }
+
+function renderSets() {
+  const box = document.getElementById("sets"); box.innerHTML = "";
+  s.sets.forEach((st, i) => {
+    const c = el(`<div class="card"><div class="row"><span class="badge ${st.role === "Z" ? "h" : ""}">${st.role}</span><span class="eyebrow grow">${st.name} · doel ${fmt(ROLES[i].goal)} · ${st.repsTarget} reps</span></div></div>`);
+    const r = el(`<div class="row"></div>`);
+    r.append(stepper(fmt(st.kg), false, () => { st.kg -= STEP; syncDefault(i); render(); }, () => { st.kg += STEP; syncDefault(i); render(); }, "gewicht"));
+    r.append(stepper(st.reps == null ? "reps" : st.reps, st.reps == null, () => { st.reps = Math.max(0, (st.reps ?? st.repsTarget) - 1); render(); }, () => { st.reps = (st.reps ?? st.repsTarget - 1) + 1; render(); }, "reps"));
+    c.append(r);
+    const g = signal(i);
+    if (g) {
+      const line = el(`<div class="row"><span class="signal ${g}">${SIG[g]}</span></div>`);
+      if (variant === "C" && g !== "good" && !s.dismissed[i]) {
+        if (hasAdvice(i)) {
+          line.append(el(`<span class="advice small grow">Advies volgende keer: ${fmt(advice(i))}</span>`));
+          const b = el(`<button class="btn yellow">Zet als doel</button>`); b.onclick = () => take(i);
+          const x = el(`<button class="btn link" aria-label="Advies negeren">Negeer</button>`); x.onclick = () => { s.dismissed[i] = true; render(); };
+          line.append(b, x);
+        } else if (s.target[i].source === "advies overgenomen") {
+          line.append(el(`<span class="small muted grow">Doel volgende keer: ${fmt(s.target[i].kg)} (advies)</span>`));
+          const u = el(`<button class="btn link">Ongedaan</button>`); u.onclick = () => undo(i); line.append(u);
+        }
+      }
+      c.append(line);
+    }
+    box.append(c);
+  });
+}
+
+function renderTarget() {
+  const box = document.getElementById("target"); box.innerHTML = "";
+  const c = el(`<div class="card deco"><span class="eyebrow gold">Volgend doel</span></div>`);
+  if (variant === "B") {
+    const t = el(`<table><thead><tr><th>Set</th><th>Vandaag</th><th>Advies</th><th>Jouw doel</th></tr></thead><tbody></tbody></table>`);
+    s.sets.forEach((st, i) => {
+      const tr = el(`<tr></tr>`);
+      tr.append(el(`<td><span class="badge ${st.role === "Z" ? "h" : ""}">${st.role}</span></td>`));
+      tr.append(el(`<td class="small">${st.reps == null ? '<span class="muted">–</span>' : fmt(st.kg) + " × " + st.reps}</td>`));
+      const a = advice(i), td = el(`<td></td>`);
+      if (a == null) td.append(el(`<span class="muted small">–</span>`));
+      else { const b = el(`<button class="cell small">${signal(i) === "good" ? "= " : ""}${fmt(a)}</button>`); b.disabled = !hasAdvice(i); b.setAttribute("aria-label", "Advies " + fmt(a) + " overnemen"); b.onclick = () => take(i); td.append(b); }
+      tr.append(td);
+      const mt = el(`<td><div class="mini"><button aria-label="doel minder">−</button><span>${fmt(s.target[i].kg).replace(" kg", "")}</span><button aria-label="doel meer">+</button></div></td>`);
+      const [m, p] = mt.querySelectorAll("button"); m.onclick = () => setTarget(i, -STEP); p.onclick = () => setTarget(i, STEP);
+      tr.append(mt); t.tBodies[0].append(tr);
+    });
+    c.append(t);
+    if ([0, 1].some(hasAdvice)) { const all = el(`<button class="btn">Alle adviezen overnemen</button>`); all.onclick = () => { [0, 1].forEach(i => hasAdvice(i) && (s.target[i] = { kg: advice(i), source: "advies overgenomen", prev: s.target[i].kg })); render(); }; c.append(all); }
+    c.append(el(`<span class="why">Advies alleen op gewicht; bij ‘Goed’ is het advies gelijk aan je doel en valt er niets over te nemen.</span>`));
+  } else {
+    s.sets.forEach((st, i) => {
+      const r = el(`<div class="row"><span class="badge ${st.role === "Z" ? "h" : ""}">${st.role}</span></div>`);
+      r.append(stepper(fmt(s.target[i].kg), false, () => setTarget(i, -STEP), () => setTarget(i, STEP), "doel"));
+      r.append(el(`<span class="small muted">${s.target[i].source}</span>`));
+      c.append(r);
+      if (variant === "A") {
+        if (hasAdvice(i)) {
+          const chip = el(`<span class="chip">Advies ${fmt(advice(i))} · ${SIG[signal(i)].toLowerCase()}</span>`);
+          const b = el(`<button class="btn yellow" style="padding:4px 10px">Overnemen</button>`); b.onclick = () => take(i); chip.append(b); c.append(chip);
+        } else if (s.target[i].source === "advies overgenomen") {
+          const chip = el(`<span class="chip done">Advies overgenomen (was ${fmt(s.target[i].prev)})</span>`);
+          const u = el(`<button class="btn link">Ongedaan</button>`); u.onclick = () => undo(i); chip.append(u); c.append(chip);
+        }
+      }
+    });
+  }
+  box.append(c);
+}
+
+function renderState() {
+  const rows = s.sets.map((st, i) => `<tr><td>${st.role}</td><td>${fmt(ROLES[i].goal)}</td><td>${st.reps == null ? "–" : fmt(st.kg) + " × " + st.reps}</td><td class="advice">${advice(i) == null ? "–" : fmt(advice(i))}</td><td>${fmt(s.target[i].kg)}</td><td>${s.target[i].source}</td></tr>`).join("");
+  document.getElementById("state").innerHTML = `<div style="overflow-x:auto"><table><thead><tr><th>Set</th><th>Sessiedoel</th><th>Prestatie</th><th>Advies</th><th>Doel</th><th>Bron</th></tr></thead><tbody>${rows}</tbody></table></div><p class="why">Een overgenomen advies telt als jouw keuze: het blijft staan, ook als je daarna je prestatie corrigeert. Niets doen laat het standaard-doel staan (je prestatie).</p>`;
+}
+
+function render(flashIdx) {
+  document.getElementById("question").textContent = VARIANTS[variant].q;
+  document.getElementById("vlabel").textContent = variant + " · " + VARIANTS[variant].name;
+  renderSets(); renderTarget(); renderState();
+}
+function go(d) { const i = (KEYS.indexOf(variant) + d + KEYS.length) % KEYS.length; variant = KEYS[i]; try { history.replaceState(null, "", "#" + variant); } catch (e) {} render(); }
+document.getElementById("prev").onclick = () => go(-1);
+document.getElementById("next").onclick = () => go(1);
+addEventListener("keydown", e => { if (e.target.closest("input,textarea,[contenteditable]")) return; if (e.key === "ArrowLeft") go(-1); if (e.key === "ArrowRight") go(1); });
+document.querySelectorAll("[data-scen]").forEach(b => b.onclick = () => {
+  const sc = b.dataset.scen; reset();
+  const reps = { light: [9, 20], good: [6, 16], heavy: [3, 11] }[sc];
+  if (reps) s.sets.forEach((st, i) => st.reps = reps[i]);
+  render();
+});
+render();
+</script>
