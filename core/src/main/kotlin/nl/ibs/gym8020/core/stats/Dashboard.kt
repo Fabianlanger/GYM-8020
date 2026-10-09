@@ -1,5 +1,6 @@
 package nl.ibs.gym8020.core.stats
 
+import nl.ibs.gym8020.core.logic.Change
 import nl.ibs.gym8020.core.logic.HomeAdvisor
 import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.model.Muscle
@@ -71,9 +72,8 @@ object Dashboard {
         val reps = mutableListOf<Point>()
         for (s in bySession) {
             val date = s.first().date
-            val heavySets = s.filter { it.role == SetRole.HEAVY && it.effectiveKg != null }
-            heavySets.maxOfOrNull { Strength.e1rm(it.effectiveKg!!, it.reps!!) }?.let { e1rm += Point(date, it) }
-            heavySets.maxOfOrNull { it.effectiveKg!! }?.let { heavy += Point(date, it) }
+            Strength.of(s)?.let { e1rm += Point(date, it) }
+            s.filter { it.role == SetRole.HEAVY }.mapNotNull { it.effectiveKg }.maxOrNull()?.let { heavy += Point(date, it) }
             s.maxOfOrNull { it.reps!! }?.let { reps += Point(date, it.toDouble()) }
         }
         return ExerciseProgress(e1rm, heavy, reps)
@@ -81,12 +81,9 @@ object Dashboard {
 
     /** Best heavy set ever per exercise (by e1RM). */
     fun records(sets: List<SetRecord>): Map<Long, Record> =
-        work(sets).filter { it.role == SetRole.HEAVY && it.effectiveKg != null }
-            .groupBy { it.exerciseId }
-            .mapValues { (id, l) ->
-                val best = l.maxWith(compareBy<SetRecord> { Strength.e1rm(it.effectiveKg!!, it.reps!!) }.thenBy { it.date })
-                Record(id, best.date, best.weightKg, best.reps!!, Strength.e1rm(best.effectiveKg!!, best.reps))
-            }
+        sets.groupBy { it.exerciseId }.mapNotNull { (id, l) ->
+            Strength.bestSet(l)?.let { best -> id to Record(id, best.date, best.weightKg, best.reps!!, Strength.e1rm(best)!!) }
+        }.toMap()
 
     /** Work sets per week per muscle (weighted by share). */
     fun setsPerMuscle(
@@ -103,7 +100,7 @@ object Dashboard {
         today: LocalDate,
         weeks: Int,
     ): Map<Muscle, List<WeekValue>> = perMuscleWeekly(sets, muscles, today, weeks) { s, share ->
-        (s.effectiveKg ?: 0.0) * (s.reps ?: 0) * share
+        Strength.volume(s) * share
     }
 
     private fun perMuscleWeekly(
@@ -199,7 +196,6 @@ object Dashboard {
     /** Relative change between the first and last value, e.g. 0.05 = +5 %. */
     fun change(points: List<Point>): Double? {
         if (points.size < 2) return null
-        val first = points.first().value
-        return if (first == 0.0) null else (points.last().value - first) / first
+        return Change.between(points.first().value, points.last().value)?.relative
     }
 }

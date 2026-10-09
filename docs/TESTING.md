@@ -60,7 +60,7 @@ Regels die we willen vastleggen (T-2):
 | Het doel gaat nooit de verkeerde kant op (te licht → zwaarder, te zwaar → lichter) | doelen |
 | Export → import levert exact dezelfde data op | back-up |
 | Schijven per kant tellen op tot het totaal, en je hebt nooit meer schijven nodig dan je hebt | schijven |
-| e1RM stijgt als gewicht of reps stijgen | kracht |
+| e1RM stijgt als gewicht of reps stijgen | kracht · **gebouwd** (`StrengthTest`) |
 
 ## 3. Risicolijst in plaats van coverage — *afgesproken*
 

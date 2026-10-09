@@ -1,10 +1,10 @@
 package nl.ibs.gym8020.core.stats
 
+import nl.ibs.gym8020.core.logic.Change
 import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.MuscleShare
 import nl.ibs.gym8020.core.model.Progression
-import nl.ibs.gym8020.core.model.SetRole
 
 /**
  * Muscle heatmap after a training (D-40, D-41):
@@ -14,15 +14,8 @@ import nl.ibs.gym8020.core.model.SetRole
  */
 object Heatmap {
 
-    fun volume(sets: List<SetRecord>, muscles: Map<Long, List<MuscleShare>>): Map<Muscle, Double> {
-        val out = HashMap<Muscle, Double>()
-        for (s in sets) {
-            if (!s.role.isWork) continue
-            val v = (s.effectiveKg ?: continue) * (s.reps ?: continue)
-            for (m in muscles[s.exerciseId].orEmpty()) out[m.muscle] = (out[m.muscle] ?: 0.0) + v * m.percent / 100.0
-        }
-        return out
-    }
+    fun volume(sets: List<SetRecord>, muscles: Map<Long, List<MuscleShare>>): Map<Muscle, Double> =
+        Strength.volumePerMuscle(sets, muscles)
 
     /** Performance score of one exercise in one training: heavy e1RM, or max reps for reps progression. */
     fun score(sets: List<SetRecord>): Double? {
@@ -30,7 +23,7 @@ object Heatmap {
         if (work.isEmpty()) return null
         val repsMode = work.first().progression == Progression.REPS && work.all { (it.weightKg ?: 0.0) == 0.0 }
         if (repsMode) return work.maxOf { it.reps!! }.toDouble()
-        return work.filter { it.role == SetRole.HEAVY && it.effectiveKg != null }.maxOfOrNull { Strength.e1rm(it.effectiveKg!!, it.reps!!) }
+        return Strength.of(work)
     }
 
     /**
@@ -41,7 +34,7 @@ object Heatmap {
         current.groupBy { it.exerciseId }.mapNotNull { (id, sets) ->
             val now = score(sets) ?: return@mapNotNull null
             val before = previous[id]?.let(::score) ?: return@mapNotNull null
-            if (before <= 0) null else id to (now - before) / before
+            Change.between(before, now)?.relative?.let { id to it }
         }.toMap()
 
     fun progress(changes: Map<Long, Double>, muscles: Map<Long, List<MuscleShare>>): Map<Muscle, Double> {
