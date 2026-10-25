@@ -49,11 +49,14 @@ jobs:
 
       - name: Upload screenshots
         if: always() && hashFiles('app/build.gradle.kts') != ''
+        # Also on the branch ci-screenshots; a full artifact store must not stop the dev release.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
           path: app/build/outputs/roborazzi/
           if-no-files-found: ignore
+          retention-days: 3
 
       # The same screenshots on the branch ci-screenshots (overwritten each build), so they can be viewed
       # without downloading artifacts.
@@ -76,11 +79,14 @@ jobs:
 
       - name: Upload APK
         if: hashFiles('app/build.gradle.kts') != ''
+        # Also in the dev release; a full artifact store must not stop it.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: gym-8020-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 3
 
       # Rolling "dev" release: always the newest build at a fixed link,
       # https://github.com/<owner>/<repo>/releases/download/dev/gym-8020.apk
@@ -129,8 +135,10 @@ jobs:
 
       - name: Upload reports
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: reports
           path: |
             core/build/reports
