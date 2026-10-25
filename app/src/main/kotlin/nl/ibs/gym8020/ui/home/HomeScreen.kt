@@ -63,7 +63,7 @@ import nl.ibs.gym8020.ui.components.LineButton
 import nl.ibs.gym8020.ui.components.PlainCard
 import nl.ibs.gym8020.ui.components.WeekPips
 import nl.ibs.gym8020.ui.deco.DecoDivider
-import nl.ibs.gym8020.ui.deco.IbsMark
+import nl.ibs.gym8020.ui.deco.ArmMark
 import nl.ibs.gym8020.ui.deco.Lattice
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.training.BodyweightPrompt
@@ -185,7 +185,7 @@ fun HomeScreen(container: AppContainer, onOpenTraining: (Long) -> Unit, onAllSch
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Eyebrow(state.today.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), Modifier.weight(1f))
-                IbsMark(Modifier.size(26.dp))
+                ArmMark(Modifier.size(28.dp))
             }
             QuickWeightCard(state, unit, onClick = { editWeight = true })
 

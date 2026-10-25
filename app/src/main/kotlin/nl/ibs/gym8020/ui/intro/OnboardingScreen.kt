@@ -56,7 +56,7 @@ import nl.ibs.gym8020.ui.components.Eyebrow
 import nl.ibs.gym8020.ui.components.GoButton
 import nl.ibs.gym8020.ui.components.NumberStepper
 import nl.ibs.gym8020.ui.deco.DecoDivider
-import nl.ibs.gym8020.ui.deco.IbsMark
+import nl.ibs.gym8020.ui.deco.AppEmblem
 import nl.ibs.gym8020.ui.theme.Gym
 import java.time.LocalDate
 
@@ -99,7 +99,7 @@ fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: 
             ) {
                 when (p) {
                     0 -> {
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { IbsMark(Modifier.size(72.dp)) }
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { AppEmblem(Modifier.size(104.dp)) }
                         Title(stringResource(R.string.intro_welcome_title))
                         Body(stringResource(R.string.intro_welcome_body))
                         MethodTable()

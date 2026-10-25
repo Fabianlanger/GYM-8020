@@ -6,7 +6,7 @@
 
 | Kenmerk | Wat we zien | Vertaling naar de app |
 |---|---|---|
-| **Logo** | Vier gele trapeziumvlakken die samen een vierkant vormen, met witte naden, iets gedraaid (≈ −5°). Woordmerk "IBS" in crème, geometrisch schreefloos. | Beeldmerk op opstart-/Over-scherm; de vier gedraaide vlakken als basis voor het app-icoon. |
+| **Logo** | Vier gele trapeziumvlakken die samen een vierkant vormen, met witte naden, iets gedraaid (≈ −5°). Woordmerk "IBS" in crème, geometrisch schreefloos. | Knipoog: de arm in het app-icoon komt uit dit merk; het merk zelf klein in "Over" (zie 5). |
 | **Kleur** | Warm geel `#F9C852` (gemeten uit het logo); crème `#FEF9ED` voor het woordmerk. | Geel = enige accentkleur. Crème i.p.v. puur wit voor tekst: warmer, minder hard. |
 | **Achtergrond** | Bijna-zwart `#171717`, kaarten in donkergrijs (`#232323` … `#3A3A3A`). | Donker thema met drie lagen oppervlak. |
 | **Gloed** | Zachte radiale gloed: amber/bruin (`#613F0F`) rechtsboven, geel links. | Subtiele radiale gloed achter kopteksten en achter de timer. |
@@ -60,9 +60,14 @@ Preview: https://claude.ai/artifact/3jfeGc8Sqtak3Zvh5so4WX
 
 **Terughoudendheid:** trainingsschermen blijven rustig en leesbaar op armlengte — daar alleen de scheider en de zonnewaaier achter de timer. Ornament mag nooit een cijfer of knop verstoren.
 
-## 5. App-icoon
+## 5. App-icoon en merk
 
-Vier gedraaide gele vlakken (IBS-merk) als omlijsting, met daarin een gestileerde halterschijf met art-deco-zonnewaaier, op zwart. Adaptive icon (voor- en achtergrondlaag) + monochrome variant voor Android 13+ thema-iconen.
+De app staat los van IBS, met een subtiele knipoog ernaar (oktober 2026).
+
+- **De arm** (`assets/branding/arm-mark.svg`, `ic_arm_mark`): het IBS-merk zonder het bovenste vlak, met drie punten verplaatst. Het linker vlak is onderarm en hand, het onderste de bovenarm (de hoek bij het rechter vlak omhoog: de biceps), het rechter de schouder (rechtsboven omlaag).
+- **Het app-icoon** (`ic_launcher_*`, `ic_app_emblem`): de arm in een halterschijf: een dubbele gouden ring met 8 streepjes en 8 mini-IBS-merkjes die met de ring meedraaien. Plus een eenkleurige versie voor Android-thema's.
+- **Gebruik:** het embleem op het opstartscherm, de introductie en "Over"; de arm klein op het beginscherm.
+- **IBS:** het volledige IBS-merk staat alleen klein in "Over" (Instellingen), met een link naar i-b-s.nl.
 
 ## 6. Componenten (kort)
 

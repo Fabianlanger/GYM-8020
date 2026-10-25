@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="about_ibs">Developed under the flag of Isatis Business Solutions</string>
+    <string name="about_ibs">A wink to Isatis Business Solutions, AI and data consultancy</string>
+    <string name="about_ibs_link">Visit i-b-s.nl</string>
     <string name="about_method">About the method</string>
     <string name="about_method_text">Two sets per exercise, straight after each other and both to failure: heavy (aim for 6 reps), then light (aim for 16). After each exercise you set your next target weight. Reps are not planned; they follow from going to failure.</string>
     <string name="about_title">About this app</string>

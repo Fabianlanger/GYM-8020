@@ -1,6 +1,7 @@
 package nl.ibs.gym8020.ui.deco
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -17,6 +18,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.res.painterResource
+import nl.ibs.gym8020.R
 import nl.ibs.gym8020.ui.theme.Gym
 import kotlin.math.PI
 import kotlin.math.cos
@@ -40,6 +43,18 @@ private fun DrawScope.inBox(w: Float, h: Float, block: DrawScope.(stroke: Float)
         translate(dx, dy)
         scale(s, s, Offset.Zero)
     }) { block(1.2f * density / 2f / s) }
+}
+
+/** The app emblem: the arm in a plate ring of mini IBS marks, as on the app icon. */
+@Composable
+fun AppEmblem(modifier: Modifier = Modifier) {
+    Image(painterResource(R.drawable.ic_app_emblem), contentDescription = null, modifier = modifier.aspectRatio(1f))
+}
+
+/** The arm: the IBS mark without its top panel, with the shoulder lowered and the biceps raised. */
+@Composable
+fun ArmMark(modifier: Modifier = Modifier) {
+    Image(painterResource(R.drawable.ic_arm_mark), contentDescription = null, modifier = modifier.aspectRatio(1f))
 }
 
 /** The IBS mark: four tilted panels, traced from the logo. Virtual box 30..317 × 5..292. */

@@ -63,11 +63,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import nl.ibs.gym8020.ui.body.BodyweightScreen
 import nl.ibs.gym8020.ui.dashboard.DashboardScreen
-import nl.ibs.gym8020.ui.components.Eyebrow
 import nl.ibs.gym8020.ui.deco.DecoBackground
 import nl.ibs.gym8020.ui.deco.DecoDivider
 import nl.ibs.gym8020.ui.deco.DecoPattern
-import nl.ibs.gym8020.ui.deco.IbsMark
+import nl.ibs.gym8020.ui.deco.AppEmblem
 import nl.ibs.gym8020.ui.deco.Lattice
 import nl.ibs.gym8020.ui.deco.Sunburst
 import nl.ibs.gym8020.ui.exercises.ExerciseEditScreen
@@ -317,10 +316,9 @@ private fun Splash() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(32.dp),
         ) {
-            IbsMark(Modifier.size(96.dp))
+            AppEmblem(Modifier.size(128.dp))
             Text("GYM · 8020", style = MaterialTheme.typography.headlineLarge, color = Gym.Cream)
             DecoDivider(Modifier.fillMaxWidth(.8f))
-            Eyebrow(stringResource(R.string.about_ibs))
         }
     }
 }

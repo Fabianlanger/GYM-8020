@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="about_ibs">Ontwikkeld onder de vlag van Isatis Business Solutions</string>
+    <string name="about_ibs">Met een knipoog naar Isatis Business Solutions, AI- en dataconsultancy</string>
+    <string name="about_ibs_link">Naar i-b-s.nl</string>
     <string name="about_method">Over de methode</string>
     <string name="about_method_text">Twee sets per oefening, direct na elkaar en allebei tot failure: zwaar (streef naar 6 reps), dan licht (streef naar 16). Na elke oefening zet je het gewicht voor de volgende keer. Reps plan je niet; die volgen uit het gaan tot failure.</string>
     <string name="about_title">Over deze app</string>

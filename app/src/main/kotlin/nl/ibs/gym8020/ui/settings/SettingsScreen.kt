@@ -35,6 +35,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,14 +65,19 @@ import nl.ibs.gym8020.ui.components.Eyebrow
 import nl.ibs.gym8020.ui.components.LineButton
 import nl.ibs.gym8020.ui.components.NumberStepper
 import nl.ibs.gym8020.ui.deco.DecoDivider
+import nl.ibs.gym8020.ui.deco.AppEmblem
 import nl.ibs.gym8020.ui.deco.IbsMark
 import nl.ibs.gym8020.ui.theme.Gym
 import java.time.LocalDate
+
+/** Isatis Business Solutions, where the app icon's mark comes from. */
+private const val IBS_URL = "https://i-b-s.nl"
 
 @Composable
 fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMethod: () -> Unit, onOpenIntro: () -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
     var message by remember { mutableStateOf<String?>(null) }
     var pendingImport by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -209,10 +215,15 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
         DecoCard(corners = true, padding = 22.dp) {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Eyebrow(stringResource(R.string.about_title))
-                IbsMark(Modifier.size(64.dp))
+                AppEmblem(Modifier.size(88.dp))
                 Text("GYM-8020", style = MaterialTheme.typography.headlineSmall)
                 Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
-                Text(stringResource(R.string.about_ibs), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                // A wink to IBS: the mark the app icon is made from, with a link (no main logo, the app stands on its own).
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IbsMark(Modifier.size(18.dp))
+                    Text(stringResource(R.string.about_ibs), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+                }
+                TextButton(onClick = { uriHandler.openUri(IBS_URL) }) { Text(stringResource(R.string.about_ibs_link), color = Gym.Yellow) }
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.about_method_text), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
                 LineButton(stringResource(R.string.about_method), onClick = onOpenMethod, icon = Icons.AutoMirrored.Filled.MenuBook)
