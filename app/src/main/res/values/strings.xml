@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="about_ibs">A wink to Isatis Business Solutions, AI and data consultancy</string>
+    <string name="about_ibs">Isatis Business Solutions</string>
+    <string name="about_ibs_text">Data and AI consultancy from Nijmegen, part of the Isatis Group. We help organisations get their data in order and turn it into usable insight and practical AI: data management, data engineering, data science and machine learning.</string>
+    <string name="about_maker">Made by</string>
     <string name="about_ibs_link">Visit i-b-s.nl</string>
     <string name="about_method">About the method</string>
     <string name="about_method_text">Two sets per exercise, straight after each other and both to failure: heavy (aim for 6 reps), then light (aim for 16). After each exercise you set your next target weight. Reps are not planned; they follow from going to failure.</string>

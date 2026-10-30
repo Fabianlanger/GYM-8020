@@ -27,6 +27,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Upload
@@ -34,6 +36,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
@@ -72,6 +75,9 @@ import java.time.LocalDate
 
 /** Isatis Business Solutions, where the app icon's mark comes from. */
 private const val IBS_URL = "https://i-b-s.nl"
+
+/** The maker of the app. */
+private const val MAKER_URL = "https://fabianlanger.nl"
 
 @Composable
 fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMethod: () -> Unit, onOpenIntro: () -> Unit) {
@@ -218,12 +224,25 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
                 AppEmblem(Modifier.size(88.dp))
                 Text("GYM-8020", style = MaterialTheme.typography.headlineSmall)
                 Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
-                // A wink to IBS: the mark the app icon is made from, with a link (no main logo, the app stands on its own).
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.about_maker), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+                    TextButton(onClick = { uriHandler.openUri(MAKER_URL) }) { Text("Fabian Langer", color = Gym.Yellow) }
+                }
+                // A wink to IBS: the mark the app icon is made from; tap for a short note and a link.
+                var ibsOpen by remember { mutableStateOf(false) }
+                Row(
+                    Modifier.clickable { ibsOpen = !ibsOpen }.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     IbsMark(Modifier.size(18.dp))
                     Text(stringResource(R.string.about_ibs), style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+                    Icon(if (ibsOpen) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, tint = Gym.Muted, modifier = Modifier.size(18.dp))
                 }
-                TextButton(onClick = { uriHandler.openUri(IBS_URL) }) { Text(stringResource(R.string.about_ibs_link), color = Gym.Yellow) }
+                if (ibsOpen) {
+                    Text(stringResource(R.string.about_ibs_text), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+                    TextButton(onClick = { uriHandler.openUri(IBS_URL) }) { Text(stringResource(R.string.about_ibs_link), color = Gym.Yellow) }
+                }
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.about_method_text), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
                 LineButton(stringResource(R.string.about_method), onClick = onOpenMethod, icon = Icons.AutoMirrored.Filled.MenuBook)
