@@ -265,6 +265,9 @@
     <string name="heat_less">Less</string>
     <string name="heat_more">More</string>
     <string name="heat_no_data">No data</string>
+    <string name="heat_not_trained">Not trained this session</string>
+    <string name="heat_skipped">Skipped</string>
+    <string name="heat_skipped_list">Skipped: %1$s</string>
     <string name="heat_progress">Vs. last time</string>
     <string name="heat_same">Same</string>
     <string name="heat_sets_title">Work sets per week (last 4 weeks)</string>

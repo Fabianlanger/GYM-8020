@@ -264,6 +264,9 @@
     <string name="heat_less">Minder</string>
     <string name="heat_more">Meer</string>
     <string name="heat_no_data">Geen data</string>
+    <string name="heat_not_trained">Niet getraind deze training</string>
+    <string name="heat_skipped">Overgeslagen</string>
+    <string name="heat_skipped_list">Overgeslagen: %1$s</string>
     <string name="heat_progress">T.o.v. vorige keer</string>
     <string name="heat_same">Gelijk</string>
     <string name="heat_sets_title">Werksets per week (laatste 4 weken)</string>

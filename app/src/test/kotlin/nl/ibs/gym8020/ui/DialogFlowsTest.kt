@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -189,6 +190,12 @@ class DialogFlowsTest {
                 rule.waitForText("Back to home")
                 assertTrue("summary offers editing", rule.has("Edit session"))
                 rule.shot("en_13_summary")
+
+                // Muscle map (#67): only the squat was done, so muscles like the calves were only trained by skipped
+                // exercises and the legend shows "skipped".
+                rule.onAllNodesWithText("Muscles this session", ignoreCase = true).onFirst().performScrollTo()
+                assertTrue("muscle map has skipped muscles", rule.has("Skipped"))
+                rule.shot("en_13b_summary_muscles")
 
                 // Edit: the session with its exercise, then back without changes.
                 rule.click("Edit session")
