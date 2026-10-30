@@ -88,6 +88,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -141,6 +142,10 @@ import nl.ibs.gym8020.ui.exercises.ExercisePickerDialog
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
 import java.time.format.DateTimeFormatter
+
+/** Test tags for the UI tests of F-2 (TESTING.md): the exercise timer and the 3-2-1 countdown. */
+const val EXERCISE_TIMER_TAG = "exercise_timer"
+const val COUNTDOWN_TAG = "countdown"
 
 fun formatDuration(ms: Long): String {
     val total = (ms / 1000).coerceAtLeast(0)
@@ -690,7 +695,10 @@ private fun RunningTimer(elapsed: Long) {
         Sunburst(Modifier.fillMaxSize().alpha(.55f), full = true)
         Box(Modifier.size(140.dp).background(Gym.Bg, RoundedCornerShape(70.dp)))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(formatDuration(elapsed), fontFamily = Poppins, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Gym.Yellow)
+            Text(
+                formatDuration(elapsed), fontFamily = Poppins, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Gym.Yellow,
+                modifier = Modifier.testTag(EXERCISE_TIMER_TAG),
+            )
             Text(stringResource(R.string.tr_put_phone_away), color = Gym.Muted, style = MaterialTheme.typography.bodySmall)
         }
     }
@@ -1062,6 +1070,7 @@ private fun CountdownOverlay(startedAt: Long, onDone: () -> Unit) {
     }
     Box(
         Modifier.fillMaxSize()
+            .testTag(COUNTDOWN_TAG)
             .background(Brush.radialGradient(listOf(Gym.Glow.copy(alpha = .9f), Gym.Bg)))
             .clickable(enabled = true, onClick = {}),
         contentAlignment = Alignment.Center,

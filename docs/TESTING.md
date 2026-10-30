@@ -70,8 +70,8 @@ zijn. Nieuwe features voegen hun flow hier toe.
 | # | Flow | Gedekt door | Status |
 |---|---|---|---|
 | F-1 | Training starten → sets invullen → doel voor volgende keer → volgende training toont dat doel | – | open (T-4) |
-| F-2 | Warming-up → GO → aftellen → timer loopt → eerste invoer stopt timer | – | open (T-4) |
-| F-3 | Training afronden → samenvatting → (bewerken) → logboek klopt | – | open (T-4) |
+| F-2 | Warming-up → GO → aftellen → timer loopt → eerste invoer stopt timer | AppFlowsTest (`F-2 warm-up, GO, countdown, timer, first input stops the timer`) | gedekt (eerste run in CI nog af te wachten) |
+| F-3 | Training afronden → samenvatting → (bewerken) → logboek klopt | DialogFlowsTest (`F-3 finish, summary, edit, the log is right`), loopt via het afrondvenster (T-7) | gedekt (eerste run in CI nog af te wachten) |
 | F-4 | App-update met databasemigratie: alle data blijft staan | MigrationTest | gedekt |
 | F-5 | Exporteren → importeren: alles terug | deels (back-upformaat) | open (T-2) |
 | F-6 | Automatische back-up naar map, houdt de nieuwste 7 | – | open |

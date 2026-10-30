@@ -1,14 +1,20 @@
 package nl.ibs.gym8020.ui
 
 import android.content.Context
+import android.os.Looper
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -24,12 +30,16 @@ import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Seeder
 import nl.ibs.gym8020.data.db.BodyweightEntity
+import nl.ibs.gym8020.ui.training.COUNTDOWN_TAG
+import nl.ibs.gym8020.ui.training.EXERCISE_TIMER_TAG
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Duration
 import java.time.LocalDate
 
 /**
@@ -125,6 +135,69 @@ class AppFlowsTest {
             rule.onAllNodesWithText("Full body").onLast().performClick()
             rule.waitForText("Back squat")
             rule.shot("en_08_training")
+        }
+    }
+
+    /** The text of the exercise timer, or null when it is not shown. */
+    private fun ComposeTestRule.timerText(): String? =
+        onAllNodesWithTag(EXERCISE_TIMER_TAG, useUnmergedTree = true).fetchSemanticsNodes().firstOrNull()?.config
+            ?.let { if (SemanticsProperties.Text in it) it[SemanticsProperties.Text].joinToString("") { t -> t.text } else "" }
+
+    /** On the page on screen: the pager also builds the next exercise, one screen width to the right. */
+    private val visible = SemanticsMatcher("on the page on screen") {
+        it.positionInRoot.x >= 0f && it.positionInRoot.x < context.resources.displayMetrics.widthPixels
+    }
+
+    /** Robolectric's clock only moves when told to; the countdown and the timers read it. */
+    private fun passTime(seconds: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(seconds))
+
+    /**
+     * F-2: warm-up → GO → 3-2-1 → the exercise timer runs → the first input stops it. Body weight is logged, so no
+     * question window appears (T-7). Clicks only on the visible page: the pager also builds the next exercise.
+     */
+    @Test
+    fun `F-2 warm-up, GO, countdown, timer, first input stops the timer`() {
+        freshInstall()
+        val db = (context as GymApp).container.db
+        runBlocking { db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = 80.0)) }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            rule.toHome("Skip", "Weight today")
+            rule.onAllNodesWithText("Full body").onLast().performClick()
+            rule.waitForText("Back squat")
+
+            // Warm-up: the button starts the warm-up time and adds a warm-up set.
+            rule.onAllNodesWithText("Warm-up ·", substring = true).filter(visible).onFirst().performClick()
+            rule.waitUntil(20_000) { rule.onAllNodesWithText("load the weight", substring = true).fetchSemanticsNodes().isNotEmpty() }
+
+            // GO starts the 3-2-1; the timer starts when it is over.
+            rule.onAllNodesWithText("Go", ignoreCase = true).filter(visible).onFirst().performClick()
+            rule.waitUntil(20_000) { rule.onAllNodesWithTag(COUNTDOWN_TAG).fetchSemanticsNodes().isNotEmpty() }
+            rule.shot("en_09_countdown")
+            passTime(4)
+            rule.waitUntil(20_000) { rule.timerText() != null }
+            assertTrue("countdown is gone", rule.onAllNodesWithTag(COUNTDOWN_TAG).fetchSemanticsNodes().isEmpty())
+
+            // The timer runs.
+            passTime(3)
+            rule.waitUntil(20_000) { rule.timerText().let { it != null && it != "00:00" } }
+            rule.shot("en_10_timer_running")
+
+            // The first input (+ on the weight of the open heavy set) stops the timer.
+            val more = rule.onAllNodesWithContentDescription("More").filter(visible).onFirst()
+            more.performScrollTo()
+            more.performClick()
+            rule.waitUntil(20_000) { rule.timerText() == null }
+
+            val times = runBlocking {
+                val session = db.sessions().all().single()
+                val squat = db.exercises().all().single { it.name == "Back squat" }
+                db.sessions().exercises(session.id).single { it.exerciseId == squat.id }
+            }
+            val warmupAt = times.warmupAt ?: error("no warm-up time")
+            val goAt = times.goAt ?: error("no GO time")
+            val firstInputAt = times.firstInputAt ?: error("no first input time")
+            assertTrue("GO after the warm-up", goAt >= warmupAt)
+            assertTrue("timer ran at least 3 s before the first input", firstInputAt - goAt >= 3_000)
         }
     }
 
