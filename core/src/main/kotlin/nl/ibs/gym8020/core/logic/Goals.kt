@@ -15,8 +15,11 @@ interface WeightSteps {
 /** A performed set as needed for planning. [weightKg] is the entered value (signed extra for bodyweight). */
 data class PerformedSet(val role: SetRole, val weightKg: Double?, val reps: Int?)
 
-/** A planned set for next time. [weightKg] is null for warm-up sets and reps-progression exercises. */
-data class PlannedSet(val role: SetRole, val weightKg: Double?)
+/**
+ * A planned set for next time. [weightKg] is null for warm-up sets and reps-progression exercises; [reps] is the
+ * reps target of a work set with reps progression (#69), null otherwise.
+ */
+data class PlannedSet(val role: SetRole, val weightKg: Double?, val reps: Int? = null)
 
 /**
  * The method: you always go to failure; reps emerge. Plan forward on weight only.

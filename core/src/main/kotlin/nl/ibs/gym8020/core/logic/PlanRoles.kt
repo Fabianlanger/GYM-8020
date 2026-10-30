@@ -12,7 +12,8 @@ object PlanRoles {
 
     /**
      * Switches set [index] to the next role. A work set takes the weight of another set with that role
-     * (so a new light set gets your light weight), else keeps its own; warm-ups have no planned weight.
+     * (so a new light set gets your light weight), else keeps its own; warm-ups have no planned weight. A reps
+     * target (#69) goes the same way.
      */
     fun cycle(sets: List<PlannedSet>, index: Int): List<PlannedSet> {
         val set = sets.getOrNull(index) ?: return sets
@@ -24,6 +25,14 @@ object PlanRoles {
                 ?: set.weightKg
                 ?: sets.lastOrNull { it.role.isWork && it.weightKg != null }?.weightKg
         }
-        return sets.mapIndexed { j, s -> if (j == index) PlannedSet(role, weight) else s }
+        // A reps target (#69) follows the same rule as the weight.
+        val reps = if (!role.isWork) {
+            null
+        } else {
+            sets.filterIndexed { j, s -> j != index && s.role == role && s.reps != null }.lastOrNull()?.reps
+                ?: set.reps
+                ?: sets.lastOrNull { it.role.isWork && it.reps != null }?.reps
+        }
+        return sets.mapIndexed { j, s -> if (j == index) PlannedSet(role, weight, reps) else s }
     }
 }

@@ -150,6 +150,7 @@
     <string name="tr_note_last">Notitie: %s</string>
     <string name="tr_put_phone_away">Leg je telefoon weg</string>
     <string name="tr_reps">Reps</string>
+    <string name="tr_reps_suffix">reps</string>
     <string name="tr_reps_progression">Versla %d reps</string>
     <string name="tr_set_delete">Set verwijderen</string>
     <string name="tr_skip">Oefening overslaan</string>

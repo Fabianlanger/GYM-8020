@@ -54,9 +54,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
-import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
-import nl.ibs.gym8020.core.logic.RepsTarget
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.WeightCalculator
@@ -159,9 +157,14 @@ class SessionEditViewModel(private val c: AppContainer, private val sessionId: L
     fun updateSessionTarget(set: SetEntity, kg: Double?) = viewModelScope.launch { repo.updateSet(set.copy(goalWeightKg = kg)) }
 
     /** You change the weight of target set [index] for next time: stored right away as your own target (#64). */
-    fun editNextTarget(item: EditItem, index: Int, kg: Double?) {
+    fun editNextTarget(item: EditItem, index: Int, kg: Double?) = editNextSet(item, index) { it.copy(weightKg = kg) }
+
+    /** With reps progression you change the reps of target set [index]: your own target as well (#69). */
+    fun editNextTargetReps(item: EditItem, index: Int, reps: Int?) = editNextSet(item, index) { it.copy(reps = reps) }
+
+    private fun editNextSet(item: EditItem, index: Int, change: (PlannedSet) -> PlannedSet) {
         val current = item.next ?: return
-        val sets = current.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = kg) else s }
+        val sets = current.sets.mapIndexed { j, s -> if (j == index) change(s) else s }
         ownEdits.update { it + (item.se.id to current.copy(sets = sets, was = current.was ?: current.sets)) }
         viewModelScope.launch { repo.setTarget(item.se.id, item.exercise.id, Target(sets, current.note)) }
     }
@@ -381,14 +384,13 @@ private fun SessionTarget(item: EditItem, set: SetEntity, unit: WeightUnit, step
 /**
  * "Doel volgende keer" (#64), only in your latest training with the exercise: as visible as the performance.
  * Changing a weight makes it your own target; "was 80 kg" shows the weight before your first change here.
- * With reps progression the target is reps, read-only as in the training screen.
+ * With reps progression the target is reps (#69), changed the same way.
  */
 @Composable
 private fun NextTargetEditor(item: EditItem, next: NextTarget, unit: WeightUnit, step: Double, vm: SessionEditViewModel) {
     val ex = item.exercise
     val signed = ex.loadType == LoadType.BODYWEIGHT
     val isReps = ex.progression == Progression.REPS
-    val repsTargets = if (isReps) RepsTarget.forSets(next.sets.map { it.role }, item.sets.map { PerformedSet(it.role, it.weightKg, it.reps) }) else null
     Column(
         Modifier.fillMaxWidth().padding(top = 10.dp).background(Gym.Bg.copy(alpha = .35f), RoundedCornerShape(14.dp)).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -399,10 +401,22 @@ private fun NextTargetEditor(item: EditItem, next: NextTarget, unit: WeightUnit,
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 RoleBadge(p.role)
                 if (isReps) {
-                    Text(
-                        repsTargets?.getOrNull(i)?.let { stringResource(R.string.tr_target, it) } ?: stringResource(R.string.tr_to_failure),
-                        color = Gym.Muted, modifier = Modifier.weight(1f),
-                    )
+                    Column(Modifier.weight(1f)) {
+                        NumberStepper(
+                            value = p.reps?.toDouble(),
+                            onValueChange = { vm.editNextTargetReps(item, i, it?.toInt()?.coerceAtLeast(0)) },
+                            step = 1.0, decimals = false, min = 0.0,
+                            formatter = { it.toInt().toString() }, suffix = stringResource(R.string.tr_reps_suffix),
+                            textSize = 18.sp, buttonSize = 38.dp,
+                        )
+                        val was = next.was?.getOrNull(i)
+                        if (was != null && was.reps != p.reps) {
+                            Text(
+                                stringResource(R.string.log_was, was.reps?.toString() ?: "–"),
+                                color = Gym.Muted, style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
                 } else {
                     Column(Modifier.weight(1f)) {
                         NumberStepper(

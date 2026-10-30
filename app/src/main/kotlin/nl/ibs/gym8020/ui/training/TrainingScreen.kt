@@ -113,7 +113,6 @@ import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.ProgressionSwitch
-import nl.ibs.gym8020.core.logic.RepsTarget
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.LoadStep
@@ -499,7 +498,7 @@ private fun ExercisePage(
         // Sets: filling in the first number stops the exercise timer (D-31). Warm-up reps don't.
         item.sets.forEach { set ->
             val target = headerTarget(item, set, targetOf)
-            // Reps progression: the reps to beat are the header number, the reps of this set's role last time (#52).
+            // Reps progression: the reps to beat are the header number, your reps target for this set (#52, #69).
             val prevReps = if (item.repsTargets != null) target else item.extra?.last?.sets?.filter { it.role == set.role }?.maxOfOrNull { it.reps ?: 0 }
             if (openSet == set.id) {
                 SetEditor(
@@ -611,8 +610,9 @@ private fun loadText(weightKg: Double?, calc: WeightCalculator?, step: LoadStep?
 }
 
 /**
- * The number in a set's header (#52). Reps progression: the reps of that set's role last time, none without a
- * last time. Weight progression: the heavy/light rep target from the settings.
+ * The number in a set's header (#52). Reps progression: your reps target for that set as the training started
+ * (#69), else the reps of that set's role last time, none without either. Weight progression: the heavy/light rep
+ * target from the settings.
  */
 private fun headerTarget(item: TrainingItem, set: SetEntity, targetOf: (SetRole) -> Int?): Int? {
     val reps = item.repsTargets ?: return targetOf(set.role)
@@ -892,8 +892,6 @@ private fun NextTimePlanner(
         if (isReps) Progression.REPS else item.progressionToday, ex.loadType, targetOf, goodMargin, step, item.calc,
     )
     val taken = vm.takenAdvice.collectAsStateWithLifecycle().value[item.se.id].orEmpty()
-    // Reps progression: the target per set is the reps you did today (#52); storing other reps waits for schema v3.
-    val repsToday = if (isReps) RepsTarget.forSets(plan.sets.map { it.role }, item.sets.map { PerformedSet(it.role, it.weightKg, it.reps) }) else null
     val switchTo = ProgressionSwitch.offered(ex.progression, ex.loadType)
     var open by remember(item.se.id) { mutableStateOf(false) }
     // A target warning tapped in the check at finishing (#47) opens the target.
@@ -903,10 +901,10 @@ private fun NextTimePlanner(
             Column(Modifier.weight(1f)) {
                 Eyebrow(stringResource(R.string.tr_next_time), color = Gym.Gold)
                 val letters = SetRole.entries.associateWith { roleLabel(it).take(1) }
-                val summary = plan.sets.withIndex().filter { it.value.role.isWork }.joinToString("  ·  ") { (i, p) ->
+                val summary = plan.sets.withIndex().filter { it.value.role.isWork }.joinToString("  ·  ") { (_, p) ->
                     val role = letters.getValue(p.role)
                     val w = p.weightKg
-                    val reps = repsToday?.getOrNull(i)
+                    val reps = p.reps
                     when {
                         isReps -> if (reps != null) "$role → $reps" else role
                         w == null -> role
@@ -928,7 +926,25 @@ private fun NextTimePlanner(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Tap to switch heavy → light → warm-up (B-3).
                     Box(Modifier.clickable { vm.editPlan(item.se.id) { d -> d.copy(sets = PlanRoles.cycle(d.sets, i)) } }) { RoleBadge(p.role) }
-                    if (p.role.isWork && !isReps) {
+                    if (p.role.isWork && isReps) {
+                        // Reps progression (#69): your reps target for this set, by default the reps you did today.
+                        // Whole reps, stored right away like a weight.
+                        NumberStepper(
+                            value = p.reps?.toDouble(),
+                            onValueChange = { v ->
+                                vm.editPlan(item.se.id) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == i) s.copy(reps = v?.toInt()?.coerceAtLeast(0)) else s }) }
+                            },
+                            step = 1.0,
+                            decimals = false,
+                            min = 0.0,
+                            formatter = { it.toInt().toString() },
+                            textSize = 20.sp,
+                            buttonSize = 40.dp,
+                            modifier = Modifier.weight(1f),
+                            minusLabel = stringResource(R.string.action_less), plusLabel = stringResource(R.string.action_more),
+                            suffix = stringResource(R.string.tr_reps_suffix),
+                        )
+                    } else if (p.role.isWork) {
                         NumberStepper(
                             value = p.weightKg,
                             onValueChange = { v -> vm.editPlan(item.se.id) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == i) s.copy(weightKg = v) else s }) } },
@@ -946,7 +962,7 @@ private fun NextTimePlanner(
                         )
                     } else {
                         Text(
-                            if (p.role == SetRole.WARMUP) warmupHint(item, unit, assistPercent) else ((if (isReps) repsToday?.getOrNull(i) else targetOf(p.role))?.let { stringResource(R.string.tr_target, it) } ?: stringResource(R.string.tr_to_failure)),
+                            warmupHint(item, unit, assistPercent),
                             color = Gym.Muted, modifier = Modifier.weight(1f),
                         )
                     }
@@ -977,7 +993,7 @@ private fun NextTimePlanner(
                     onClick = {
                         vm.editPlan(item.se.id) { d ->
                             val last = d.sets.lastOrNull { it.role.isWork }
-                            d.copy(sets = d.sets + PlannedSet(SetRole.HEAVY, if (isReps) null else last?.weightKg ?: if (signed) 0.0 else null))
+                            d.copy(sets = d.sets + PlannedSet(SetRole.HEAVY, if (isReps) null else last?.weightKg ?: if (signed) 0.0 else null, if (isReps) last?.reps else null))
                         }
                     },
                     icon = Icons.Filled.Add,

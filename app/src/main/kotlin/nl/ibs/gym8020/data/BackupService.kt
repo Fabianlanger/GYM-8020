@@ -39,8 +39,11 @@ import nl.ibs.gym8020.data.db.SetEntity
 import nl.ibs.gym8020.data.db.WeekPlanEntity
 import nl.ibs.gym8020.data.db.WeekPlanSlotEntity
 
-/** Export/import of all data as one JSON file (D-48). Import replaces everything. */
-class BackupService(private val db: AppDatabase, private val settings: SettingsStore) {
+/**
+ * Export/import of all data as one JSON file (D-48). Import replaces everything. The reps targets (#69) live in
+ * [reps] until schema v3 (A-1) and go along with the target's sets.
+ */
+class BackupService(private val db: AppDatabase, private val settings: SettingsStore, private val reps: RepsTargets) {
 
     suspend fun export(): String {
         val exercises = db.exercises().all()
@@ -87,7 +90,11 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
             },
             plateStock = settings.current().plateStock.encode(),
             plans = db.plans().all().map { p ->
-                PlanDto(p.exerciseId, p.note, planSets[p.exerciseId].orEmpty().map { PlanSetDto(it.role.name, it.weightKg) })
+                val planReps = reps.target(p.exerciseId)
+                PlanDto(
+                    p.exerciseId, p.note,
+                    planSets[p.exerciseId].orEmpty().sortedBy { it.position }.mapIndexed { i, s -> PlanSetDto(s.role.name, s.weightKg, planReps.getOrNull(i)) },
+                )
             },
         )
         return BackupJson.encode(backup)
@@ -96,6 +103,8 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
     /** Replaces all data with the backup. Throws on an invalid file before anything is changed. */
     suspend fun import(text: String) {
         val b = BackupJson.decode(text)
+        // Reps targets per (new) exercise id, stored once the database part has succeeded.
+        val planReps = HashMap<Long, List<Int?>>()
         db.withTransaction {
             val sql = db.openHelper.writableDatabase
             listOf(
@@ -172,8 +181,12 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                     PlanEntity(exerciseId = exId, note = p.note, updatedAt = System.currentTimeMillis()),
                     p.sets.map { PlanSetEntity(exerciseId = exId, position = 0, role = enumOr(it.role, SetRole.HEAVY), weightKg = it.weightKg) },
                 )
+                planReps[exId] = p.sets.map { it.reps }
             }
         }
+        // TODO(A-1): the session target in reps (#69) is not in the backup; it moves into the database with schema v3.
+        reps.clear()
+        planReps.forEach { (exId, list) -> reps.setTarget(exId, list) }
     }
 
     /** Called after [import]: the plate stock lives in the settings, not in the database. */

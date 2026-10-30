@@ -4,6 +4,8 @@ import nl.ibs.gym8020.core.backup.Backup
 import nl.ibs.gym8020.core.backup.BackupJson
 import nl.ibs.gym8020.core.backup.ExerciseDto
 import nl.ibs.gym8020.core.backup.MuscleShareDto
+import nl.ibs.gym8020.core.backup.PlanDto
+import nl.ibs.gym8020.core.backup.PlanSetDto
 import nl.ibs.gym8020.core.library.DefaultLibrary
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,6 +47,18 @@ class LibraryAndBackupTest {
             exercises = listOf(ExerciseDto(1, "pull_up", "Pull-up", "BODYWEIGHT", "BODYWEIGHT", "WEIGHT", 1.0, muscles = listOf(MuscleShareDto("LATS", 100)))),
         )
         assertEquals(b, BackupJson.decode(BackupJson.encode(b)))
+    }
+
+    @Test
+    fun `#69 a reps target goes along in the backup`() {
+        val b = Backup(exportedAt = 1L, plans = listOf(PlanDto(1, sets = listOf(PlanSetDto("HEAVY", null, 18), PlanSetDto("LIGHT", null, 30)))))
+        assertEquals(b, BackupJson.decode(BackupJson.encode(b)))
+    }
+
+    @Test
+    fun `#69 an older backup without reps targets is still read`() {
+        val text = """{"format":"${Backup.FORMAT}","exportedAt":1,"plans":[{"exerciseId":1,"sets":[{"role":"HEAVY","weightKg":80.0}]}]}"""
+        assertEquals(listOf(PlanSetDto("HEAVY", 80.0, null)), BackupJson.decode(text).plans.single().sets)
     }
 
     @Test
