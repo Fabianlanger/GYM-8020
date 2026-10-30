@@ -4,7 +4,6 @@ import nl.ibs.gym8020.core.logic.Change
 import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.MuscleShare
-import nl.ibs.gym8020.core.model.Progression
 
 /**
  * Muscle heatmap after a training (D-40, D-41):
@@ -21,8 +20,7 @@ object Heatmap {
     fun score(sets: List<SetRecord>): Double? {
         val work = sets.filter { it.role.isWork && (it.reps ?: 0) > 0 }
         if (work.isEmpty()) return null
-        val repsMode = work.first().progression == Progression.REPS && work.all { (it.weightKg ?: 0.0) == 0.0 }
-        if (repsMode) return work.maxOf { it.reps!! }.toDouble()
+        if (Comparison.repsMode(work)) return work.maxOf { it.reps!! }.toDouble()
         return Strength.of(work)
     }
 

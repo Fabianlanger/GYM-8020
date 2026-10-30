@@ -126,13 +126,18 @@
     <string name="signal_good">Good</string>
     <string name="signal_too_heavy">Too heavy</string>
     <string name="signal_too_light">Too light</string>
+    <string name="sum_e1rm">e1RM %1$s</string>
+    <string name="sum_first_time">First time</string>
+    <string name="sum_per_exercise">Compared to last time</string>
+    <string name="sum_reps">%1$d reps</string>
+    <string name="sum_reps_change">%1$s reps</string>
+    <string name="sum_vs_previous">Compared to previous %1$s (%2$s)</string>
+    <string name="sum_volume">Volume %1$s</string>
     <string name="sum_back_home">Back to home</string>
     <string name="sum_duration">Duration</string>
-    <string name="sum_exercise_time">%1$s training · %2$s switching</string>
     <string name="sum_goals">Targets</string>
     <string name="sum_record">New record</string>
     <string name="sum_sets">Sets</string>
-    <string name="sum_times">Time per exercise</string>
     <string name="tr_add_exercise">Add exercise</string>
     <string name="tr_add_set">Set</string>
     <string name="tr_add_warmup">Warm-up</string>
@@ -356,6 +361,14 @@
     <plurals name="rem_behind_text">
         <item quantity="one">%1$d session to go, %2$d days left this week.</item>
         <item quantity="other">%1$d sessions to go, %2$d days left this week.</item>
+    </plurals>
+    <plurals name="sum_sets_change">
+        <item quantity="one">%1$d set (%2$s)</item>
+        <item quantity="other">%1$d sets (%2$s)</item>
+    </plurals>
+    <plurals name="sum_skipped">
+        <item quantity="one">%1$d exercise skipped</item>
+        <item quantity="other">%1$d exercises skipped</item>
     </plurals>
     <string name="tr_warmup_hint_assist">With assistance: %1$s</string>
     <string name="tr_warmup_hint_assist_pct">With assistance, about %1$d%% of your body weight</string>
