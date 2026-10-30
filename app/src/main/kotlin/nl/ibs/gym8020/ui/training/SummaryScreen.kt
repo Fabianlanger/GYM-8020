@@ -46,13 +46,13 @@ import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.model.LoadType
-import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.stats.Comparison
 import nl.ibs.gym8020.core.stats.ComparisonFormat
 import nl.ibs.gym8020.core.stats.ExerciseComparison
-import nl.ibs.gym8020.core.stats.Heatmap
 import nl.ibs.gym8020.core.stats.Measure
+import nl.ibs.gym8020.core.stats.MuscleComparison
+import nl.ibs.gym8020.core.stats.MuscleMap
 import nl.ibs.gym8020.core.stats.Trend
 import nl.ibs.gym8020.core.stats.WorkoutComparison
 import nl.ibs.gym8020.data.db.ExerciseEntity
@@ -87,8 +87,10 @@ data class Summary(
     /** Against the previous session of the same workout; null for the first one. */
     val workout: WorkoutComparison? = null,
     val exercises: List<ExerciseLine> = emptyList(),
-    val heatTotal: Map<Muscle, Double> = emptyMap(),
-    val heatProgress: Map<Muscle, Double> = emptyMap(),
+    /** Muscle map (#67); null when nothing was trained. */
+    val muscles: MuscleMap? = null,
+    /** Exercise names for the muscle map. */
+    val exerciseById: Map<Long, ExerciseEntity> = emptyMap(),
 )
 
 suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
@@ -149,10 +151,12 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
         Comparison.workout(current, bySession[p.id].orEmpty(), p.startedAt.toLocalDate(), ses.count { it.skipped })
     }
 
-    // Heatmap (D-40..42): volume of this training, and progress vs. the previous time of each exercise.
-    val heatTotal = Heatmap.volume(current, stats.muscles)
-    val heatProgress = Heatmap.progress(Heatmap.exerciseChange(current, previous), stats.muscles)
-    return Summary(session, work, reached, total, records, unit, workout, lines, heatTotal, heatProgress)
+    // Muscle map (#67): strength of what you did vs. the last time, volume vs. the previous session of this
+    // workout, and the muscles you would only have trained with skipped exercises.
+    val muscles = MuscleComparison.of(
+        current, ses.map { it.exerciseId }, previous, previousSession?.let { bySession[it.id].orEmpty() }, stats.muscles,
+    ).takeIf { it.breakdown.isNotEmpty() }
+    return Summary(session, work, reached, total, records, unit, workout, lines, muscles, stats.exercises)
 }
 
 @Composable
@@ -194,9 +198,7 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, 
                 Eyebrow(stringResource(R.string.sum_per_exercise))
                 s.exercises.forEach { ExerciseComparisonRow(it, s.unit) }
             }
-            if (s.heatTotal.isNotEmpty()) {
-                HeatmapCard(s.heatTotal, s.heatProgress, s.unit)
-            }
+            s.muscles?.let { MuscleMapCard(it, s.exerciseById, s.unit) }
         }
         Spacer(Modifier.height(4.dp))
         GoButton(stringResource(R.string.sum_back_home), onClick = onDone)
@@ -219,16 +221,22 @@ private fun Stat(value: String, label: String, modifier: Modifier = Modifier) {
 /** Short training date, e.g. "1 okt" (as "Laatste keer"). */
 private val compareDate = DateTimeFormatter.ofPattern("d MMM")
 
-private fun trendColor(trend: Trend?): Color = when (trend) {
+internal fun trendColor(trend: Trend?): Color = when (trend) {
     Trend.UP -> Gym.Positive
     Trend.DOWN -> Gym.Negative
     else -> Gym.Muted
 }
 
 /** "(+2,5 kg · +2,4%)"; a change within the margin of noise as "(≈ −0,7 kg · −0,6%)" in a neutral colour. */
-private fun changeText(absolute: String, relative: Double?, trend: Trend?): String {
+internal fun changeText(absolute: String, relative: Double?, trend: Trend?): String {
     val parts = listOfNotNull(absolute, relative?.let(ComparisonFormat::percent)).joinToString(" · ")
     return if (trend == Trend.SAME) "(≈ $parts)" else "($parts)"
+}
+
+/** One exercise's change: "(+2,5 kg · +2,4%)", or "(+2)" for reps; null without a comparison. */
+internal fun exerciseChangeText(c: ExerciseComparison, unit: WeightUnit): String? = c.change?.let { ch ->
+    if (c.measure == Measure.REPS) "(${ComparisonFormat.count(ch.absolute.roundToInt())})"
+    else changeText(ComparisonFormat.weight(ch.absolute, unit), ch.relative, c.trend)
 }
 
 /** Per workout (#66): "Tegenover vorige Full body (1 okt): volume 12.400 kg (+350 kg · +3%) · 18 sets (−2) · 2 oefeningen overgeslagen". */
@@ -269,10 +277,7 @@ private fun ExerciseComparisonRow(line: ExerciseLine, unit: WeightUnit) {
         c.measure == Measure.REPS -> stringResource(R.string.sum_reps, now.roundToInt())
         else -> stringResource(R.string.sum_e1rm, ComparisonFormat.weight(now, unit, signed = false))
     }
-    val change = c.change?.let { ch ->
-        if (c.measure == Measure.REPS) "(${ComparisonFormat.count(ch.absolute.roundToInt())})"
-        else changeText(ComparisonFormat.weight(ch.absolute, unit), ch.relative, c.trend)
-    }
+    val change = exerciseChangeText(c, unit)
     Column(
         Modifier.fillMaxWidth().background(Gym.Surface, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
