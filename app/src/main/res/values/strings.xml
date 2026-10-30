@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about_ibs">Isatis Business Solutions</string>
-    <string name="about_ibs_text">Data and AI consultancy from Nijmegen, part of the Isatis Group. We help organisations get their data in order and turn it into usable insight and practical AI: data management, data engineering, data science and machine learning.</string>
+    <string name="about_ibs_text">Data and AI consultancy from Houten. We help organisations get their data in order and turn it into usable insight and practical AI.</string>
     <string name="about_maker">Made by</string>
     <string name="about_ibs_link">Visit i-b-s.nl</string>
     <string name="about_method">About the method</string>
