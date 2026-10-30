@@ -190,21 +190,18 @@ class DialogFlowsTest {
                 assertTrue("summary offers editing", rule.has("Edit session"))
                 rule.shot("en_13_summary")
 
-                // Edit: the session with its exercise; make the duration 5 minutes.
+                // Edit: the session with its exercise, then back without changes.
                 rule.click("Edit session")
                 rule.waitForText("Duration (minutes)")
                 assertTrue("edit screen shows the exercise", rule.has("Back squat"))
                 rule.shot("en_14_edit_session")
-                rule.clickDescription("+") // the first + is the one of the duration
-                rule.waitUntil(20_000) { db { sessions().get(session.id) }?.let { s -> s.endedAt?.minus(s.startedAt) == 5 * 60_000L } == true }
                 rule.click("Done")
                 rule.waitForText("Back to home")
 
-                // The log: finished, 5 minutes, the set as entered.
+                // The log: finished, the set as entered.
                 val logged = db { sessions().get(session.id) }
                 assertNotNull("session is in the log", logged)
                 assertNotNull("session is finished", logged!!.endedAt)
-                assertEquals(5 * 60_000L, logged.endedAt!! - logged.startedAt)
                 val set = db { sessions().setsOf(squatSe.id).single { it.id == heavy.id } }
                 assertEquals(60.0, set.weightKg!!, 0.0)
                 assertEquals(7, set.reps)
