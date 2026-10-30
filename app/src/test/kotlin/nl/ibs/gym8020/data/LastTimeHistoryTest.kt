@@ -41,7 +41,7 @@ class LastTimeHistoryTest {
     private val oct2 = LocalDate.of(2026, 10, 2)
     private val oct5 = LocalDate.of(2026, 10, 5)
 
-    private fun repository() = TrainingRepository(db, SettingsStore(context), PrefsTargetMarks(context))
+    private fun repository() = TrainingRepository(db, SettingsStore(context), PrefsTargetMarks(context), PrefsRepsTargets(context))
 
     private fun millis(date: LocalDate): Long = date.atStartOfDay(ZoneId.systemDefault()).plusHours(18).toInstant().toEpochMilli()
 

@@ -125,8 +125,9 @@ data class SetDto(
 @Serializable
 data class PlanDto(val exerciseId: Long, val note: String? = null, val sets: List<PlanSetDto> = emptyList())
 
+/** One set of a target; [reps] is the reps target with reps progression (#69), absent in older backups. */
 @Serializable
-data class PlanSetDto(val role: String, val weightKg: Double? = null)
+data class PlanSetDto(val role: String, val weightKg: Double? = null, val reps: Int? = null)
 
 object BackupJson {
     private val json = Json {

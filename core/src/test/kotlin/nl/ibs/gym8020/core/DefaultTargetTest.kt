@@ -61,13 +61,42 @@ class DefaultTargetTest {
     }
 
     @Test
-    fun `with reps progression the target carries no weight`() {
+    fun `with reps progression each set's target is the reps you did today, without weight`() {
         val target = DefaultTarget.of(
-            listOf(PlannedSet(HEAVY, null), PlannedSet(LIGHT, null)), listOf(HEAVY, LIGHT),
+            listOf(PlannedSet(HEAVY, null, 18), PlannedSet(LIGHT, null, 30)), listOf(HEAVY, LIGHT),
             listOf(PerformedSet(HEAVY, 10.0, 20), PerformedSet(LIGHT, null, 35)),
             Progression.REPS, LoadType.BODYWEIGHT,
         )
-        assertEquals(listOf(PlannedSet(HEAVY, null), PlannedSet(LIGHT, null)), target)
+        assertEquals(listOf(PlannedSet(HEAVY, null, 20), PlannedSet(LIGHT, null, 35)), target)
+    }
+
+    @Test
+    fun `with reps progression a set you did not do keeps its previous reps target`() {
+        val target = DefaultTarget.of(
+            listOf(PlannedSet(HEAVY, null, 18), PlannedSet(LIGHT, null, 30)), listOf(HEAVY, LIGHT),
+            listOf(PerformedSet(HEAVY, null, 21), PerformedSet(LIGHT, null, null)),
+            Progression.REPS, LoadType.BODYWEIGHT,
+        )
+        assertEquals(listOf(PlannedSet(HEAVY, null, 21), PlannedSet(LIGHT, null, 30)), target)
+    }
+
+    @Test
+    fun `with reps progression the k-th heavy set aims at the k-th heavy set of today`() {
+        val target = DefaultTarget.of(
+            null, listOf(HEAVY, LIGHT, HEAVY),
+            listOf(PerformedSet(WARMUP, null, 10), PerformedSet(HEAVY, null, 20), PerformedSet(LIGHT, null, 35), PerformedSet(HEAVY, null, 17)),
+            Progression.REPS, LoadType.BODYWEIGHT,
+        )
+        assertEquals(listOf(PlannedSet(HEAVY, null, 20), PlannedSet(LIGHT, null, 35), PlannedSet(HEAVY, null, 17)), target)
+    }
+
+    @Test
+    fun `with weight progression the target carries no reps`() {
+        val target = squat(
+            listOf(PlannedSet(HEAVY, 100.0, 12), PlannedSet(LIGHT, 70.0, 20)),
+            PerformedSet(HEAVY, 102.5, 6), PerformedSet(LIGHT, 70.0, 16),
+        )
+        assertEquals(listOf(PlannedSet(HEAVY, 102.5), PlannedSet(LIGHT, 70.0)), target)
     }
 
     @Test

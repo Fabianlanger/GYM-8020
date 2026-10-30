@@ -73,7 +73,10 @@ data class TrainingItem(
      * next session on (#52), so today's sets keep the progression the session started with.
      */
     val progressionToday: Progression = exercise.progression,
-    /** Reps progression: per set the reps of its role last time, the number in its header (#52). Null on weight. */
+    /**
+     * Reps progression: per set the reps you aim at today, the number in its header: your reps target as this
+     * training started (#69), or for a set without one the reps of its role last time (#52). Null on weight.
+     */
     val repsTargets: List<Int?>? = null,
     /** "Laatste keer" (#65): per set in [sets] its most recent performance with the date; null for warm-ups. */
     val lastPerSet: List<LastSet?> = emptyList(),
@@ -128,7 +131,8 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             } else null
             val today = startProgression.getOrPut(ex.id) { ex.progression }
             val repsTargets = if (today == Progression.REPS) {
-                RepsTarget.forSets(list.map { it.role }, extraMap[ex.id]?.last?.sets?.map { PerformedSet(it.role, it.weightKg, it.reps) })
+                val lastTime = RepsTarget.forSets(list.map { it.role }, extraMap[ex.id]?.last?.sets?.map { PerformedSet(it.role, it.weightKg, it.reps) })
+                list.mapIndexed { i, set -> repo.sessionRepsGoal(set.id) ?: lastTime[i] }
             } else null
             val lastPerSet = extraMap[ex.id]?.let { e -> LastTime.perSet(list.map { it.role }, e.history) }.orEmpty()
             TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist, today, repsTargets, lastPerSet)

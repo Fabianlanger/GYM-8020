@@ -31,4 +31,14 @@ class PlanRolesTest {
             assertEquals(plan[i].role, back[i].role)
         }
     }
+
+    @Test
+    fun `#69 with reps targets a switched set takes the reps of the other set with that role`() {
+        val plan = listOf(PlannedSet(HEAVY, null, 18), PlannedSet(LIGHT, null, 30), PlannedSet(HEAVY, null, 18))
+        val light = PlanRoles.cycle(plan, 2)
+        assertEquals(PlannedSet(LIGHT, null, 30), light[2])
+        val warmup = PlanRoles.cycle(light, 2)
+        assertEquals(PlannedSet(WARMUP, null), warmup[2], "warm-ups have no target")
+        assertEquals(PlannedSet(HEAVY, null, 18), PlanRoles.cycle(warmup, 2)[2])
+    }
 }

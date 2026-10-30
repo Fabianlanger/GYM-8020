@@ -32,12 +32,12 @@ class ProgressionSwitchTest {
     }
 
     @Test
-    fun `to reps the target carries no weight`() {
+    fun `to reps the target carries no weight and the reps of today are the target`() {
         val target = ProgressionSwitch.target(
             listOf(PlannedSet(HEAVY, -20.0), PlannedSet(LIGHT, -30.0)),
             listOf(PerformedSet(HEAVY, -20.0, 8), PerformedSet(LIGHT, -30.0, 14)),
             Progression.REPS, LoadType.BODYWEIGHT,
         )
-        assertEquals(listOf(PlannedSet(HEAVY, null), PlannedSet(LIGHT, null)), target)
+        assertEquals(listOf(PlannedSet(HEAVY, null, 8), PlannedSet(LIGHT, null, 14)), target)
     }
 }

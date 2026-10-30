@@ -158,6 +158,7 @@
     <string name="tr_note_last">Note: %s</string>
     <string name="tr_put_phone_away">Put your phone away</string>
     <string name="tr_reps">Reps</string>
+    <string name="tr_reps_suffix">reps</string>
     <string name="tr_reps_progression">Beat %d reps</string>
     <string name="tr_set_delete">Remove set</string>
     <string name="tr_skip">Skip exercise</string>

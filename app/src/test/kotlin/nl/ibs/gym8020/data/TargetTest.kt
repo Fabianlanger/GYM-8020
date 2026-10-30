@@ -35,13 +35,14 @@ class TargetTest {
     private var exerciseId = 0L
 
     /** A fresh repository is what you get after leaving the training screen and coming back. */
-    private fun repository() = TrainingRepository(db, SettingsStore(context), PrefsTargetMarks(context))
+    private fun repository() = TrainingRepository(db, SettingsStore(context), PrefsTargetMarks(context), PrefsRepsTargets(context))
 
     private fun heavy(kg: Double) = Target(listOf(PlannedSet(SetRole.HEAVY, kg), PlannedSet(SetRole.LIGHT, kg / 2)))
 
     @Before
     fun setUp() = runBlocking {
         context.getSharedPreferences("target_marks", Context.MODE_PRIVATE).edit().clear().commit()
+        context.getSharedPreferences("reps_targets", Context.MODE_PRIVATE).edit().clear().commit()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
         exerciseId = db.exercises().insert(
             ExerciseEntity(name = "Cable row", equipment = Equipment.CABLE, loadType = LoadType.EXTERNAL, progression = Progression.WEIGHT),
