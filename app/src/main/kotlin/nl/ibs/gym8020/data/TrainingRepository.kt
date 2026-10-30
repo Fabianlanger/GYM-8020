@@ -1,13 +1,10 @@
 package nl.ibs.gym8020.data
 
 import androidx.room.withTransaction
-import nl.ibs.gym8020.core.logic.EffectiveWeight
 import nl.ibs.gym8020.core.logic.DefaultTarget
 import nl.ibs.gym8020.core.logic.PastSession
-import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
-import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.Progression
@@ -320,17 +317,6 @@ class TrainingRepository(
         }
         return out.sortedByDescending { it.second.date }
     }
-
-    /** Best heavy-set e1RM (effective weight) in earlier sessions. */
-    suspend fun bestE1rm(exercise: ExerciseEntity, excludeSession: Long): Double? =
-        sessions.historySets(exercise.id, excludeSession)
-            .filter { it.role == SetRole.HEAVY && it.reps != null }
-            .mapNotNull { s -> effective(exercise, s)?.let { Strength.e1rm(it, s.reps!!) } }
-            .maxOrNull()
-
-    fun effective(exercise: ExerciseEntity, set: SetEntity): Double? =
-        PerformanceWeight.orNone(set.weightKg, exercise.progression, exercise.loadType)
-            ?.let { EffectiveWeight.of(exercise.loadType, it, set.bodyweightKg, exercise.bodyweightFactor) }
 
     suspend fun finish(sessionId: Long, now: Long = System.currentTimeMillis()) = db.withTransaction {
         val session = sessions.get(sessionId) ?: return@withTransaction

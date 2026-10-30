@@ -94,6 +94,8 @@ training; overgeslagen sets tellen niet, dan geldt de keer daarvoor (met datum e
 Buiten het trainen (samenvatting, dashboard): je resultaat naast een eerder resultaat, altijd absoluut én in
 procenten. Per oefening: kracht tegenover de laatste keer. Per spier: kracht (alleen wat je deed) of volume
 (tegenover de vorige sessie van dezelfde workout). Per workout: tegenover de vorige sessie van die workout.
+Kracht is de e1RM van de zware sets (lichte sets apart); bij progressie op reps de meeste reps in één werkset.
+Een verschil binnen ±1 % telt als gelijk (meetruis); reps tellen per stuk.
 _Vermijd_: vs. last time (als algemene term)
 
 **Volume** (EN: Volume):
