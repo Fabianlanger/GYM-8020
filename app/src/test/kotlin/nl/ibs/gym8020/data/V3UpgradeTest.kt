@@ -35,6 +35,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 import java.io.File
 
 /**
@@ -93,9 +94,10 @@ class V3UpgradeTest {
             .putString("target_$crunch", "22,40").putInt("goal_${latestSets[0]}", 21).putInt("goal_${latestSets[1]}", 38).commit()
 
         upgrade().run()
+        val log = ShadowLog.getLogsForTag("V3Upgrade").joinToString { "${it.msg}: ${it.throwable?.stackTraceToString()?.take(1500)}" }
 
         // Reps targets and session targets in reps are in the database.
-        assertEquals(listOf(22, 40), db.plans().sets(crunch).map { it.reps })
+        assertEquals("upgrade log: $log", listOf(22, 40), db.plans().sets(crunch).map { it.reps })
         assertEquals(listOf(21, 38), db.sessions().setsOf(latest).map { it.goalReps })
         // "Set by you" is now the origin of the kept target.
         val repo = TrainingRepository(db, settings)
