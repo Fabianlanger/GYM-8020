@@ -53,7 +53,7 @@ class V3UpgradeTest {
     val folder = TemporaryFolder()
 
     @Before
-    fun setUp() = runBlocking {
+    fun setUp() = runBlocking<Unit> {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
         // The settings store lives for the whole test process: start from the state before the move.
         settings.update { AppSettings(plateStock = PlateStock(mapOf(20.0 to 4, 5.0 to 2))) }
@@ -81,7 +81,7 @@ class V3UpgradeTest {
     }
 
     @Test
-    fun `the interim stores move into the database once, then their files are gone`() = runBlocking {
+    fun `the interim stores move into the database once, then their files are gone`() = runBlocking<Unit> {
         val (older, _) = training(1_000)
         val (latest, latestSets) = training(5_000)
         db.plans().replace(
@@ -119,7 +119,7 @@ class V3UpgradeTest {
     }
 
     @Test
-    fun `the plate stock moves from the settings into the migrated gym`() = runBlocking {
+    fun `the plate stock moves from the settings into the migrated gym`() = runBlocking<Unit> {
         val gymId = db.gyms().insert(GymEntity(name = AppDatabase.MIGRATED_GYM_NAME, plates = null))
         training(1_000, gymId = gymId)
 
@@ -135,7 +135,7 @@ class V3UpgradeTest {
     }
 
     @Test
-    fun `a fresh install gets a gym with the plates from the settings`() = runBlocking {
+    fun `a fresh install gets a gym with the plates from the settings`() = runBlocking<Unit> {
         upgrade().run()
 
         val gym = db.gyms().all().single()
@@ -160,7 +160,7 @@ class V3UpgradeTest {
     """.trimIndent()
 
     @Test
-    fun `a v2 backup imports with defaults, a gym and derived targets`() = runBlocking {
+    fun `a v2 backup imports with defaults, a gym and derived targets`() = runBlocking<Unit> {
         BackupService(db, settings).import(v2)
 
         val gym = db.gyms().all().single()
@@ -182,7 +182,7 @@ class V3UpgradeTest {
     }
 
     @Test
-    fun `export then import gives the same v3 data back`() = runBlocking {
+    fun `export then import gives the same v3 data back`() = runBlocking<Unit> {
         val gymId = db.gyms().insert(GymEntity(name = "My gym", plates = "20.0:4"))
         val (seId, _) = training(1_000, goalReps = listOf(20, 35), gymId = gymId)
         db.sessions().updateSet(db.sessions().setsOf(seId).first().copy(repsInReserve = 2))
