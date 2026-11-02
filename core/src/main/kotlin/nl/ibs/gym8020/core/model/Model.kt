@@ -53,6 +53,18 @@ enum class SetRole { HEAVY, LIGHT, WARMUP;
     val isWork: Boolean get() = this != WARMUP
 }
 
+/** Where a training comes from (A-2): live in the app, entered afterwards, imported, or from a wearable. */
+enum class SessionOrigin { LIVE, AFTERWARDS, IMPORTED, WEARABLE }
+
+/** Where a body weight measurement comes from (A-14): entered by you, or from a wearable or scale. */
+enum class MeasurementOrigin { MANUAL, WEARABLE }
+
+/**
+ * Who set the target for next time in a session exercise: you ([YOURS]), the default target when you set
+ * nothing ([DEFAULT]), or not known because it was derived afterwards from older data ([UNKNOWN], schema v3).
+ */
+enum class TargetOrigin { YOURS, DEFAULT, UNKNOWN }
+
 /** Result of a work set compared to its rep target. */
 enum class Signal { TOO_LIGHT, GOOD, TOO_HEAVY }
 

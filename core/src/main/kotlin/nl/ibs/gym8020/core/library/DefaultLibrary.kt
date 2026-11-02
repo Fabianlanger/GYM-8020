@@ -142,10 +142,10 @@ object DefaultLibrary {
         LibraryMaterial("olympic_bar", "Olympic bar 20 kg", "Olympische stang 20 kg", MaterialProfile(MaterialKind.PLATES, baseKg = 20.0, loadingPoints = 2)),
         LibraryMaterial("ez_bar", "EZ bar 10 kg", "EZ-stang 10 kg", MaterialProfile(MaterialKind.PLATES, baseKg = 10.0, loadingPoints = 2)),
         LibraryMaterial("plate_machine", "Plate-loaded machine", "Plate-loaded machine", MaterialProfile(MaterialKind.PLATES, baseKg = 0.0, loadingPoints = 2)),
-        LibraryMaterial("pin_stack", "Pin stack 5 kg steps", "Pin-stack per 5 kg", MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0, maxKg = 120.0)),
-        LibraryMaterial("cable", "Cable 2.5 kg steps", "Kabel per 2,5 kg", MaterialProfile(MaterialKind.STACK, minKg = 2.5, stepKg = 2.5, maxKg = 80.0)),
-        LibraryMaterial("dumbbells", "Dumbbells 2–40 kg", "Dumbbells 2–40 kg", MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0, maxKg = 40.0)),
-        LibraryMaterial("bodyweight", "Assisted machine + dip belt", "Assisted machine + dipriem", MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0, maxKg = 60.0)),
+        LibraryMaterial("pin_stack", "Pin stack 5 kg steps", "Pin-stack per 5 kg", MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0)),
+        LibraryMaterial("cable", "Cable 2.5 kg steps", "Kabel per 2,5 kg", MaterialProfile(MaterialKind.STACK, minKg = 2.5, stepKg = 2.5)),
+        LibraryMaterial("dumbbells", "Dumbbells 2–40 kg", "Dumbbells 2–40 kg", MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0)),
+        LibraryMaterial("bodyweight", "Assisted machine + dip belt", "Assisted machine + dipriem", MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0)),
     )
 
     /** Movement pattern per library exercise (for the icon). */

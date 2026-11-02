@@ -9,7 +9,7 @@ enum class MaterialKind {
     /** Bar or plate-loaded machine: base weight plus plates on 1 or 2 loading points. */
     PLATES,
 
-    /** Pin-stack machine or cable: min, step, max. */
+    /** Pin-stack machine or cable: min and step. */
     STACK,
 
     /** Fixed dumbbell range; the value is the weight per dumbbell. */
@@ -21,7 +21,7 @@ enum class MaterialKind {
 
 /**
  * A reusable material profile (D-27), e.g. "Olympic bar 20 kg" or "Pin stack 5 kg".
- * Plate-based kinds use the gym's plate stock.
+ * Plate-based kinds use the gym's plate stock. There is no maximum (#6, schema v3): material never limits.
  */
 data class MaterialProfile(
     val kind: MaterialKind,
@@ -29,7 +29,6 @@ data class MaterialProfile(
     val loadingPoints: Int = 2,
     val minKg: Double = 0.0,
     val stepKg: Double = 5.0,
-    val maxKg: Double = 100.0,
 )
 
 /** The gym's plates: size in kg → number of pieces in total. */
@@ -109,9 +108,9 @@ class WeightCalculator(val profile: MaterialProfile, private val stock: PlateSto
     val achievable: List<Double> by lazy {
         when (profile.kind) {
             MaterialKind.PLATES -> combos.keys.map { kg(g(profile.baseKg) + it * loadingPoints) }.distinct().sorted()
-            MaterialKind.STACK, MaterialKind.DUMBBELLS -> range(profile.minKg, profile.maxKg, profile.stepKg)
+            MaterialKind.STACK, MaterialKind.DUMBBELLS -> range(profile.minKg, RANGE_KG, profile.stepKg)
             MaterialKind.BODYWEIGHT -> {
-                val assist = if (profile.stepKg > 0) range(profile.stepKg, profile.maxKg, profile.stepKg).map { -it } else emptyList()
+                val assist = if (profile.stepKg > 0) range(profile.stepKg, MAX_ASSIST_KG, profile.stepKg).map { -it } else emptyList()
                 val extra = combos.keys.filter { it > 0 }.map(::kg)
                 (assist + 0.0 + extra).distinct().sorted()
             }
@@ -128,13 +127,6 @@ class WeightCalculator(val profile: MaterialProfile, private val stock: PlateSto
     fun snap(weightKg: Double): Double = achievable.minByOrNull { abs(it - weightKg) + if (it > weightKg) 1e-9 else 0.0 } ?: weightKg
 
     fun isAchievable(weightKg: Double): Boolean = achievable.any { abs(it - weightKg) < 1e-6 }
-
-    /** Outside what the profile knows (D-79): reported to the user, never corrected. */
-    fun outOfRange(weightKg: Double): Boolean {
-        val lo = achievable.firstOrNull() ?: return false
-        val hi = achievable.last()
-        return weightKg > hi + 1e-6 || weightKg < lo - 1e-6
-    }
 
     /** Step used outside the known range: the smallest plate, or the profile's step (D-79). */
     private val stepAbove: Double
@@ -262,5 +254,16 @@ class WeightCalculator(val profile: MaterialProfile, private val stock: PlateSto
     private fun expand(c: IntArray, descending: Boolean): List<Double> {
         val l = toLoading(c).plates
         return if (descending) l else l.reversed()
+    }
+
+    companion object {
+        /**
+         * How far the listed weights of a stack or dumbbells go. Profiles have no maximum (#6); above this the
+         * weight still goes up in the profile's step (D-79).
+         */
+        const val RANGE_KG = 200.0
+
+        /** The most assistance listed for an assisted machine (signed: down to −100 kg). */
+        const val MAX_ASSIST_KG = 100.0
     }
 }
