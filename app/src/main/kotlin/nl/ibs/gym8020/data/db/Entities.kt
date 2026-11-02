@@ -8,10 +8,13 @@ import nl.ibs.gym8020.core.material.MaterialKind
 import nl.ibs.gym8020.core.material.MaterialProfile
 import nl.ibs.gym8020.core.model.Equipment
 import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.MeasurementOrigin
 import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.Progression
+import nl.ibs.gym8020.core.model.SessionOrigin
 import nl.ibs.gym8020.core.model.SetRole
+import nl.ibs.gym8020.core.model.TargetOrigin
 
 @Entity(tableName = "exercises", indices = [Index("libraryKey", unique = true)])
 data class ExerciseEntity(
@@ -30,9 +33,17 @@ data class ExerciseEntity(
     val materialProfileId: Long? = null,
     /** Movement pattern for the icon; null = derived from the library or equipment. */
     val movement: Movement? = null,
+    /** Default warm-up (schema v3): a weight, signed for bodyweight exercises (ADR 0001); null = none. */
+    val defaultWarmupKg: Double? = null,
+    /** Short note with the default warm-up (schema v3). */
+    val defaultWarmupNote: String? = null,
+    /** Health Connect exercise segment type without the `SEGMENT_TYPE_` prefix (schema v3, A-5); null = unknown. */
+    val healthConnectType: String? = null,
+    /** Garmin FIT exercise category (schema v3, A-5); null = unknown. */
+    val garminCategory: String? = null,
 )
 
-/** Reusable material profile (D-27). Added in database version 2. */
+/** Reusable material profile (D-27). Added in database version 2; `maxKg` removed in version 3 (#6). */
 @Entity(tableName = "material_profiles")
 data class MaterialProfileEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -43,11 +54,20 @@ data class MaterialProfileEntity(
     val loadingPoints: Int = 2,
     val minKg: Double = 0.0,
     val stepKg: Double = 5.0,
-    val maxKg: Double = 100.0,
     val archived: Boolean = false,
 ) {
-    fun toProfile() = MaterialProfile(kind, baseKg, loadingPoints, minKg, stepKg, maxKg)
+    fun toProfile() = MaterialProfile(kind, baseKg, loadingPoints, minKg, stepKg)
 }
+
+/** A gym (A-4, schema v3) with its plate stock. Until gyms can be chosen (E4) the first one is yours. */
+@Entity(tableName = "gyms")
+data class GymEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    /** Plate stock as `PlateStock.encode()`; null = not moved from the settings yet (the settings value applies). */
+    val plates: String? = null,
+    val archived: Boolean = false,
+)
 
 @Entity(
     tableName = "exercise_muscles",
@@ -107,14 +127,24 @@ data class WeekPlanSlotEntity(
     val day: Int? = null,
 )
 
-@Entity(tableName = "bodyweights", indices = [Index("epochDay", unique = true)])
+/**
+ * A body weight measurement. Since schema v3 a day can have several (V-14): the last one on or before a day counts
+ * (`BodyweightLog`). [epochDay] is the local day, [measuredAt] the moment (epoch millis).
+ */
+@Entity(tableName = "bodyweights", indices = [Index("epochDay")])
 data class BodyweightEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val epochDay: Long,
     val kg: Double,
+    val measuredAt: Long,
+    val origin: MeasurementOrigin = MeasurementOrigin.MANUAL,
 )
 
-@Entity(tableName = "sessions")
+@Entity(
+    tableName = "sessions",
+    indices = [Index("gymId")],
+    foreignKeys = [ForeignKey(GymEntity::class, ["id"], ["gymId"], onDelete = ForeignKey.SET_NULL)],
+)
 data class SessionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val schemaId: Long? = null,
@@ -123,14 +153,19 @@ data class SessionEntity(
     val endedAt: Long? = null,
     /** Body weight at the start of the training, copied to bodyweight sets (history must not shift). */
     val bodyweightKg: Double? = null,
+    /** Where the training comes from (schema v3, A-2). */
+    val origin: SessionOrigin = SessionOrigin.LIVE,
+    /** The gym of this training (schema v3, A-4); null = unknown. */
+    val gymId: Long? = null,
 )
 
 @Entity(
     tableName = "session_exercises",
-    indices = [Index("sessionId"), Index("exerciseId")],
+    indices = [Index("sessionId"), Index("exerciseId"), Index("materialProfileId")],
     foreignKeys = [
         ForeignKey(SessionEntity::class, ["id"], ["sessionId"], onDelete = ForeignKey.CASCADE),
         ForeignKey(ExerciseEntity::class, ["id"], ["exerciseId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(MaterialProfileEntity::class, ["id"], ["materialProfileId"], onDelete = ForeignKey.SET_NULL),
     ],
 )
 data class SessionExerciseEntity(
@@ -144,6 +179,8 @@ data class SessionExerciseEntity(
     val firstInputAt: Long? = null,
     val doneAt: Long? = null,
     val skipped: Boolean = false,
+    /** Material for this session only (schema v3, #48); null = the exercise's own profile. */
+    val materialProfileId: Long? = null,
 )
 
 @Entity(
@@ -161,9 +198,16 @@ data class SetEntity(
     val reps: Int? = null,
     val bodyweightKg: Double? = null,
     val goalWeightKg: Double? = null,
+    /** Session target in reps (schema v3, #69): the reps aimed at as the training started. */
+    val goalReps: Int? = null,
+    /** "Nog over" (RIR, schema v3, D-20); null = to failure. */
+    val repsInReserve: Int? = null,
 )
 
-/** The plan for next time per exercise (D-18). */
+/**
+ * The current target for next time per exercise (D-18): what the next session starts from. Every stored target is
+ * also kept per session exercise in [TargetEntity] (schema v3).
+ */
 @Entity(
     tableName = "plans",
     foreignKeys = [ForeignKey(ExerciseEntity::class, ["id"], ["exerciseId"], onDelete = ForeignKey.CASCADE)],
@@ -185,4 +229,36 @@ data class PlanSetEntity(
     val position: Int,
     val role: SetRole,
     val weightKg: Double? = null,
+    /** Reps target (schema v3, #69). */
+    val reps: Int? = null,
+)
+
+/**
+ * The target for next time set in a session exercise (schema v3): kept for every session, also when a later
+ * session replaces it. [origin] says who set it; [setAt] is null when unknown (derived afterwards, A-6).
+ */
+@Entity(
+    tableName = "targets",
+    foreignKeys = [ForeignKey(SessionExerciseEntity::class, ["id"], ["sessionExerciseId"], onDelete = ForeignKey.CASCADE)],
+)
+data class TargetEntity(
+    @PrimaryKey val sessionExerciseId: Long,
+    val origin: TargetOrigin,
+    val note: String? = null,
+    val setAt: Long? = null,
+)
+
+/** One set of a [TargetEntity]: role, weight and/or reps. */
+@Entity(
+    tableName = "target_sets",
+    indices = [Index("sessionExerciseId")],
+    foreignKeys = [ForeignKey(TargetEntity::class, ["sessionExerciseId"], ["sessionExerciseId"], onDelete = ForeignKey.CASCADE)],
+)
+data class TargetSetEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val sessionExerciseId: Long,
+    val position: Int,
+    val role: SetRole,
+    val weightKg: Double? = null,
+    val reps: Int? = null,
 )

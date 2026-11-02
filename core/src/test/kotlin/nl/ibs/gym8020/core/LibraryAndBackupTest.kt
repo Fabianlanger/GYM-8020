@@ -7,9 +7,12 @@ import nl.ibs.gym8020.core.backup.MuscleShareDto
 import nl.ibs.gym8020.core.backup.PlanDto
 import nl.ibs.gym8020.core.backup.PlanSetDto
 import nl.ibs.gym8020.core.library.DefaultLibrary
+import nl.ibs.gym8020.core.library.ExerciseCodeTable
+import nl.ibs.gym8020.core.library.ExerciseCodes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class LibraryAndBackupTest {
@@ -79,5 +82,27 @@ class LibraryMaterialTest {
     fun `only core exercises fall back to the core icon`() {
         DefaultLibrary.exercises.filter { DefaultLibrary.movementFor(it.key) == nl.ibs.gym8020.core.model.Movement.CORE }
             .forEach { assertTrue(it.muscles.any { m -> m.muscle.group == nl.ibs.gym8020.core.model.MuscleGroup.CORE }, it.key) }
+    }
+}
+
+/** A-5 (#18): standard codes per library exercise for Health Connect and Garmin FIT. */
+class ExerciseCodesTest {
+    @Test
+    fun `codes belong to library exercises and use known names`() {
+        val keys = DefaultLibrary.exercises.map { it.key }.toSet()
+        ExerciseCodeTable.byKey.forEach { (key, codes) ->
+            assertTrue(key in keys, "unknown exercise $key")
+            codes.healthConnect?.let { assertTrue(it in ExerciseCodeTable.healthConnectTypes, "$key → $it") }
+            codes.garmin?.let { assertTrue(it in ExerciseCodeTable.garminCategories, "$key → $it") }
+        }
+    }
+
+    @Test
+    fun `the main lifts have both codes, unclear ones none`() {
+        assertEquals(ExerciseCodes("SQUAT", "squat"), ExerciseCodeTable.of("back_squat"))
+        assertEquals(ExerciseCodes("BENCH_PRESS", "bench_press"), ExerciseCodeTable.of("bench_press"))
+        assertEquals(ExerciseCodes("DEADLIFT", "deadlift"), ExerciseCodeTable.of("deadlift"))
+        assertNull(ExerciseCodeTable.of("russian_twist"))
+        assertNull(ExerciseCodeTable.of(null))
     }
 }

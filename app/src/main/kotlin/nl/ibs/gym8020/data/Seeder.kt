@@ -2,6 +2,7 @@ package nl.ibs.gym8020.data
 
 import androidx.room.withTransaction
 import nl.ibs.gym8020.core.library.DefaultLibrary
+import nl.ibs.gym8020.core.library.ExerciseCodeTable
 import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.ExerciseMuscleEntity
@@ -37,7 +38,7 @@ class Seeder(private val db: AppDatabase, private val settings: SettingsStore, p
                 MaterialProfileEntity(
                     libraryKey = m.key, name = if (dutch) m.nameNl else m.nameEn, kind = m.profile.kind,
                     baseKg = m.profile.baseKg, loadingPoints = m.profile.loadingPoints,
-                    minKg = m.profile.minKg, stepKg = m.profile.stepKg, maxKg = m.profile.maxKg,
+                    minKg = m.profile.minKg, stepKg = m.profile.stepKg,
                 ),
             )
         }
@@ -64,6 +65,8 @@ class Seeder(private val db: AppDatabase, private val settings: SettingsStore, p
                     loadType = ex.loadType,
                     progression = ex.progression,
                     bodyweightFactor = ex.bodyweightFactor,
+                    healthConnectType = ExerciseCodeTable.of(ex.key)?.healthConnect,
+                    garminCategory = ExerciseCodeTable.of(ex.key)?.garmin,
                 ),
             )
             exerciseIds[ex.key] = id

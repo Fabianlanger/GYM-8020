@@ -5,6 +5,8 @@ import nl.ibs.gym8020.core.backup.Backup
 import nl.ibs.gym8020.core.backup.BackupJson
 import nl.ibs.gym8020.core.backup.BodyweightDto
 import nl.ibs.gym8020.core.backup.ExerciseDto
+import nl.ibs.gym8020.core.backup.GymDto
+import nl.ibs.gym8020.core.backup.MaterialDto
 import nl.ibs.gym8020.core.backup.MuscleShareDto
 import nl.ibs.gym8020.core.backup.PlanDto
 import nl.ibs.gym8020.core.backup.PlanSetDto
@@ -13,21 +15,26 @@ import nl.ibs.gym8020.core.backup.SchemaEntryDto
 import nl.ibs.gym8020.core.backup.SessionDto
 import nl.ibs.gym8020.core.backup.SessionExerciseDto
 import nl.ibs.gym8020.core.backup.SetDto
+import nl.ibs.gym8020.core.backup.TargetDto
 import nl.ibs.gym8020.core.backup.WeekPlanDto
 import nl.ibs.gym8020.core.backup.WeekPlanSlotDto
-import nl.ibs.gym8020.core.backup.MaterialDto
+import nl.ibs.gym8020.core.logic.BodyweightLog
 import nl.ibs.gym8020.core.material.MaterialKind
 import nl.ibs.gym8020.core.material.PlateStock
 import nl.ibs.gym8020.core.model.Equipment
-import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.core.model.LoadType
+import nl.ibs.gym8020.core.model.MeasurementOrigin
+import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.core.model.Muscle
 import nl.ibs.gym8020.core.model.Progression
+import nl.ibs.gym8020.core.model.SessionOrigin
 import nl.ibs.gym8020.core.model.SetRole
+import nl.ibs.gym8020.core.model.TargetOrigin
 import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.data.db.BodyweightEntity
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.ExerciseMuscleEntity
+import nl.ibs.gym8020.data.db.GymEntity
 import nl.ibs.gym8020.data.db.MaterialProfileEntity
 import nl.ibs.gym8020.data.db.PlanEntity
 import nl.ibs.gym8020.data.db.PlanSetEntity
@@ -36,14 +43,16 @@ import nl.ibs.gym8020.data.db.SchemaEntryEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.SessionExerciseEntity
 import nl.ibs.gym8020.data.db.SetEntity
+import nl.ibs.gym8020.data.db.TargetEntity
+import nl.ibs.gym8020.data.db.TargetSetEntity
 import nl.ibs.gym8020.data.db.WeekPlanEntity
 import nl.ibs.gym8020.data.db.WeekPlanSlotEntity
 
 /**
- * Export/import of all data as one JSON file (D-48). Import replaces everything. The reps targets (#69) live in
- * [reps] until schema v3 (A-1) and go along with the target's sets.
+ * Export/import of all data as one JSON file (D-48). Import replaces everything. Format version 3 since schema v3
+ * (#11); older backups are still read, with defaults for what they lack (A-7).
  */
-class BackupService(private val db: AppDatabase, private val settings: SettingsStore, private val reps: RepsTargets) {
+class BackupService(private val db: AppDatabase, private val settings: SettingsStore, private val dutch: Boolean = false) {
 
     suspend fun export(): String {
         val exercises = db.exercises().all()
@@ -53,6 +62,9 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
         val seByS = db.sessions().allExercises().groupBy { it.sessionId }
         val setsBySe = db.sessions().allSets().groupBy { it.sessionExerciseId }
         val planSets = db.plans().allSets().groupBy { it.exerciseId }
+        val targets = db.targets().all().associateBy { it.sessionExerciseId }
+        val targetSets = db.targets().allSets().groupBy { it.sessionExerciseId }
+        val gyms = db.gyms().all()
         val backup = Backup(
             exportedAt = System.currentTimeMillis(),
             exercises = exercises.map { e ->
@@ -62,6 +74,8 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                     heavyTarget = e.heavyTarget, lightTarget = e.lightTarget, archived = e.archived,
                     muscles = muscles[e.id].orEmpty().map { MuscleShareDto(it.muscle.name, it.percent) },
                     materialId = e.materialProfileId, movement = e.movement?.name,
+                    defaultWarmupKg = e.defaultWarmupKg, defaultWarmupNote = e.defaultWarmupNote,
+                    healthConnectType = e.healthConnectType, garminCategory = e.garminCategory,
                 )
             },
             schemas = db.schemas().all().map { s ->
@@ -70,30 +84,38 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
             weekPlans = db.weekPlans().all().map { p ->
                 WeekPlanDto(p.id, p.libraryKey, p.name, p.targetPerWeek, p.active, slots[p.id].orEmpty().map { WeekPlanSlotDto(it.schemaId, it.day) })
             },
-            bodyweights = db.bodyweights().all().map { BodyweightDto(it.epochDay, it.kg) },
+            bodyweights = db.bodyweights().all().map { BodyweightDto(it.epochDay, it.kg, it.measuredAt, it.origin.name) },
             sessions = db.sessions().all().map { s ->
                 SessionDto(
                     id = s.id, schemaId = s.schemaId, schemaName = s.schemaName, startedAt = s.startedAt, endedAt = s.endedAt,
+                    origin = s.origin.name, gymId = s.gymId, bodyweightKg = s.bodyweightKg,
                     exercises = seByS[s.id].orEmpty().sortedBy { it.position }.map { se ->
                         SessionExerciseDto(
                             exerciseId = se.exerciseId, shownAt = se.shownAt, warmupAt = se.warmupAt, goAt = se.goAt,
                             firstInputAt = se.firstInputAt, doneAt = se.doneAt, skipped = se.skipped,
                             sets = setsBySe[se.id].orEmpty().sortedBy { it.position }.map {
-                                SetDto(it.role.name, it.weightKg, it.reps, it.bodyweightKg, it.goalWeightKg)
+                                SetDto(it.role.name, it.weightKg, it.reps, it.bodyweightKg, it.goalWeightKg, it.goalReps, it.repsInReserve)
+                            },
+                            materialId = se.materialProfileId,
+                            target = targets[se.id]?.let { t ->
+                                TargetDto(
+                                    t.origin.name, t.note, t.setAt,
+                                    targetSets[se.id].orEmpty().sortedBy { it.position }.map { PlanSetDto(it.role.name, it.weightKg, it.reps) },
+                                )
                             },
                         )
                     },
                 )
             },
             materials = db.materials().all().map { m ->
-                MaterialDto(m.id, m.libraryKey, m.name, m.kind.name, m.baseKg, m.loadingPoints, m.minKg, m.stepKg, m.maxKg)
+                MaterialDto(m.id, m.libraryKey, m.name, m.kind.name, m.baseKg, m.loadingPoints, m.minKg, m.stepKg)
             },
-            plateStock = settings.current().plateStock.encode(),
+            plateStock = plateStockFor(null, gyms, settings.current().plateStock).encode(),
+            gyms = gyms.map { GymDto(it.id, it.name, it.plates, it.archived) },
             plans = db.plans().all().map { p ->
-                val planReps = reps.target(p.exerciseId)
                 PlanDto(
                     p.exerciseId, p.note,
-                    planSets[p.exerciseId].orEmpty().sortedBy { it.position }.mapIndexed { i, s -> PlanSetDto(s.role.name, s.weightKg, planReps.getOrNull(i)) },
+                    planSets[p.exerciseId].orEmpty().sortedBy { it.position }.map { s -> PlanSetDto(s.role.name, s.weightKg, s.reps) },
                 )
             },
         )
@@ -103,22 +125,29 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
     /** Replaces all data with the backup. Throws on an invalid file before anything is changed. */
     suspend fun import(text: String) {
         val b = BackupJson.decode(text)
-        // Reps targets per (new) exercise id, stored once the database part has succeeded.
-        val planReps = HashMap<Long, List<Int?>>()
         db.withTransaction {
             val sql = db.openHelper.writableDatabase
             listOf(
-                "sets", "session_exercises", "sessions", "plan_sets", "plans", "week_plan_slots", "week_plans",
-                "schema_entries", "schemas", "exercise_muscles", "exercises", "bodyweights", "material_profiles",
+                "target_sets", "targets", "sets", "session_exercises", "sessions", "gyms", "plan_sets", "plans",
+                "week_plan_slots", "week_plans", "schema_entries", "schemas", "exercise_muscles", "exercises", "bodyweights",
+                "material_profiles",
             ).forEach { sql.execSQL("DELETE FROM $it") }
             val materialIds = HashMap<Long, Long>()
             b.materials.forEach { m ->
                 materialIds[m.id] = db.materials().insert(
                     MaterialProfileEntity(
                         libraryKey = m.libraryKey, name = m.name, kind = enumOr(m.kind, MaterialKind.PLATES), baseKg = m.baseKg,
-                        loadingPoints = m.loadingPoints, minKg = m.minKg, stepKg = m.stepKg, maxKg = m.maxKg,
+                        loadingPoints = m.loadingPoints, minKg = m.minKg, stepKg = m.stepKg,
                     ),
                 )
+            }
+            // Gyms (v3). An older backup had one gym: its plate stock was the backup's plate stock.
+            val gymIds = HashMap<Long, Long>()
+            b.gyms.forEach { g -> gymIds[g.id] = db.gyms().insert(GymEntity(name = g.name, plates = g.plates, archived = g.archived)) }
+            val olderGymId = if (b.gyms.isEmpty()) {
+                db.gyms().insert(GymEntity(name = Gyms.defaultName(dutch), plates = b.plateStock?.let { PlateStock.decode(it).encode() }))
+            } else {
+                null
             }
             val exIds = HashMap<Long, Long>()
             b.exercises.forEach { e ->
@@ -129,6 +158,8 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                         bodyweightFactor = e.bodyweightFactor, heavyTarget = e.heavyTarget, lightTarget = e.lightTarget, archived = e.archived,
                         materialProfileId = e.materialId?.let { materialIds[it] },
                         movement = e.movement?.let { runCatching { Movement.valueOf(it) }.getOrNull() },
+                        defaultWarmupKg = e.defaultWarmupKg, defaultWarmupNote = e.defaultWarmupNote,
+                        healthConnectType = e.healthConnectType, garminCategory = e.garminCategory,
                     ),
                 )
                 exIds[e.id] = id
@@ -152,10 +183,21 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                         .mapIndexed { i, sl -> sl.copy(position = i) },
                 )
             }
-            b.bodyweights.forEach { db.bodyweights().upsert(BodyweightEntity(epochDay = it.date, kg = it.kg)) }
+            b.bodyweights.forEach {
+                db.bodyweights().insert(
+                    BodyweightEntity(
+                        epochDay = it.date, kg = it.kg, measuredAt = it.measuredAt ?: BodyweightLog.legacyMeasuredAt(it.date),
+                        origin = enumOr(it.origin, MeasurementOrigin.MANUAL),
+                    ),
+                )
+            }
             b.sessions.forEach { s ->
                 val sid = db.sessions().insert(
-                    SessionEntity(schemaId = s.schemaId?.let { schemaIds[it] }, schemaName = s.schemaName, startedAt = s.startedAt, endedAt = s.endedAt),
+                    SessionEntity(
+                        schemaId = s.schemaId?.let { schemaIds[it] }, schemaName = s.schemaName, startedAt = s.startedAt, endedAt = s.endedAt,
+                        bodyweightKg = s.bodyweightKg, origin = enumOr(s.origin, SessionOrigin.LIVE),
+                        gymId = s.gymId?.let { gymIds[it] } ?: olderGymId,
+                    ),
                 )
                 s.exercises.forEachIndexed { i, se ->
                     val exId = exIds[se.exerciseId] ?: return@forEachIndexed
@@ -163,6 +205,7 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                         SessionExerciseEntity(
                             sessionId = sid, exerciseId = exId, position = i, shownAt = se.shownAt, warmupAt = se.warmupAt,
                             goAt = se.goAt, firstInputAt = se.firstInputAt, doneAt = se.doneAt, skipped = se.skipped,
+                            materialProfileId = se.materialId?.let { materialIds[it] },
                         ),
                     )
                     db.sessions().insertSets(
@@ -170,26 +213,34 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                             SetEntity(
                                 sessionExerciseId = seId, position = j, role = enumOr(st.role, SetRole.HEAVY), weightKg = st.weightKg,
                                 reps = st.reps, bodyweightKg = st.bodyweightKg, goalWeightKg = st.goalWeightKg,
+                                goalReps = st.goalReps, repsInReserve = st.repsInReserve,
                             )
                         },
                     )
+                    se.target?.let { t ->
+                        db.targets().replace(
+                            TargetEntity(sessionExerciseId = seId, origin = enumOr(t.origin, TargetOrigin.UNKNOWN), note = t.note, setAt = t.setAt),
+                            t.sets.map {
+                                TargetSetEntity(sessionExerciseId = seId, position = 0, role = enumOr(it.role, SetRole.HEAVY), weightKg = it.weightKg, reps = it.reps)
+                            },
+                        )
+                    }
                 }
             }
             b.plans.forEach { p ->
                 val exId = exIds[p.exerciseId] ?: return@forEach
                 db.plans().replace(
                     PlanEntity(exerciseId = exId, note = p.note, updatedAt = System.currentTimeMillis()),
-                    p.sets.map { PlanSetEntity(exerciseId = exId, position = 0, role = enumOr(it.role, SetRole.HEAVY), weightKg = it.weightKg) },
+                    p.sets.map { PlanSetEntity(exerciseId = exId, position = 0, role = enumOr(it.role, SetRole.HEAVY), weightKg = it.weightKg, reps = it.reps) },
                 )
-                planReps[exId] = p.sets.map { it.reps }
             }
+            // A backup from before v3 has no target per training: derived like the migration does (Q3).
+            if (b.version < 3) V3Upgrade.backfillTargets(db)
+            V3Upgrade.fillLibraryCodes(db)
         }
-        // TODO(A-1): the session target in reps (#69) is not in the backup; it moves into the database with schema v3.
-        reps.clear()
-        planReps.forEach { (exId, list) -> reps.setTarget(exId, list) }
     }
 
-    /** Called after [import]: the plate stock lives in the settings, not in the database. */
+    /** Called after [import]: the plate stock is also kept in the settings (fallback, and for older backups). */
     suspend fun importSettings(text: String) {
         val b = BackupJson.decode(text)
         // A backup without materials (v1) gets the standard profiles again via the seeder.

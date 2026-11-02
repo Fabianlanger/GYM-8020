@@ -10,6 +10,7 @@ import nl.ibs.gym8020.core.model.Equipment
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
+import nl.ibs.gym8020.core.model.TargetOrigin
 import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.SessionEntity
@@ -35,14 +36,12 @@ class TargetTest {
     private var exerciseId = 0L
 
     /** A fresh repository is what you get after leaving the training screen and coming back. */
-    private fun repository() = TrainingRepository(db, SettingsStore(context), PrefsTargetMarks(context), PrefsRepsTargets(context))
+    private fun repository() = TrainingRepository(db, SettingsStore(context))
 
     private fun heavy(kg: Double) = Target(listOf(PlannedSet(SetRole.HEAVY, kg), PlannedSet(SetRole.LIGHT, kg / 2)))
 
     @Before
     fun setUp() = runBlocking {
-        context.getSharedPreferences("target_marks", Context.MODE_PRIVATE).edit().clear().commit()
-        context.getSharedPreferences("reps_targets", Context.MODE_PRIVATE).edit().clear().commit()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
         exerciseId = db.exercises().insert(
             ExerciseEntity(name = "Cable row", equipment = Equipment.CABLE, loadType = LoadType.EXTERNAL, progression = Progression.WEIGHT),
@@ -52,45 +51,78 @@ class TargetTest {
     @After
     fun tearDown() = db.close()
 
+    private val openSessionExercises = HashMap<Int, Long>()
+
+    /**
+     * Session exercise number [n] of this test. Since schema v3 a target is kept per real session exercise; these
+     * belong to trainings still in progress, so they are no history.
+     */
+    private suspend fun se(n: Int): Long = openSessionExercises.getOrPut(n) {
+        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Open", startedAt = 0L))
+        db.sessions().insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exerciseId, position = 0))
+    }
+
     @Test
     fun `a target you set survives leaving the training screen`() = runBlocking {
-        repository().setTarget(seId = 1, exerciseId = exerciseId, target = heavy(80.0))
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = heavy(80.0))
 
-        assertEquals(heavy(80.0), repository().targetSetIn(seId = 1, exerciseId = exerciseId))
+        assertEquals(heavy(80.0), repository().targetSetIn(seId = se(1), exerciseId = exerciseId))
     }
 
     @Test
     fun `moving on does not replace your target with the default target`() = runBlocking {
-        repository().setTarget(seId = 1, exerciseId = exerciseId, target = heavy(80.0))
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = heavy(80.0))
 
-        repository().storeDefaultTarget(seId = 1, exerciseId = exerciseId, target = heavy(82.5))
+        repository().storeDefaultTarget(seId = se(1), exerciseId = exerciseId, target = heavy(82.5))
 
         assertEquals(heavy(80.0), repository().target(exerciseId))
     }
 
     @Test
     fun `without a target of your own the default target is stored when moving on`() = runBlocking {
-        repository().storeDefaultTarget(seId = 2, exerciseId = exerciseId, target = heavy(82.5))
+        repository().storeDefaultTarget(seId = se(2), exerciseId = exerciseId, target = heavy(82.5))
 
         assertEquals(heavy(82.5), repository().target(exerciseId))
-        assertNull(repository().targetSetIn(seId = 2, exerciseId = exerciseId))
+        assertNull(repository().targetSetIn(seId = se(2), exerciseId = exerciseId))
     }
 
     @Test
     fun `a target set in an earlier session does not count as set in this one`() = runBlocking {
-        repository().setTarget(seId = 1, exerciseId = exerciseId, target = heavy(80.0))
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = heavy(80.0))
 
-        assertNull(repository().targetSetIn(seId = 3, exerciseId = exerciseId))
+        assertNull(repository().targetSetIn(seId = se(3), exerciseId = exerciseId))
     }
 
     @Test
     fun `undoing advice taken over the default target makes the target no longer yours`() = runBlocking {
-        repository().setTarget(seId = 4, exerciseId = exerciseId, target = heavy(82.5))
+        repository().setTarget(seId = se(4), exerciseId = exerciseId, target = heavy(82.5))
 
-        repository().withdrawTarget(seId = 4, exerciseId = exerciseId, before = heavy(80.0))
+        repository().withdrawTarget(seId = se(4), exerciseId = exerciseId, before = heavy(80.0))
 
-        assertNull(repository().targetSetIn(seId = 4, exerciseId = exerciseId))
+        assertNull(repository().targetSetIn(seId = se(4), exerciseId = exerciseId))
         assertEquals(heavy(80.0), repository().target(exerciseId))
+    }
+
+    @Test
+    fun `schema v3 - every session keeps the target set in it, also when a later session replaces it`() = runBlocking {
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = heavy(80.0))
+        repository().storeDefaultTarget(seId = se(2), exerciseId = exerciseId, target = heavy(85.0))
+
+        assertEquals(heavy(85.0), repository().target(exerciseId))
+        assertEquals(heavy(80.0), repository().targetSetIn(seId = se(1), exerciseId = exerciseId))
+        assertEquals(TargetOrigin.YOURS, db.targets().get(se(1))?.origin)
+        assertEquals(heavy(85.0), repository().targetOf(se(2)))
+        assertEquals(TargetOrigin.DEFAULT, db.targets().get(se(2))?.origin)
+    }
+
+    @Test
+    fun `schema v3 - a default target becomes yours when you change it`() = runBlocking {
+        repository().storeDefaultTarget(seId = se(1), exerciseId = exerciseId, target = heavy(80.0))
+
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = heavy(82.5))
+
+        assertEquals(heavy(82.5), repository().targetSetIn(seId = se(1), exerciseId = exerciseId))
+        assertEquals(heavy(82.5), repository().target(exerciseId))
     }
 
     /** A finished training with one heavy set of [kg] × 6 and a light set you did not do; returns (session, se). */
@@ -108,7 +140,7 @@ class TargetTest {
 
     @Test
     fun `correcting a training stores the default target from what you lifted`() = runBlocking {
-        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = heavy(80.0))
         val (sessionId, _) = finishedSession(85.0)
 
         repository().recomputeTarget(db.exercises().get(exerciseId)!!, sessionId)
@@ -132,7 +164,7 @@ class TargetTest {
 
     @Test
     fun `correcting your latest training lets the default target follow`() = runBlocking {
-        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = heavy(80.0))
         val (sessionId, _) = finishedSession(85.0)
 
         repository().applyCorrection(sessionId, listOf(exerciseId))
@@ -152,7 +184,7 @@ class TargetTest {
 
     @Test
     fun `a target you change in the edit screen is yours`() = runBlocking {
-        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = heavy(80.0))
         val (sessionId, seId) = finishedSession(85.0)
         val exercise = db.exercises().get(exerciseId)!!
         assertEquals(corrected(85.0), repository().nextTargetIn(sessionId, exercise))
@@ -167,7 +199,7 @@ class TargetTest {
 
     @Test
     fun `correcting an older training does not change the target`() = runBlocking {
-        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = heavy(80.0))
+        repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = heavy(80.0))
         val (older, _) = finishedSession(70.0, startedAt = 1_000L)
         finishedSession(80.0, startedAt = 10_000L)
 

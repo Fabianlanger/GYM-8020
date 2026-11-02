@@ -18,15 +18,15 @@ import kotlin.test.assertTrue
  * Material supports, it never limits (D-79).
  */
 class MaterialRulesTest {
-    private val cable = MaterialProfile(MaterialKind.STACK, minKg = 2.5, stepKg = 2.5, maxKg = 80.0)
+    private val cable = MaterialProfile(MaterialKind.STACK, minKg = 2.5, stepKg = 2.5)
 
     private val profiles = listOf(
         MaterialProfile(MaterialKind.PLATES, baseKg = 20.0, loadingPoints = 2),
         MaterialProfile(MaterialKind.PLATES, baseKg = 0.0, loadingPoints = 1),
         cable,
-        MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0, maxKg = 120.0),
-        MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0, maxKg = 40.0),
-        MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0, maxKg = 60.0),
+        MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0),
+        MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0),
+        MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0),
     )
     private val stocks = listOf(
         PlateStock.DEFAULT,
@@ -68,16 +68,8 @@ class MaterialRulesTest {
     }
 
     @Test
-    fun `out of range is reported, not corrected`() {
-        val calc = WeightCalculator(cable, PlateStock.DEFAULT)
-        assertTrue(calc.outOfRange(85.0))
-        assertFalse(calc.outOfRange(80.0))
-        assertFalse(calc.outOfRange(42.5))
-    }
-
-    @Test
     fun `B-4 pull-ups warm up with assistance, half the body weight by default`() {
-        val assisted = MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0, maxKg = 60.0)
+        val assisted = MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0)
         val calc = WeightCalculator(assisted, PlateStock.DEFAULT)
         assertTrue(Warmup.needsAssistance(LoadType.BODYWEIGHT, 1.0))
         assertTrue(Warmup.needsAssistance(LoadType.BODYWEIGHT, 0.95))

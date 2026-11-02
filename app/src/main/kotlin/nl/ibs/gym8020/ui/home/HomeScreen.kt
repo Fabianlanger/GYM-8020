@@ -51,7 +51,7 @@ import nl.ibs.gym8020.core.logic.PlanSlot
 import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.data.movementOrDefault
 import nl.ibs.gym8020.ui.deco.MovementStrip
-import nl.ibs.gym8020.data.db.BodyweightEntity
+import nl.ibs.gym8020.data.manualMeasurement
 import nl.ibs.gym8020.data.db.SchemaEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.WeekPlanEntity
@@ -126,7 +126,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     fun start(schemaId: Long, bodyweightKg: Double? = null, onStarted: (Long) -> Unit) {
         viewModelScope.launch {
             if (bodyweightKg != null) {
-                c.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = bodyweightKg))
+                c.db.bodyweights().replaceManualOfDay(manualMeasurement(bodyweightKg))
             }
             val id = c.training.startSession(schemaId)
             Reminders.onTrainingStarted(c.app, id, c.settings.current())
@@ -136,7 +136,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
 
     /** Quick card (V-10): today's measurement; saving again on the same day replaces it. */
     fun saveBodyweight(kg: Double) {
-        viewModelScope.launch { c.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = kg)) }
+        viewModelScope.launch { c.db.bodyweights().replaceManualOfDay(manualMeasurement(kg)) }
     }
 
     fun discard(id: Long) {

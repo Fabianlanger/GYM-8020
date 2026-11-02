@@ -88,7 +88,8 @@ fun MaterialScreen(container: AppContainer) {
     val profiles by container.db.materials().observeActive().collectAsStateWithLifecycle(emptyList())
     var editing by remember { mutableStateOf<MaterialProfileEntity?>(null) }
     val unit = settings.unit
-    val stock = settings.plateStock.plates
+    // The plates of your gym (A-4); a screen per gym comes with E4 (#50).
+    val stock = container.gyms.stock.collectAsStateWithLifecycle(settings.plateStock).value.plates
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp),
@@ -108,10 +109,10 @@ fun MaterialScreen(container: AppContainer) {
                     onValueChange = { v ->
                         val n = (v ?: 0.0).toInt().coerceAtLeast(0)
                         scope.launch {
-                            container.settings.update {
-                                val map = it.plateStock.plates.toMutableMap()
+                            container.gyms.updateStock { current ->
+                                val map = current.plates.toMutableMap()
                                 if (n == 0) map.remove(size) else map[size] = n
-                                it.copy(plateStock = if (map.isEmpty()) it.plateStock else PlateStock(map))
+                                if (map.isEmpty()) current else PlateStock(map)
                             }
                         }
                     },

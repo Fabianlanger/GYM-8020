@@ -20,7 +20,7 @@ zou opmerken. We sturen op wat wel iets zegt: de risicolijst en mutatietesten (z
 | Laag | Wat | Aantal |
 |---|---|---|
 | Rekenlogica (`core/`) | Unittests: doelen, gewichten, schijven, dagherkenning, dashboard, heatmap, herinneringen, back-upformaat | 50 |
-| Database | Migratietest: je data overleeft een update | 1 |
+| Database | Migratietest: je data overleeft een update (1 → 3 en 2 → 3, met voorbeelddata) | 4 |
 | Statische controle | Android Lint in CI (blokkeert niet) | – |
 | Schermen, flows, screenshots | – | 0 |
 
@@ -58,7 +58,7 @@ Regels die we willen vastleggen (T-2):
 | + geeft nooit een lager gewicht, − nooit een hoger | materiaal · **gebouwd** (`MaterialRulesTest`) |
 | Een voorgesteld gewicht is altijd op te leggen met het materiaal, of wordt als "buiten bereik" gemeld | materiaal |
 | Het doel gaat nooit de verkeerde kant op (te licht → zwaarder, te zwaar → lichter) | doelen |
-| Export → import levert exact dezelfde data op | back-up |
+| Export → import levert exact dezelfde data op | back-up · **deels gebouwd** (`BackupFormatV3Test`, `V3UpgradeTest`: v3 heen en terug, v1/v2 blijven inleesbaar) |
 | Schijven per kant tellen op tot het totaal, en je hebt nooit meer schijven nodig dan je hebt | schijven |
 | e1RM stijgt als gewicht of reps stijgen | kracht · **gebouwd** (`StrengthTest`) |
 
@@ -72,7 +72,7 @@ zijn. Nieuwe features voegen hun flow hier toe.
 | F-1 | Training starten → sets invullen → doel voor volgende keer → volgende training toont dat doel | – | open (T-4) |
 | F-2 | Warming-up → GO → aftellen → timer loopt → eerste invoer stopt timer | AppFlowsTest (`F-2 warm-up, GO, countdown, timer, first input stops the timer`) | gedekt (eerste run in CI nog af te wachten) |
 | F-3 | Training afronden → samenvatting → (bewerken) → logboek klopt | DialogFlowsTest (`F-3 finish, summary, edit, the log is right`), loopt via het afrondvenster (T-7) | gedekt (eerste run in CI nog af te wachten) |
-| F-4 | App-update met databasemigratie: alle data blijft staan | MigrationTest | gedekt |
+| F-4 | App-update met databasemigratie: alle data blijft staan | MigrationTest (1 → 3, 2 → 3: elke rij blijft met de juiste waarden, Room controleert het schema; daarna de overzet en het terugrekenen van doelen), V3UpgradeTest (overzet van de tijdelijke opslag, schijven naar de gym, kopie vóór de migratie, back-up v2 inlezen) | gedekt (schema v3, #11; eerste run in CI nog af te wachten) |
 | F-5 | Exporteren → importeren: alles terug | deels (back-upformaat) | open (T-2) |
 | F-6 | Automatische back-up naar map, houdt de nieuwste 7 | – | open |
 | F-7 | Dagherkenning en herinneringen | HomeAdvisorTest, RemindersTest | gedekt |

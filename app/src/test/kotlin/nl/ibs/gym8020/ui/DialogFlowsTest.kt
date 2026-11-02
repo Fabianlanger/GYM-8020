@@ -31,7 +31,7 @@ import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Seeder
 import nl.ibs.gym8020.data.db.AppDatabase
-import nl.ibs.gym8020.data.db.BodyweightEntity
+import nl.ibs.gym8020.data.manualMeasurement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -41,7 +41,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.LocalDate
 
 /**
  * Flows with a window (dialog) over the app screens (T-7, T-4: F-1 with the body weight question, F-3).
@@ -72,7 +71,7 @@ class DialogFlowsTest {
         container.settings.update { AppSettings() }
         Seeder(container.db, container.settings, dutch = false).seedIfNeeded()
         container.settings.update { it.copy(onboarded = true) }
-        if (weightToday) container.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = 80.0))
+        if (weightToday) container.db.bodyweights().replaceManualOfDay(manualMeasurement(80.0))
     }
 
     private fun <T> db(block: suspend AppDatabase.() -> T): T = runBlocking { container.db.block() }

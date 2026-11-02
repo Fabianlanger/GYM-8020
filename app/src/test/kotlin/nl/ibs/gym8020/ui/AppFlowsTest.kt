@@ -29,7 +29,7 @@ import nl.ibs.gym8020.SPLASH_TAG
 import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Seeder
-import nl.ibs.gym8020.data.db.BodyweightEntity
+import nl.ibs.gym8020.data.manualMeasurement
 import nl.ibs.gym8020.ui.training.COUNTDOWN_TAG
 import nl.ibs.gym8020.ui.training.EXERCISE_TIMER_TAG
 import org.junit.Assert.assertTrue
@@ -40,7 +40,6 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.time.Duration
-import java.time.LocalDate
 
 /**
  * UI flows and screenshots (TESTING.md: T-4, T-5). Runs on the JVM with Robolectric; the screenshots land in
@@ -127,7 +126,7 @@ class AppFlowsTest {
     @Test
     fun `F-1 start a workout`() {
         freshInstall()
-        runBlocking { (context as GymApp).container.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = 80.0)) }
+        runBlocking { (context as GymApp).container.db.bodyweights().replaceManualOfDay(manualMeasurement(80.0)) }
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
             rule.shot("en_07_home_weight_logged")
@@ -159,7 +158,7 @@ class AppFlowsTest {
     fun `F-2 warm-up, GO, countdown, timer, first input stops the timer`() {
         freshInstall()
         val db = (context as GymApp).container.db
-        runBlocking { db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = 80.0)) }
+        runBlocking { db.bodyweights().replaceManualOfDay(manualMeasurement(80.0)) }
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
             rule.onAllNodesWithText("Full body").onLast().performClick()

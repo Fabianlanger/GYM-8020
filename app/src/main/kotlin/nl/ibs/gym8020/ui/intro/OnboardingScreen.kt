@@ -51,14 +51,13 @@ import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.PlateStock
 import nl.ibs.gym8020.data.AppSettings
-import nl.ibs.gym8020.data.db.BodyweightEntity
+import nl.ibs.gym8020.data.manualMeasurement
 import nl.ibs.gym8020.ui.components.Eyebrow
 import nl.ibs.gym8020.ui.components.GoButton
 import nl.ibs.gym8020.ui.components.NumberStepper
 import nl.ibs.gym8020.ui.deco.DecoDivider
 import nl.ibs.gym8020.ui.deco.AppEmblem
 import nl.ibs.gym8020.ui.theme.Gym
-import java.time.LocalDate
 
 private const val PAGES = 4
 private const val OLYMPIC_BAR = "olympic_bar"
@@ -72,6 +71,7 @@ private val PLATE_SIZES = listOf(25.0, 20.0, 15.0, 10.0, 5.0, 2.5, 1.25)
 fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
+    val stock by container.gyms.stock.collectAsStateWithLifecycle(settings.plateStock)
     val plans by container.db.weekPlans().observeAll().collectAsStateWithLifecycle(emptyList())
     val materials by container.db.materials().observeActive().collectAsStateWithLifecycle(emptyList())
     var page by rememberSaveable { mutableStateOf(0) }
@@ -79,7 +79,7 @@ fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: 
     val bar = materials.firstOrNull { it.libraryKey == OLYMPIC_BAR }
 
     fun finish() = scope.launch {
-        bodyweight?.takeIf { it > 0 }?.let { container.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = it)) }
+        bodyweight?.takeIf { it > 0 }?.let { container.db.bodyweights().replaceManualOfDay(manualMeasurement(it)) }
         container.settings.update { it.copy(onboarded = true) }
         withContext(Dispatchers.Main) { onDone() } // navigation on the main thread
 
@@ -136,12 +136,13 @@ fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: 
                             )
                         }
                         Eyebrow(stringResource(R.string.intro_plate_sizes))
-                        PlateChips(settings.plateStock, settings.unit) { kg ->
+                        // The plates of your gym (A-4).
+                        PlateChips(stock, settings.unit) { kg ->
                             scope.launch {
-                                container.settings.update {
-                                    val map = it.plateStock.plates.toMutableMap()
+                                container.gyms.updateStock { current ->
+                                    val map = current.plates.toMutableMap()
                                     if ((map[kg] ?: 0) > 0) map.remove(kg) else map[kg] = PlateStock.DEFAULT.plates[kg] ?: 2
-                                    it.copy(plateStock = if (map.values.any { n -> n > 0 }) PlateStock(map) else it.plateStock)
+                                    if (map.values.any { n -> n > 0 }) PlateStock(map) else current
                                 }
                             }
                         }

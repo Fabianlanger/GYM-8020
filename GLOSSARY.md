@@ -49,12 +49,20 @@ _Vermijd_: assistentie-instelling, aparte velden voor extra en ondersteuning
 
 **Effectief gewicht** (EN: Effective weight):
 Bij een lichaamsgewicht-oefening: je lichaamsgewicht maal het aandeel van de oefening, plus of min het
-plus-of-min-gewicht. Daarmee vergelijk je kracht eerlijk door de tijd.
+plus-of-min-gewicht. Daarmee vergelijk je kracht eerlijk door de tijd. Als lichaamsgewicht telt de laatste
+meting op of vóór de dag van de training; een dag kan meerdere metingen hebben.
+
+**Gym** (EN: Gym):
+De plek waar je traint, met de schijven die er zijn. Elke sessie hoort bij een gym. Tot er een gymscherm is
+(E4) heb je er één.
 
 **Materiaal** (EN: Equipment):
 Wat je gebruikt om gewicht te maken (stang, dumbbells, kabel, machine, ondersteuning), met de stappen die
 het toelaat.
 _Vermijd_: material
+
+**Nog over** (EN: Reps in reserve, RIR):
+Hoeveel herhalingen je bij een set nog had gekund. Leeg betekent tot falen, zoals de methode vraagt.
 
 **Overgeslagen** (EN: Skipped):
 Een oefening of set die je in een sessie niet deed: zelf overgeslagen, of als lege set zo gemarkeerd bij
@@ -67,7 +75,8 @@ Wat je in een sessie bij een oefening echt deed: per set gewicht en reps.
 
 **Doel** (EN: Target):
 Wat jij voor de volgende keer van een oefening vastzet: per set een gewicht en/of aantal reps. Alleen jij
-zet een doel. Elke sessie bewaart het doel dat erin gezet is, ook als een latere sessie het vervangt.
+zet een doel. Elke sessie bewaart het doel dat erin gezet is, ook als een latere sessie het vervangt, met zijn
+herkomst.
 _Vermijd_: plan, next time, goal
 
 **Sessiedoel** (EN: Session target):
@@ -81,6 +90,11 @@ Je sessiedoel tegenover je prestatie, door de tijd: overschat (prestatie onder j
 **Standaard-doel** (EN: Default target):
 Het doel dat geldt als je zelf niets zet: de sets uit je laatste eigen doel (of anders uit de workout), met
 per set het gewicht van je prestatie; een set die je niet deed houdt je vorige doel.
+
+**Herkomst** (EN: Origin):
+Waar iets vandaan komt. Bij een doel: zelf gezet, standaard (het standaard-doel) of onbekend (teruggerekend
+uit oudere trainingen). Bij een sessie: live, achteraf, geïmporteerd of van een wearable. Bij een meting van je
+lichaamsgewicht: handmatig of van een wearable.
 
 **Advies** (EN: Advice):
 Een voorstel van de app voor het doel, op basis van je prestatie. Wordt nooit vanzelf een doel.

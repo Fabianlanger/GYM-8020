@@ -18,8 +18,19 @@ object Calculators {
     fun of(profile: MaterialProfile, stock: PlateStock): WeightCalculator =
         cache.getOrPut(profile to stock) { WeightCalculator(profile, stock) }
 
-    fun forExercise(ex: ExerciseEntity, profiles: Map<Long, MaterialProfileEntity>, stock: PlateStock): WeightCalculator? =
-        ex.materialProfileId?.let { profiles[it] }?.let { of(it.toProfile(), stock) }
+    /**
+     * The calculator for an exercise: the material chosen for this session ([sessionProfileId], #48) when there is
+     * one, else the exercise's own profile.
+     */
+    fun forExercise(
+        ex: ExerciseEntity,
+        profiles: Map<Long, MaterialProfileEntity>,
+        stock: PlateStock,
+        sessionProfileId: Long? = null,
+    ): WeightCalculator? {
+        val profile = sessionProfileId?.let { profiles[it] } ?: ex.materialProfileId?.let { profiles[it] }
+        return profile?.let { of(it.toProfile(), stock) }
+    }
 }
 
 /** Icon for an exercise: its own choice, the library default, or a guess from equipment and load. */

@@ -55,13 +55,15 @@ class MaterialTest {
 
     @Test
     fun `stack and dumbbells`() {
-        val stack = WeightCalculator(MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0, maxKg = 100.0), stock)
+        val stack = WeightCalculator(MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0), stock)
         assertEquals(5.0, stack.achievable.first())
-        assertEquals(100.0, stack.achievable.last())
+        // No maximum (#6): the listed weights go on to the range, + keeps going above it (D-79).
+        assertEquals(WeightCalculator.RANGE_KG, stack.achievable.last())
+        assertEquals(WeightCalculator.RANGE_KG + 5.0, stack.up(WeightCalculator.RANGE_KG))
         assertEquals(50.0, stack.up(45.0))
         assertEquals(5.0, stack.warmupKg)
         assertNull(stack.plan(listOf(50.0)))
-        val db = WeightCalculator(MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0, maxKg = 40.0), stock)
+        val db = WeightCalculator(MaterialProfile(MaterialKind.DUMBBELLS, minKg = 2.0, stepKg = 2.0), stock)
         assertEquals(24.0, db.up(22.0))
         // Below the lightest dumbbell − still works (D-79: material never limits), but never below zero.
         assertEquals(0.0, db.down(2.0))
@@ -70,8 +72,8 @@ class MaterialTest {
 
     @Test
     fun `bodyweight assistance and belt`() {
-        val bw = WeightCalculator(MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0, maxKg = 50.0), stock)
-        assertEquals(-50.0, bw.achievable.first())
+        val bw = WeightCalculator(MaterialProfile(MaterialKind.BODYWEIGHT, stepKg = 5.0), stock)
+        assertEquals(-WeightCalculator.MAX_ASSIST_KG, bw.achievable.first())
         assertTrue(bw.isAchievable(0.0))
         assertTrue(bw.isAchievable(-20.0))
         assertTrue(bw.isAchievable(2.5))
@@ -90,7 +92,7 @@ class MaterialTest {
 class MaterialGoalTest {
     @Test
     fun `suggestion uses the next achievable weight`() {
-        val stack = WeightCalculator(MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0, maxKg = 100.0), PlateStock.DEFAULT)
+        val stack = WeightCalculator(MaterialProfile(MaterialKind.STACK, minKg = 5.0, stepKg = 5.0), PlateStock.DEFAULT)
         val plan = nl.ibs.gym8020.core.logic.GoalAdvisor.planNext(
             listOf(nl.ibs.gym8020.core.logic.PerformedSet(nl.ibs.gym8020.core.model.SetRole.HEAVY, 45.0, 10)),
             nl.ibs.gym8020.core.model.LoadType.EXTERNAL, nl.ibs.gym8020.core.model.Progression.WEIGHT,

@@ -38,7 +38,7 @@ import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.data.AppSettings
-import nl.ibs.gym8020.data.db.BodyweightEntity
+import nl.ibs.gym8020.data.manualMeasurement
 import nl.ibs.gym8020.ui.components.DecoCard
 import nl.ibs.gym8020.ui.components.Eyebrow
 import nl.ibs.gym8020.ui.components.GoButton
@@ -79,7 +79,7 @@ fun BodyweightScreen(container: AppContainer) {
                     GoButton(stringResource(R.string.action_save), onClick = {
                         val kg = value ?: list.firstOrNull()?.kg
                         if (kg != null && kg > 0) scope.launch {
-                            container.db.bodyweights().upsert(BodyweightEntity(epochDay = LocalDate.now().toEpochDay(), kg = kg))
+                            container.db.bodyweights().replaceManualOfDay(manualMeasurement(kg))
                             value = null
                         }
                     }, height = 52.dp)

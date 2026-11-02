@@ -13,12 +13,12 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AutoBackup
-import nl.ibs.gym8020.data.PrefsRepsTargets
-import nl.ibs.gym8020.data.PrefsTargetMarks
 import nl.ibs.gym8020.data.BackupService
+import nl.ibs.gym8020.data.Gyms
 import nl.ibs.gym8020.data.Seeder
 import nl.ibs.gym8020.data.SettingsStore
 import nl.ibs.gym8020.data.TrainingRepository
+import nl.ibs.gym8020.data.V3Upgrade
 import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.notify.Reminders
 
@@ -30,19 +30,22 @@ class AppContainer(val app: Application) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val db: AppDatabase = AppDatabase.create(app)
     val settings = SettingsStore(app)
-    /** Reps targets (#69), outside the database until schema v3 (A-1). */
-    val repsTargets = PrefsRepsTargets(app)
-    val backup = BackupService(db, settings, repsTargets)
+    private val dutch = AppLanguage.get(app) == AppLanguage.DUTCH
+    /** Gyms and their plate stock (A-4). */
+    val gyms = Gyms(db, settings)
+    val backup = BackupService(db, settings, dutch)
     val autoBackup = AutoBackup(app, backup, settings, appScope)
-    val training = TrainingRepository(db, settings, PrefsTargetMarks(app), repsTargets, onFinished = { autoBackup.runSoon() })
-    val seeder = Seeder(db, settings, dutch = AppLanguage.get(app) == AppLanguage.DUTCH)
+    val training = TrainingRepository(db, settings, onFinished = { autoBackup.runSoon() })
+    val seeder = Seeder(db, settings, dutch = dutch)
+    /** One-time steps after the move to schema v3 (#11). */
+    val upgrade = V3Upgrade(app, db, settings, gyms, dutch)
 }
 
 class GymApp : Application() {
     lateinit var container: AppContainer
         private set
 
-    /** The first-start fill with standard content; tests wait for it. */
+    /** The schema v3 steps and the first-start fill with standard content; tests wait for it. */
     lateinit var seeding: Job
         private set
 
@@ -53,7 +56,10 @@ class GymApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        seeding = container.appScope.launch { container.seeder.seedIfNeeded() }
+        seeding = container.appScope.launch {
+            container.upgrade.run()
+            container.seeder.seedIfNeeded()
+        }
         Reminders.createChannel(this)
         // Replan the daily reminder whenever its settings change (and once at start).
         container.settings.settings

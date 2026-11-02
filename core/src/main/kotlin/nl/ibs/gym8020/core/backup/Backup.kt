@@ -6,6 +6,12 @@ import kotlinx.serialization.json.Json
 /**
  * Full export of all user data (D-48) as one JSON file. Ids are local to the file; import
  * remaps them. Weights are always stored in kg; bodyweight extra is signed.
+ *
+ * Versions (A-7): every older version stays readable; fields added later have a default.
+ * - 1: first format. 2: material profiles and the plate stock.
+ * - 3 (schema v3, #11): gyms, the target per session exercise, session target in reps, "nog over" (RIR),
+ *   origin of a training and of a body weight measurement, default warm-up and codes per exercise, material per
+ *   session. `maxKg` of a material profile is gone (older files still have it; it is ignored).
  */
 @Serializable
 data class Backup(
@@ -19,13 +25,19 @@ data class Backup(
     val sessions: List<SessionDto> = emptyList(),
     val plans: List<PlanDto> = emptyList(),
     val materials: List<MaterialDto> = emptyList(),
+    /** The plate stock of the first gym; kept for older app versions (v2). */
     val plateStock: String? = null,
+    val gyms: List<GymDto> = emptyList(),
 ) {
     companion object {
         const val FORMAT = "gym-8020-backup"
-        const val VERSION = 2
+        const val VERSION = 3
     }
 }
+
+/** A gym (A-4) with its plate stock as `PlateStock.encode()`; null = not set. */
+@Serializable
+data class GymDto(val id: Long, val name: String, val plates: String? = null, val archived: Boolean = false)
 
 @Serializable
 data class ExerciseDto(
@@ -42,6 +54,12 @@ data class ExerciseDto(
     val muscles: List<MuscleShareDto> = emptyList(),
     val materialId: Long? = null,
     val movement: String? = null,
+    /** Default warm-up (v3): signed for bodyweight exercises, and a short note. */
+    val defaultWarmupKg: Double? = null,
+    val defaultWarmupNote: String? = null,
+    /** Standard codes (v3, A-5). */
+    val healthConnectType: String? = null,
+    val garminCategory: String? = null,
 )
 
 @Serializable
@@ -54,7 +72,6 @@ data class MaterialDto(
     val loadingPoints: Int,
     val minKg: Double,
     val stepKg: Double,
-    val maxKg: Double,
 )
 
 @Serializable
@@ -86,9 +103,12 @@ data class WeekPlanDto(
 @Serializable
 data class WeekPlanSlotDto(val schemaId: Long, val day: Int? = null)
 
-/** [date] is ISO epoch day. */
+/**
+ * [date] is ISO epoch day. [measuredAt] (epoch millis, v3) orders several measurements on one day; null in older
+ * backups (then noon of the day). [origin] is MANUAL or WEARABLE.
+ */
 @Serializable
-data class BodyweightDto(val date: Long, val kg: Double)
+data class BodyweightDto(val date: Long, val kg: Double, val measuredAt: Long? = null, val origin: String = "MANUAL")
 
 @Serializable
 data class SessionDto(
@@ -98,6 +118,11 @@ data class SessionDto(
     val startedAt: Long,
     val endedAt: Long? = null,
     val exercises: List<SessionExerciseDto> = emptyList(),
+    /** LIVE, AFTERWARDS, IMPORTED or WEARABLE (v3, A-2); older trainings are live. */
+    val origin: String = "LIVE",
+    val gymId: Long? = null,
+    /** Body weight at the start of the training (v3). */
+    val bodyweightKg: Double? = null,
 )
 
 @Serializable
@@ -111,7 +136,15 @@ data class SessionExerciseDto(
     val skipped: Boolean = false,
     val note: String? = null,
     val sets: List<SetDto> = emptyList(),
+    /** Material for this session only (v3, #48); null = the exercise's own. */
+    val materialId: Long? = null,
+    /** The target for next time set in this session exercise (v3). */
+    val target: TargetDto? = null,
 )
+
+/** The target for next time of a session exercise: [origin] is YOURS, DEFAULT or UNKNOWN. */
+@Serializable
+data class TargetDto(val origin: String, val note: String? = null, val setAt: Long? = null, val sets: List<PlanSetDto> = emptyList())
 
 @Serializable
 data class SetDto(
@@ -120,6 +153,10 @@ data class SetDto(
     val reps: Int? = null,
     val bodyweightKg: Double? = null,
     val goalWeightKg: Double? = null,
+    /** Session target in reps (v3). */
+    val goalReps: Int? = null,
+    /** "Nog over" (RIR, v3); null = to failure. */
+    val repsInReserve: Int? = null,
 )
 
 @Serializable
