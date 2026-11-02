@@ -31,6 +31,7 @@ import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Calculators
 import nl.ibs.gym8020.data.LastPerformance
 import nl.ibs.gym8020.data.Target
+import nl.ibs.gym8020.data.plateStockFor
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.SessionExerciseEntity
@@ -64,7 +65,7 @@ data class TrainingItem(
     /** Your target for next time: what you set yourself, else the default target (#52). Null until reps are entered. */
     val plan: PlanDraft?,
     val note: String = "",
-    /** Achievable weights and plate plans from the exercise's material profile (v0.2). */
+    /** Achievable weights and plate plans: this session's material (#48), else the exercise's profile (v0.2). */
     val calc: WeightCalculator? = null,
     /** Pull-ups and dips: warm-up assistance as signed extra (negative), when the body weight is known (B-4). */
     val warmupAssistKg: Double? = null,
@@ -115,16 +116,21 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         c.db.sessions().observe(sessionId),
         c.db.sessions().observeExercises(sessionId),
         c.db.sessions().observeSets(sessionId),
-        combine(c.db.exercises().observeAll(), c.settings.settings, c.db.materials().observeAll()) { e, s, m -> Triple(e, s, m) },
+        combine(c.db.exercises().observeAll(), c.settings.settings, c.db.materials().observeAll(), c.db.gyms().observeAll()) { e, s, m, g ->
+            Triple(e, s, m to g)
+        },
         combine(extras, combine(drafts, ownTargets) { d, o -> o + d }, notes) { e, d, n -> Triple(e, d, n) },
-    ) { session, ses, sets, (exercises, settings, materials), (extraMap, draftMap, noteMap) ->
+    ) { session, ses, sets, (exercises, settings, materialsAndGyms), (extraMap, draftMap, noteMap) ->
+        val (materials, gyms) = materialsAndGyms
         val byId = exercises.associateBy { it.id }
         val profiles = materials.associateBy { it.id }
+        // The plates of this training's gym (A-4); the settings until they moved into the gym.
+        val stock = plateStockFor(session?.gymId, gyms, settings.plateStock)
         val setsBySe = sets.groupBy { it.sessionExerciseId }
         val items = ses.mapNotNull { se ->
             val ex = byId[se.exerciseId] ?: return@mapNotNull null
             val list = setsBySe[se.id].orEmpty()
-            val calc = Calculators.forExercise(ex, profiles, settings.plateStock)
+            val calc = Calculators.forExercise(ex, profiles, stock, se.materialProfileId)
             val plan = (draftMap[se.id] ?: defaultTarget(ex, list, extraMap[ex.id]))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
             val assist = if (Warmup.needsAssistance(ex.loadType, ex.bodyweightFactor)) {
                 Warmup.assistKg(session?.bodyweightKg, ex.bodyweightFactor, settings.warmupAssistPercent, calc)
@@ -132,7 +138,7 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             val today = startProgression.getOrPut(ex.id) { ex.progression }
             val repsTargets = if (today == Progression.REPS) {
                 val lastTime = RepsTarget.forSets(list.map { it.role }, extraMap[ex.id]?.last?.sets?.map { PerformedSet(it.role, it.weightKg, it.reps) })
-                list.mapIndexed { i, set -> repo.sessionRepsGoal(set.id) ?: lastTime[i] }
+                list.mapIndexed { i, set -> set.goalReps ?: lastTime[i] }
             } else null
             val lastPerSet = extraMap[ex.id]?.let { e -> LastTime.perSet(list.map { it.role }, e.history) }.orEmpty()
             TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist, today, repsTargets, lastPerSet)

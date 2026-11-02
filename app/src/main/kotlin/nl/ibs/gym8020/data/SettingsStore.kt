@@ -39,6 +39,8 @@ data class AppSettings(
     val backupFailed: Boolean = false,
     /** Warm-up assistance for pull-ups and dips, % of the moved body weight (B-4, D-83). */
     val warmupAssistPercent: Int = Warmup.DEFAULT_ASSIST_PERCENT,
+    /** The one-time move of data into schema v3 is done (`V3Upgrade`, #11). */
+    val v3DataMoved: Boolean = false,
 )
 
 class SettingsStore(private val context: Context) {
@@ -63,6 +65,7 @@ class SettingsStore(private val context: Context) {
         val lastBackup = longPreferencesKey("last_backup_at")
         val backupFailed = booleanPreferencesKey("backup_failed")
         val warmupAssist = intPreferencesKey("warmup_assist_percent")
+        val v3DataMoved = booleanPreferencesKey("v3_data_moved")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
@@ -96,6 +99,7 @@ class SettingsStore(private val context: Context) {
             lastBackupAt = this[Keys.lastBackup],
             backupFailed = this[Keys.backupFailed] ?: false,
             warmupAssistPercent = this[Keys.warmupAssist] ?: Warmup.DEFAULT_ASSIST_PERCENT,
+            v3DataMoved = this[Keys.v3DataMoved] ?: false,
         )
     }
 
@@ -122,6 +126,7 @@ class SettingsStore(private val context: Context) {
             if (next.lastBackupAt != null) prefs[Keys.lastBackup] = next.lastBackupAt else prefs.remove(Keys.lastBackup)
             prefs[Keys.backupFailed] = next.backupFailed
             prefs[Keys.warmupAssist] = next.warmupAssistPercent
+            prefs[Keys.v3DataMoved] = next.v3DataMoved
         }
     }
 }

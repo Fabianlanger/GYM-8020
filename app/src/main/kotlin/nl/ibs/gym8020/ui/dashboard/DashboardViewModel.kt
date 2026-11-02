@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.ibs.gym8020.AppContainer
+import nl.ibs.gym8020.core.logic.BodyweightLog
 import nl.ibs.gym8020.core.logic.EffectiveWeight
 import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.WeightUnit
@@ -25,6 +26,7 @@ import nl.ibs.gym8020.core.stats.SetRecord
 import nl.ibs.gym8020.core.stats.WeekValue
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.toLocalDate
+import nl.ibs.gym8020.data.toMeasurement
 import java.time.LocalDate
 
 data class DashboardData(
@@ -94,7 +96,8 @@ class DashboardViewModel(private val c: AppContainer) : ViewModel() {
         val sessionRecords = sessions.map { SessionRecord(it.id, it.startedAt.toLocalDate(), it.endedAt!! - it.startedAt) }
         val timings = ses.map { ExerciseTiming(it.sessionId, it.position + 1, if (it.goAt != null && it.firstInputAt != null) it.firstInputAt - it.goAt else null) }
 
-        val bw = db.bodyweights().all().map { Point(LocalDate.ofEpochDay(it.epochDay), it.kg) }
+        // Per day the measurement that counts: the last one (V-14).
+        val bw = BodyweightLog.lastPerDay(db.bodyweights().all().map { it.toMeasurement() }).map { Point(LocalDate.ofEpochDay(it.epochDay), it.kg) }
         val goalResults = Dashboard.goalResults(sets)
         val setsPerMuscle = Dashboard.setsPerMuscle(sets, muscles, today, DASHBOARD_WEEKS)
         val volumePerMuscle = Dashboard.volumePerMuscle(sets, muscles, today, DASHBOARD_WEEKS)

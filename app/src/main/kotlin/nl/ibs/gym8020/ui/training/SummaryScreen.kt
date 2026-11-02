@@ -111,7 +111,7 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
         for (s in done) {
             val prog = if (ex.progression == Progression.REPS && (s.weightKg ?: 0.0) == 0.0) Progression.REPS else Progression.WEIGHT
             // Reps: your session target reps (#69) when there is one, else the best reps of that role last time.
-            val prev = c.training.sessionRepsGoal(s.id) ?: previousReps?.filter { it.role == s.role }?.maxOfOrNull { it.reps ?: 0 }
+            val prev = s.goalReps ?: previousReps?.filter { it.role == s.role }?.maxOfOrNull { it.reps ?: 0 }
             GoalAdvisor.goalReached(prog, s.goalWeightKg, PerformanceWeight.orNone(s.weightKg, ex.progression, ex.loadType), prev, s.reps)?.let {
                 total++
                 if (it) reached++

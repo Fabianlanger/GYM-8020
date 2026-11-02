@@ -64,6 +64,7 @@ import nl.ibs.gym8020.core.model.SetRole
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Calculators
 import nl.ibs.gym8020.data.Target
+import nl.ibs.gym8020.data.plateStockFor
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.SessionExerciseEntity
@@ -119,16 +120,18 @@ class SessionEditViewModel(private val c: AppContainer, private val sessionId: L
         c.db.sessions().observeExercises(sessionId),
         c.db.sessions().observeSets(sessionId),
         c.db.exercises().observeAll(),
-        combine(c.settings.settings, c.db.materials().observeAll(), ownEdits) { s, m, e -> Triple(s, m, e) },
-    ) { session, ses, sets, exercises, (settings, materials, edits) ->
+        combine(c.settings.settings, c.db.materials().observeAll(), c.db.gyms().observeAll(), ownEdits) { s, m, g, e -> Triple(s, m to g, e) },
+    ) { session, ses, sets, exercises, (settings, materialsAndGyms, edits) ->
+        val (materials, gyms) = materialsAndGyms
         val byId = exercises.associateBy { it.id }
         val profiles = materials.associateBy { it.id }
+        val stock = plateStockFor(session?.gymId, gyms, settings.plateStock)
         val bySe = sets.groupBy { it.sessionExerciseId }
         val items = ses.mapNotNull { se ->
             val ex = byId[se.exerciseId] ?: return@mapNotNull null
             // Asked again on every change, so the default target follows your corrected performance at once.
             val next = edits[se.id] ?: if (se.skipped || session?.endedAt == null) null else repo.nextTargetIn(sessionId, ex)?.let { NextTarget(it.sets, it.note) }
-            EditItem(se, ex, bySe[se.id].orEmpty(), Calculators.forExercise(ex, profiles, settings.plateStock), next)
+            EditItem(se, ex, bySe[se.id].orEmpty(), Calculators.forExercise(ex, profiles, stock, se.materialProfileId), next)
         }
         EditState(session, items, exercises.filter { !it.archived }, settings, loaded = true)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EditState())

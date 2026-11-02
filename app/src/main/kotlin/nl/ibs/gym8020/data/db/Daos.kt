@@ -155,19 +155,39 @@ interface WeekPlanDao {
     }
 }
 
+/**
+ * Body weight measurements; a day can have several (schema v3, V-14). The last one on or before a day counts
+ * (`BodyweightLog`): latest day first, then latest moment.
+ */
 @Dao
 interface BodyweightDao {
-    @Query("SELECT * FROM bodyweights ORDER BY epochDay DESC")
+    /** Newest first. */
+    @Query("SELECT * FROM bodyweights ORDER BY epochDay DESC, measuredAt DESC, id DESC")
     fun observeAll(): Flow<List<BodyweightEntity>>
 
-    @Query("SELECT * FROM bodyweights ORDER BY epochDay")
+    /** Oldest first. */
+    @Query("SELECT * FROM bodyweights ORDER BY epochDay, measuredAt, id")
     suspend fun all(): List<BodyweightEntity>
 
-    @Query("SELECT * FROM bodyweights WHERE epochDay <= :epochDay ORDER BY epochDay DESC LIMIT 1")
+    /** The body weight of [epochDay]: its last measurement, or else the last one before it. */
+    @Query("SELECT * FROM bodyweights WHERE epochDay <= :epochDay ORDER BY epochDay DESC, measuredAt DESC, id DESC LIMIT 1")
     suspend fun latestOnOrBefore(epochDay: Long): BodyweightEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(b: BodyweightEntity)
+    @Insert
+    suspend fun insert(b: BodyweightEntity): Long
+
+    @Query("DELETE FROM bodyweights WHERE epochDay = :epochDay AND origin = 'MANUAL'")
+    suspend fun deleteManualOfDay(epochDay: Long)
+
+    /**
+     * Your measurement of a day as the screens enter it today: it replaces your earlier manual measurement of that
+     * day; measurements from a wearable stay. Adding several per day comes with the body weight screen (V-14).
+     */
+    @Transaction
+    suspend fun replaceManualOfDay(b: BodyweightEntity) {
+        deleteManualOfDay(b.epochDay)
+        insert(b)
+    }
 
     @Query("DELETE FROM bodyweights WHERE id = :id")
     suspend fun delete(id: Long)
@@ -319,6 +339,9 @@ interface PlanDao {
     @Insert
     suspend fun insertSets(list: List<PlanSetEntity>)
 
+    @Update
+    suspend fun updateSets(list: List<PlanSetEntity>)
+
     @Transaction
     suspend fun replace(plan: PlanEntity, sets: List<PlanSetEntity>) {
         upsert(plan)
@@ -360,5 +383,59 @@ interface MaterialDao {
     suspend fun delete(id: Long) {
         detach(id)
         deleteRow(id)
+    }
+}
+
+@Dao
+interface GymDao {
+    @Query("SELECT * FROM gyms ORDER BY id")
+    fun observeAll(): Flow<List<GymEntity>>
+
+    @Query("SELECT * FROM gyms ORDER BY id")
+    suspend fun all(): List<GymEntity>
+
+    @Insert
+    suspend fun insert(g: GymEntity): Long
+
+    @Update
+    suspend fun update(g: GymEntity)
+}
+
+/** The target for next time per session exercise (schema v3). */
+@Dao
+interface TargetDao {
+    @Query("SELECT * FROM targets WHERE sessionExerciseId = :seId")
+    suspend fun get(seId: Long): TargetEntity?
+
+    @Query("SELECT * FROM target_sets WHERE sessionExerciseId = :seId ORDER BY position")
+    suspend fun sets(seId: Long): List<TargetSetEntity>
+
+    @Query("SELECT * FROM targets")
+    suspend fun all(): List<TargetEntity>
+
+    @Query("SELECT * FROM target_sets ORDER BY sessionExerciseId, position")
+    suspend fun allSets(): List<TargetSetEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(t: TargetEntity)
+
+    @Update
+    suspend fun update(t: TargetEntity)
+
+    @Query("DELETE FROM target_sets WHERE sessionExerciseId = :seId")
+    suspend fun deleteSets(seId: Long)
+
+    @Insert
+    suspend fun insertSets(list: List<TargetSetEntity>)
+
+    @Query("DELETE FROM targets WHERE sessionExerciseId = :seId")
+    suspend fun delete(seId: Long)
+
+    /** Stores the target of a session exercise, replacing an earlier one of that session exercise. */
+    @Transaction
+    suspend fun replace(target: TargetEntity, sets: List<TargetSetEntity>) {
+        deleteSets(target.sessionExerciseId)
+        upsert(target)
+        insertSets(sets.mapIndexed { i, s -> s.copy(id = 0, sessionExerciseId = target.sessionExerciseId, position = i) })
     }
 }

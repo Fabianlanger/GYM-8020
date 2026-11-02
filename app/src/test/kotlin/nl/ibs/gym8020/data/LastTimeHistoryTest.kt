@@ -35,13 +35,13 @@ import java.time.ZoneId
 class LastTimeHistoryTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private lateinit var db: AppDatabase
-    private var exerciseId = 0L
+    private var exerciseId = se(0)L
 
     private val sep28 = LocalDate.of(2026, 9, 28)
     private val oct2 = LocalDate.of(2026, 10, 2)
     private val oct5 = LocalDate.of(2026, 10, 5)
 
-    private fun repository() = TrainingRepository(db, SettingsStore(context), PrefsTargetMarks(context), PrefsRepsTargets(context))
+    private fun repository() = TrainingRepository(db, SettingsStore(context))
 
     private fun millis(date: LocalDate): Long = date.atStartOfDay(ZoneId.systemDefault()).plusHours(18).toInstant().toEpochMilli()
 

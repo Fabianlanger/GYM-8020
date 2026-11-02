@@ -9,6 +9,7 @@ import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
+import nl.ibs.gym8020.core.model.TargetOrigin
 import nl.ibs.gym8020.data.db.AppDatabase
 import nl.ibs.gym8020.data.db.ExerciseEntity
 import nl.ibs.gym8020.data.db.PlanEntity
@@ -16,6 +17,8 @@ import nl.ibs.gym8020.data.db.PlanSetEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.SessionExerciseEntity
 import nl.ibs.gym8020.data.db.SetEntity
+import nl.ibs.gym8020.data.db.TargetEntity
+import nl.ibs.gym8020.data.db.TargetSetEntity
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -34,9 +37,6 @@ data class LastPerformance(val date: LocalDate, val sets: List<SetEntity>)
 class TrainingRepository(
     private val db: AppDatabase,
     private val settings: SettingsStore,
-    private val marks: TargetMarks,
-    /** Reps targets (#69), outside the database until schema v3 (A-1). */
-    private val reps: RepsTargets,
     /** Called after a training is finished (automatic backup). */
     private val onFinished: () -> Unit = {},
 ) {
@@ -47,7 +47,10 @@ class TrainingRepository(
         val schema = requireNotNull(db.schemas().get(schemaId))
         val method = settings.current().method
         val bodyweight = db.bodyweights().latestOnOrBefore(now.toLocalDate().toEpochDay())?.kg
-        val sessionId = sessions.insert(SessionEntity(schemaId = schemaId, schemaName = schema.name, startedAt = now, bodyweightKg = bodyweight))
+        val gymId = defaultGym(db.gyms().all())?.id
+        val sessionId = sessions.insert(
+            SessionEntity(schemaId = schemaId, schemaName = schema.name, startedAt = now, bodyweightKg = bodyweight, gymId = gymId),
+        )
         db.schemas().entries(schemaId).forEachIndexed { i, entry ->
             val exercise = db.exercises().get(entry.exerciseId) ?: return@forEachIndexed
             if (exercise.archived) return@forEachIndexed
@@ -88,31 +91,27 @@ class TrainingRepository(
         val seId = sessions.insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exercise.id, position = position))
         val plan = db.plans().sets(exercise.id)
         val planned: List<PlannedSet> = if (plan.isNotEmpty()) {
-            val planReps = reps.target(exercise.id)
-            plan.mapIndexed { i, p -> PlannedSet(p.role, p.weightKg, planReps.getOrNull(i)) }
+            plan.map { p -> PlannedSet(p.role, p.weightKg, p.reps) }
         } else {
             val zero = if (exercise.loadType == LoadType.BODYWEIGHT) 0.0 else null
             defaultRoles(setCount ?: method.defaultSetCount).map { PlannedSet(it, zero) }
         }
         val isReps = exercise.progression == Progression.REPS
-        // Your performance is never prefilled (#47): the target only goes into goalWeightKg, or with reps
-        // progression into the session target in reps (#69, outside the database until schema v3).
-        planned.forEachIndexed { i, p ->
-            val setId = sessions.insertSet(
+        // Your performance is never prefilled (#47): the target only goes into the session target, goalWeightKg,
+        // or with reps progression goalReps (#69).
+        sessions.insertSets(
+            planned.mapIndexed { i, p ->
                 SetEntity(
                     sessionExerciseId = seId,
                     position = i,
                     role = p.role,
                     bodyweightKg = if (exercise.loadType == LoadType.BODYWEIGHT) bodyweight else null,
                     goalWeightKg = if (withGoals && p.role.isWork && !isReps) p.weightKg else null,
-                ),
-            )
-            reps.setSessionGoal(setId, if (withGoals && p.role.isWork && isReps) p.reps else null)
-        }
+                    goalReps = if (withGoals && p.role.isWork && isReps) p.reps else null,
+                )
+            },
+        )
     }
-
-    /** With reps progression: the reps you aimed at in set [setId] as the training started (#69), or null. */
-    fun sessionRepsGoal(setId: Long): Int? = reps.sessionGoal(setId)
 
     // ---- timestamps (D-30, D-31, D-45a) ----
 
@@ -157,14 +156,12 @@ class TrainingRepository(
         if (role == SetRole.WARMUP) {
             // Warm-ups go before the work sets.
             sessions.updateSets(sets.map { it.copy(position = it.position + 1) })
-            val id = sessions.insertSet(SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.WARMUP, bodyweightKg = bw))
-            reps.setSessionGoal(id, null)
+            sessions.insertSet(SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.WARMUP, bodyweightKg = bw))
         } else {
             // Weight stays empty: you fill in what you did (#47).
-            val id = sessions.insertSet(
+            sessions.insertSet(
                 SetEntity(sessionExerciseId = seId, position = (sets.maxOfOrNull { it.position } ?: -1) + 1, role = role, bodyweightKg = bw),
             )
-            reps.setSessionGoal(id, null)
         }
     }
 
@@ -172,13 +169,41 @@ class TrainingRepository(
 
     // ---- plan for next time ----
 
+    /** Stores the current target of an exercise: what the next session starts from. */
     suspend fun savePlan(exerciseId: Long, sets: List<PlannedSet>, note: String?) {
+        val target = stored(Target(sets, note))
         db.plans().replace(
-            PlanEntity(exerciseId = exerciseId, note = note?.takeIf { it.isNotBlank() }, updatedAt = System.currentTimeMillis()),
-            sets.map { PlanSetEntity(exerciseId = exerciseId, position = 0, role = it.role, weightKg = if (it.role.isWork) it.weightKg else null) },
+            PlanEntity(exerciseId = exerciseId, note = target.note, updatedAt = System.currentTimeMillis()),
+            target.sets.map { PlanSetEntity(exerciseId = exerciseId, position = 0, role = it.role, weightKg = it.weightKg, reps = it.reps) },
         )
-        // The plan tables have no reps column yet (A-1): the reps targets are kept by position next to them.
-        reps.setTarget(exerciseId, sets.map { if (it.role.isWork) it.reps else null })
+    }
+
+    /** A target as it is stored: weight and reps only on work sets, no blank note. */
+    private fun stored(target: Target) = Target(
+        target.sets.map { if (it.role.isWork) it else PlannedSet(it.role, null, null) },
+        target.note?.takeIf { it.isNotBlank() },
+    )
+
+    /**
+     * Stores [target] as the current target and keeps it as the target set in session exercise [seId] (schema v3),
+     * with who set it.
+     */
+    private suspend fun storeTarget(seId: Long, exerciseId: Long, target: Target, origin: TargetOrigin) = db.withTransaction {
+        savePlan(exerciseId, target.sets, target.note)
+        val kept = stored(target)
+        db.targets().replace(
+            TargetEntity(sessionExerciseId = seId, origin = origin, note = kept.note, setAt = System.currentTimeMillis()),
+            kept.sets.map { TargetSetEntity(sessionExerciseId = seId, position = 0, role = it.role, weightKg = it.weightKg, reps = it.reps) },
+        )
+    }
+
+    /** Whether you set the target yourself in session exercise [seId]. */
+    private suspend fun isSetByYou(seId: Long): Boolean = db.targets().get(seId)?.origin == TargetOrigin.YOURS
+
+    /** The target kept for session exercise [seId] (schema v3), whoever set it; null when it has none. */
+    suspend fun targetOf(seId: Long): Target? {
+        val target = db.targets().get(seId) ?: return null
+        return Target(db.targets().sets(seId).map { PlannedSet(it.role, it.weightKg, it.reps) }, target.note)
     }
 
     suspend fun planNote(exerciseId: Long): String? = db.plans().get(exerciseId)?.note
@@ -188,14 +213,12 @@ class TrainingRepository(
     /** The stored target for an exercise: what the next session starts from. */
     suspend fun target(exerciseId: Long): Target? {
         val plan = db.plans().get(exerciseId) ?: return null
-        val planReps = reps.target(exerciseId)
-        return Target(db.plans().sets(exerciseId).mapIndexed { i, s -> PlannedSet(s.role, s.weightKg, planReps.getOrNull(i)) }, plan.note)
+        return Target(db.plans().sets(exerciseId).map { s -> PlannedSet(s.role, s.weightKg, s.reps) }, plan.note)
     }
 
-    /** You set your target during session exercise [seId]: stored right away. */
+    /** You set your target during session exercise [seId]: stored right away, and kept as yours in that session. */
     suspend fun setTarget(seId: Long, exerciseId: Long, target: Target) {
-        savePlan(exerciseId, target.sets, target.note)
-        marks.markSetByYou(seId)
+        storeTarget(seId, exerciseId, target, TargetOrigin.YOURS)
     }
 
     /**
@@ -203,21 +226,27 @@ class TrainingRepository(
      * counts as yours, so the default target applies when moving on.
      */
     suspend fun withdrawTarget(seId: Long, exerciseId: Long, before: Target) {
-        savePlan(exerciseId, before.sets, before.note)
-        marks.unmarkSetByYou(seId)
+        db.withTransaction {
+            savePlan(exerciseId, before.sets, before.note)
+            db.targets().delete(seId)
+        }
     }
 
-    /** The target you set yourself during session exercise [seId], or null if you did not. */
+    /**
+     * The target you set yourself during session exercise [seId], or null if you did not. Read from what that
+     * session kept (schema v3), so a later session's target does not change it; [exerciseId] is no longer needed.
+     */
+    @Suppress("UNUSED_PARAMETER")
     suspend fun targetSetIn(seId: Long, exerciseId: Long): Target? =
-        if (marks.isSetByYou(seId)) target(exerciseId) else null
+        if (isSetByYou(seId)) targetOf(seId) else null
 
     /**
      * Stores the default target (#52) when moving on, unless you set one yourself during [seId]. Never the
      * advice: the advice does not become a target by itself.
      */
     suspend fun storeDefaultTarget(seId: Long, exerciseId: Long, target: Target) {
-        if (marks.isSetByYou(seId)) return
-        savePlan(exerciseId, target.sets, target.note)
+        if (isSetByYou(seId)) return
+        storeTarget(seId, exerciseId, target, TargetOrigin.DEFAULT)
     }
 
     /** The set roles the workout of [sessionId] gives this exercise; the default target's sets without a target. */
@@ -243,9 +272,9 @@ class TrainingRepository(
      */
     suspend fun recomputeTarget(exercise: ExerciseEntity, sessionId: Long) {
         val se = sessions.exercises(sessionId).firstOrNull { it.exerciseId == exercise.id && !it.skipped } ?: return
-        if (marks.isSetByYou(se.id)) return
+        if (isSetByYou(se.id)) return
         val target = defaultTargetFrom(exercise, sessionId, se.id) ?: return
-        savePlan(exercise.id, target, planNote(exercise.id))
+        storeTarget(se.id, exercise.id, Target(target, planNote(exercise.id)), TargetOrigin.DEFAULT)
     }
 
     /** The default target from the sets of session exercise [seId]; null while it has no reps. Not stored. */

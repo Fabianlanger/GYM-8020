@@ -35,14 +35,12 @@ class RepsTargetRepositoryTest {
     private var exerciseId = 0L
 
     /** A fresh repository is what you get after leaving the training screen and coming back. */
-    private fun repository() = TrainingRepository(db, SettingsStore(context), PrefsTargetMarks(context), PrefsRepsTargets(context))
+    private fun repository() = TrainingRepository(db, SettingsStore(context))
 
     private fun reps(heavy: Int?, light: Int?) = Target(listOf(PlannedSet(SetRole.HEAVY, null, heavy), PlannedSet(SetRole.LIGHT, null, light)))
 
     @Before
     fun setUp() = runBlocking {
-        context.getSharedPreferences("target_marks", Context.MODE_PRIVATE).edit().clear().commit()
-        context.getSharedPreferences("reps_targets", Context.MODE_PRIVATE).edit().clear().commit()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
         exerciseId = db.exercises().insert(
             ExerciseEntity(
@@ -54,6 +52,17 @@ class RepsTargetRepositoryTest {
 
     @After
     fun tearDown() = db.close()
+
+    private val openSessionExercises = HashMap<Int, Long>()
+
+    /**
+     * Session exercise number [n] of this test. Since schema v3 a target is kept per real session exercise; these
+     * belong to trainings still in progress, so they are no history.
+     */
+    private suspend fun se(n: Int): Long = openSessionExercises.getOrPut(n) {
+        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Open", startedAt = 0L))
+        db.sessions().insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exerciseId, position = 0))
+    }
 
     /** A finished training with a heavy set of [heavy] reps and a light set of [light] reps; returns (session, se). */
     private suspend fun finishedSession(heavy: Int?, light: Int?, startedAt: Long = 1_000L): Pair<Long, Long> {
@@ -70,24 +79,24 @@ class RepsTargetRepositoryTest {
 
     @Test
     fun `a reps target you set survives leaving the training screen`() = runBlocking {
-        repository().setTarget(seId = 1, exerciseId = exerciseId, target = reps(22, 40))
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = reps(22, 40))
 
-        assertEquals(reps(22, 40), repository().targetSetIn(seId = 1, exerciseId = exerciseId))
+        assertEquals(reps(22, 40), repository().targetSetIn(seId = se(1), exerciseId = exerciseId))
         assertEquals(reps(22, 40), repository().target(exerciseId))
     }
 
     @Test
     fun `moving on does not replace your reps target with the reps of today`() = runBlocking {
-        repository().setTarget(seId = 1, exerciseId = exerciseId, target = reps(22, 40))
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = reps(22, 40))
 
-        repository().storeDefaultTarget(seId = 1, exerciseId = exerciseId, target = reps(20, 35))
+        repository().storeDefaultTarget(seId = se(1), exerciseId = exerciseId, target = reps(20, 35))
 
         assertEquals(reps(22, 40), repository().target(exerciseId))
     }
 
     @Test
     fun `without a reps target of your own the default target is the reps of today`() = runBlocking {
-        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = reps(18, 30))
+        repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = reps(18, 30))
         val (sessionId, _) = finishedSession(heavy = 20, light = 35)
 
         assertEquals(reps(20, 35), repository().nextTargetIn(sessionId, db.exercises().get(exerciseId)!!))
@@ -98,7 +107,7 @@ class RepsTargetRepositoryTest {
 
     @Test
     fun `a set you did not do keeps its previous reps target`() = runBlocking {
-        repository().storeDefaultTarget(seId = 9, exerciseId = exerciseId, target = reps(18, 30))
+        repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = reps(18, 30))
         val (sessionId, _) = finishedSession(heavy = 20, light = null)
 
         repository().applyCorrection(sessionId, listOf(exerciseId))
@@ -119,7 +128,7 @@ class RepsTargetRepositoryTest {
 
     @Test
     fun `the next training aims at your reps target, also after you change it again`() = runBlocking {
-        repository().storeDefaultTarget(seId = 99, exerciseId = exerciseId, target = reps(22, 40))
+        repository().storeDefaultTarget(seId = se(99), exerciseId = exerciseId, target = reps(22, 40))
         val sessionId = db.sessions().insert(SessionEntity(schemaName = "Core", startedAt = 5_000L))
 
         repository().addExercise(sessionId, exerciseId)
@@ -127,14 +136,14 @@ class RepsTargetRepositoryTest {
         repository().setTarget(seId = seId, exerciseId = exerciseId, target = reps(25, 45))
 
         val sets = db.sessions().setsOf(seId)
-        assertEquals(listOf(22, 40), sets.map { repository().sessionRepsGoal(it.id) })
+        assertEquals(listOf(22, 40), sets.map { it.goalReps })
     }
 
     @Test
     fun `a target without reps comes back without reps`() = runBlocking {
         val target = Target(listOf(PlannedSet(SetRole.HEAVY, 10.0), PlannedSet(SetRole.LIGHT, 0.0)))
 
-        repository().setTarget(seId = 1, exerciseId = exerciseId, target = target)
+        repository().setTarget(seId = se(1), exerciseId = exerciseId, target = target)
 
         assertEquals(target, repository().target(exerciseId))
     }
