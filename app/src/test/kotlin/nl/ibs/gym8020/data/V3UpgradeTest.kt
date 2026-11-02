@@ -24,6 +24,7 @@ import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.SessionExerciseEntity
 import nl.ibs.gym8020.data.db.SetEntity
 import nl.ibs.gym8020.data.db.PreMigrationCopy
+import nl.ibs.gym8020.GymApp
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,6 +56,8 @@ class V3UpgradeTest {
 
     @Before
     fun setUp() = runBlocking<Unit> {
+        // The app runs its own upgrade at start; let it finish so it does not move this test's stores.
+        (context as GymApp).seeding.join()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
         // The settings store lives for the whole test process: start from the state before the move.
         settings.update { AppSettings(plateStock = PlateStock(mapOf(20.0 to 4, 5.0 to 2))) }
