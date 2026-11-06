@@ -36,12 +36,30 @@ class DefaultTargetTest {
     }
 
     @Test
-    fun `the sets of your stored target stay, filled per role from today`() {
+    fun `the sets you did today make the target, an extra set included`() {
         val target = squat(
             listOf(PlannedSet(HEAVY, 100.0), PlannedSet(LIGHT, 70.0)),
             PerformedSet(WARMUP, null, 10), PerformedSet(HEAVY, 105.0, 6), PerformedSet(LIGHT, 72.5, 15), PerformedSet(HEAVY, 100.0, 5),
         )
-        assertEquals(listOf(PlannedSet(HEAVY, 105.0), PlannedSet(LIGHT, 72.5)), target)
+        assertEquals(listOf(PlannedSet(HEAVY, 105.0), PlannedSet(LIGHT, 72.5), PlannedSet(HEAVY, 100.0)), target)
+    }
+
+    @Test
+    fun `an extra heavy set today stays in the target (owner, 6 Nov 2026)`() {
+        val target = squat(
+            listOf(PlannedSet(HEAVY, 80.0), PlannedSet(LIGHT, 40.0)),
+            PerformedSet(HEAVY, 80.0, 9), PerformedSet(HEAVY, 60.0, 10), PerformedSet(LIGHT, 40.0, 14),
+        )
+        assertEquals(listOf(PlannedSet(HEAVY, 80.0), PlannedSet(HEAVY, 60.0), PlannedSet(LIGHT, 40.0)), target)
+    }
+
+    @Test
+    fun `a warm-up in your stored target stays at the front`() {
+        val target = squat(
+            listOf(PlannedSet(WARMUP, null), PlannedSet(HEAVY, 100.0), PlannedSet(LIGHT, 70.0)),
+            PerformedSet(HEAVY, 102.5, 6), PerformedSet(LIGHT, 70.0, 16),
+        )
+        assertEquals(listOf(PlannedSet(WARMUP, null), PlannedSet(HEAVY, 102.5), PlannedSet(LIGHT, 70.0)), target)
     }
 
     @Test

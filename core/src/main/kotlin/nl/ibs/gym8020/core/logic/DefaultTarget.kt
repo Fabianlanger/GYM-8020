@@ -10,10 +10,10 @@ import nl.ibs.gym8020.core.model.SetRole
 object DefaultTarget {
 
     /**
-     * The sets of your [stored] target (or, without one, the [workout]'s roles), each with the weight of the
-     * matching set you did [today]. A set you did not do (no reps, so also a skipped set) keeps its previous
-     * target. With reps progression the target is reps only (#69): the reps of the matching set today, never a
-     * weight. Warm-ups have no target.
+     * The sets you did [today], each with the weight you lifted (an extra set included, owner 6 Nov 2026); a set
+     * you did not do (no reps, so also a skipped set) keeps the target of the matching set of [stored]. Without
+     * work sets today: the sets of your [stored] target, or the [workout]'s roles. Warm-ups of [stored] stay at the
+     * front, without a value. With reps progression the target is reps only (#69). Never the advice.
      */
     fun of(
         stored: List<PlannedSet>?,
@@ -22,7 +22,14 @@ object DefaultTarget {
         progression: Progression,
         loadType: LoadType,
     ): List<PlannedSet> {
-        val structure = stored?.takeIf { it.isNotEmpty() } ?: workout.map { PlannedSet(it, null) }
+        val previous = stored?.takeIf { it.isNotEmpty() } ?: workout.map { PlannedSet(it, null) }
+        val todayWork = today.filter { it.role.isWork }
+        val structure = if (todayWork.isEmpty()) previous
+        else previous.filter { !it.role.isWork } + todayWork.mapIndexed { i, set ->
+            // A set not done today keeps the previous target of the k-th set with that role.
+            val k = todayWork.take(i).count { it.role == set.role }
+            previous.filter { it.role == set.role }.getOrNull(k) ?: PlannedSet(set.role, null)
+        }
         val byRole = today.groupBy { it.role }
         return structure.mapIndexed { i, set ->
             // Warm-ups have no target.

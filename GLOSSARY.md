@@ -88,8 +88,8 @@ _Vermijd_: oud doel, vorig doel
 Je sessiedoel tegenover je prestatie, door de tijd: overschat (prestatie onder je doel) of onderschat (erboven).
 
 **Standaard-doel** (EN: Default target):
-Het doel dat geldt als je zelf niets zet: de sets uit je laatste eigen doel (of anders uit de workout), met
-per set het gewicht van je prestatie; een set die je niet deed houdt je vorige doel.
+Het doel dat geldt als je zelf niets zet: de sets die je vandaag deed (een extra set telt mee), met per set het
+gewicht van je prestatie; een set die je niet deed houdt je vorige doel.
 
 **Herkomst** (EN: Origin):
 Waar iets vandaan komt. Bij een doel: zelf gezet, standaard (het standaard-doel) of onbekend (teruggerekend
