@@ -599,10 +599,15 @@ private fun loadText(weightKg: Double?, calc: WeightCalculator?, step: LoadStep?
                 if (step.loading.plates.isEmpty()) stringResource(R.string.ld_no_plates) + base
                 else stringResource(R.string.ld_per_side, plates(step.loading.plates)) + base
             }
+            // The change from the previous set, then what is on the bar after it, so the sum can be checked.
             else -> listOfNotNull(
                 step.remove.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.ld_remove, plates(it)) },
                 step.add.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.ld_add, plates(it)) },
-            ).joinToString("  ·  ").ifEmpty { null }
+            ).joinToString("  ·  ").ifEmpty { null }?.let { change ->
+                val after = if (step.loading.plates.isEmpty()) stringResource(R.string.ld_no_plates)
+                else stringResource(R.string.ld_per_side, plates(step.loading.plates))
+                "$change\n→ $after"
+            }
         }
         MaterialKind.STACK -> stringResource(R.string.ld_pin, kgText(w, unit))
         MaterialKind.DUMBBELLS -> stringResource(R.string.ld_dumbbells, kgText(w, unit))
