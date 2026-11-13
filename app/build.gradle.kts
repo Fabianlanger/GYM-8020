@@ -11,7 +11,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "nl.ibs.gym8020"
+        // Own package, apart from IBS (map 1.0, "Naam van de app vóór publiek"); the code namespace stays.
+        applicationId = "nl.fabianlanger.gym8020"
         minSdk = 26
         targetSdk = 35
         // CI build number, so every build is a real update and visible under "About".
@@ -28,21 +29,22 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
-        // Own release key, only when CI provides it (GitHub Secrets, see docs/RELEASE.md).
+        // Own key (A-8), only when CI provides it from GitHub Secrets (docs/RELEASE.md): alias gym8020, and the key
+        // password is the keystore password. It signs dev builds and versions alike, so they install over each other.
         val releaseStore = System.getenv("RELEASE_KEYSTORE")?.let(::file)?.takeIf { it.exists() }
         if (releaseStore != null) {
             create("release") {
                 storeFile = releaseStore
                 storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
-                keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+                keyAlias = "gym8020"
+                keyPassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
             }
         }
     }
 
     buildTypes {
         debug {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
         release {
             signingConfig = signingConfigs.findByName("release")

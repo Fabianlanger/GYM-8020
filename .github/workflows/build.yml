@@ -41,6 +41,24 @@ jobs:
       - name: Core tests
         run: ./gradlew :core:test --console=plain
 
+      # Own signing key (A-8) for dev builds and versions, from GitHub Secrets; without it the debug key is used.
+      - name: Signing key
+        if: env.HAS_SIGNING_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          # Only a key with alias gym8020 that opens with the password is used; otherwise the debug key, loudly.
+          if keytool -list -keystore "$RUNNER_TEMP/release.jks" -storepass "$KEYSTORE_PASSWORD" -alias gym8020 >/dev/null 2>&1; then
+            echo "RELEASE_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "RELEASE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "Signing with your own key (alias gym8020)."
+          else
+            rm -f "$RUNNER_TEMP/release.jks"
+            echo "::warning::Signing secrets do not open a key with alias gym8020; this build uses the debug key."
+          fi
+
       - name: Build debug APK
         if: hashFiles('app/build.gradle.kts') != ''
         # Unit, UI and screenshot tests (TESTING.md T-4/T-5). Screenshots are recorded, not yet compared:
@@ -106,23 +124,15 @@ jobs:
       # With the signing secrets set (docs/RELEASE.md) the version release is signed with your own key;
       # without them it is the debug-signed APK, like the dev builds.
       - name: Build signed release APK
-        if: env.RELEASE_TAG != '' && env.HAS_SIGNING_KEY == 'true'
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-          RELEASE_KEYSTORE="$RUNNER_TEMP/release.jks" ./gradlew :app:assembleRelease --console=plain
-          rm -f "$RUNNER_TEMP/release.jks"
+        if: env.RELEASE_TAG != '' && env.RELEASE_KEYSTORE != ''
+        run: ./gradlew :app:assembleRelease --console=plain
 
       - name: Publish version release
         if: env.RELEASE_TAG != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$HAS_SIGNING_KEY" = "true" ]; then
+          if [ -n "$RELEASE_KEYSTORE" ]; then
             apk=$(ls app/build/outputs/apk/release/*-release.apk | head -1)
             apksigner=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
             "$apksigner" verify --print-certs "$apk" | grep -i "SHA-256"

@@ -4,41 +4,26 @@
 
 | What | When | Signed with | Where |
 |------|------|-------------|-------|
-| Dev build | every push to `main` or `claude/**` | debug key (`app/debug.keystore`, in the repo) | [`releases/download/dev/gym-8020.apk`](https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk) |
+| Dev build | every push to `main` or `claude/**` | your own key (debug key only without the secrets) | [`releases/download/dev/gym-8020.apk`](https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk) |
 | Version release | pushing a tag `v*` (e.g. `v0.5.0`) | your own release key if the secrets below are set, otherwise the debug key | its own GitHub release |
 
 The debug key is public on purpose: it only makes sure every dev build installs over the previous one.
 Anyone could sign an APK with it, so a public version should use your own key.
 
-## Setting up your own release key (once)
+## Your own key (set up once, November 2026)
 
-1. Create a key on your computer (needs a JDK; `keytool` is part of it):
+The key is set up and stays: **never create a new one**. It lives only in two places, both private:
 
-   ```sh
-   keytool -genkeypair -v -keystore gym-8020-release.jks -alias gym8020 \
-     -keyalg RSA -keysize 4096 -validity 10000
-   ```
+- GitHub Secrets of this repo: `KEYSTORE_BASE64` (the keystore as base64) and `KEYSTORE_PASSWORD`
+  (keystore and key password). Alias `gym8020`. `KEY_ALIAS` and `KEY_PASSWORD` are no longer used.
+- The owner's private backup file `gym-8020-sleutel.txt` with the same two values.
 
-   Choose a strong password. **Keep the `.jks` file and the password safe** (password manager plus a backup).
-   If you lose them you can never publish an update that installs over existing installations.
+CI decodes the key once per build (step "Signing key") and signs **dev builds and versions** with it, so they
+install over each other. If the secrets do not open a key with alias `gym8020`, CI falls back to the debug key
+and says so in a warning. The package is `nl.fabianlanger.gym8020` (since 1.0; `nl.ibs.gym8020` before).
 
-2. Turn the key into text:
-
-   ```sh
-   base64 -w0 gym-8020-release.jks > keystore.txt      # Linux
-   base64 -i gym-8020-release.jks -o keystore.txt      # macOS
-   ```
-
-3. In GitHub: **Settings → Secrets and variables → Actions → New repository secret**, add:
-
-   | Secret | Value |
-   |--------|-------|
-   | `KEYSTORE_BASE64` | the contents of `keystore.txt` |
-   | `KEYSTORE_PASSWORD` | the keystore password |
-   | `KEY_ALIAS` | `gym8020` (or the alias you chose) |
-   | `KEY_PASSWORD` | the key password (by default the same as the keystore password) |
-
-   Delete `keystore.txt` afterwards. Never commit the `.jks` file.
+To restore the secrets from the backup: GitHub → Settings → Secrets and variables → Actions, update the two
+secrets with the values from the backup file.
 
 ## Publishing a version
 
