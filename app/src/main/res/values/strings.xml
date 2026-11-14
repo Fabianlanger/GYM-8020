@@ -18,7 +18,13 @@
     <string name="app_name" translatable="false">GYM-8020</string>
     <string name="body_empty">No measurements yet</string>
     <string name="body_title">Body weight</string>
-    <string name="body_today">Today</string>
+    <string name="body_add">Add a measurement</string>
+    <string name="body_at_now">Now</string>
+    <string name="body_edit">Change measurement</string>
+    <plurals name="body_measurements">
+        <item quantity="one">%1$d measurement</item>
+        <item quantity="other">%1$d measurements</item>
+    </plurals>
     <string name="bw_ask_body">Needed for bodyweight exercises. Stored only on this phone.</string>
     <string name="bw_ask_title">What do you weigh today?</string>
     <string name="day_none">No fixed day</string>

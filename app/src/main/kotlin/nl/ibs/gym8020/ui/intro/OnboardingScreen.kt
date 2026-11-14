@@ -51,7 +51,6 @@ import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.PlateStock
 import nl.ibs.gym8020.data.AppSettings
-import nl.ibs.gym8020.data.manualMeasurement
 import nl.ibs.gym8020.ui.components.Eyebrow
 import nl.ibs.gym8020.ui.components.GoButton
 import nl.ibs.gym8020.ui.components.NumberStepper
@@ -79,7 +78,7 @@ fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: 
     val bar = materials.firstOrNull { it.libraryKey == OLYMPIC_BAR }
 
     fun finish() = scope.launch {
-        bodyweight?.takeIf { it > 0 }?.let { container.db.bodyweights().replaceManualOfDay(manualMeasurement(it)) }
+        bodyweight?.takeIf { it > 0 }?.let { container.bodyweights.add(it) }
         container.settings.update { it.copy(onboarded = true) }
         withContext(Dispatchers.Main) { onDone() } // navigation on the main thread
 

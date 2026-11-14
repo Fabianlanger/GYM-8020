@@ -71,7 +71,7 @@ class DialogFlowsTest {
         container.settings.update { AppSettings() }
         Seeder(container.db, container.settings, dutch = false).seedIfNeeded()
         container.settings.update { it.copy(onboarded = true) }
-        if (weightToday) container.db.bodyweights().replaceManualOfDay(manualMeasurement(80.0))
+        if (weightToday) container.db.bodyweights().insert(manualMeasurement(80.0))
     }
 
     private fun <T> db(block: suspend AppDatabase.() -> T): T = runBlocking { container.db.block() }

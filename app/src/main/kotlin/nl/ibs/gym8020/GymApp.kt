@@ -42,6 +42,8 @@ class AppContainer(val app: Application) {
     val upgrade = V3Upgrade(app, db, settings, gyms, dutch)
     /** The targets of bodyweight exercises in effective weight, converted once (#87). */
     val bodyweightTargets = BodyweightTargets(db, settings)
+    /** Body weight measurements, several per day (#94). */
+    val bodyweights = BodyweightRepository(db)
 }
 
 class GymApp : Application() {

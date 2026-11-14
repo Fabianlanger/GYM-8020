@@ -177,7 +177,10 @@ fun DashboardScreen(container: AppContainer, onOpenBodyweight: () -> Unit, onOpe
         DecoDivider()
         Eyebrow(stringResource(R.string.body_title))
         if (d.bodyweight.isNotEmpty()) {
-            LineChart(d.bodyweight, format = ::kg, trend = d.bodyweightTrend.takeIf { d.bodyweight.size >= 3 }, unit = unit.name.lowercase())
+            LineChart(
+                d.bodyweight, format = ::kg, trend = d.bodyweightTrend.takeIf { d.bodyweight.size >= 3 }, unit = unit.name.lowercase(),
+                extraDots = d.bodyweightOthers, ranges = d.bodyweightRanges, dotRadius = 3.dp,
+            )
             Dashboard.change(d.bodyweight)?.let { Text(stringResource(R.string.dash_change, sign(it)), style = MaterialTheme.typography.bodySmall, color = Gym.Muted) }
         } else {
             Text(stringResource(R.string.body_empty), color = Gym.Muted)
