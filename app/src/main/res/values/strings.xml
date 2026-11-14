@@ -203,7 +203,8 @@
     <string name="ld_belt">On the belt: %s</string>
     <string name="ld_dumbbells">2× %s</string>
     <string name="ld_no_plates">No plates</string>
-    <string name="ld_per_side">Per side: %s</string>
+    <string name="ld_not_stacked">Too few plates to only take off between sets</string>
+    <string name="ld_per_side">Per side, inside → outside: %s</string>
     <string name="ld_pin">Pin at %s</string>
     <string name="ld_remove">Take off: %s per side</string>
     <string name="mat_assist_step">Assistance step</string>

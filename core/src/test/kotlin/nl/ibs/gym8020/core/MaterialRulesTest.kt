@@ -10,6 +10,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -53,6 +54,32 @@ class MaterialRulesTest {
                 assertTrue(up > w - 1e-9, "up($w) = $up for $profile")
                 assertTrue(down < w + 1e-9, "down($w) = $down for $profile")
                 if (profile.kind != MaterialKind.BODYWEIGHT && w >= 0.0) assertTrue(down >= 0.0, "down($w) = $down below zero for $profile")
+            }
+        }
+    }
+
+    @Test
+    fun `rule #71 - stacked plates, heavy to light only takes off, for any reachable weights`() {
+        val random = Random(71)
+        // Six of each per side: enough for up to five different weights, each step needing at most one of a size.
+        val plenty = PlateStock(mapOf(20.0 to 12, 15.0 to 12, 10.0 to 12, 5.0 to 12, 2.5 to 12, 1.25 to 12))
+        val bars = profiles.filter { it.kind == MaterialKind.PLATES }
+        for (profile in bars) for (stock in stocks + plenty) {
+            val calc = WeightCalculator(profile, stock)
+            // Weights up to what the stock can stack in any case: half the plates per side.
+            val reachable = calc.achievable.filter { it <= profile.baseKg + (calc.achievable.last() - profile.baseKg) / 2 }
+            repeat(300) {
+                val weights = List(random.nextInt(1, 6)) { reachable[random.nextInt(reachable.size)] }
+                val plan = assertNotNull(calc.plan(weights), "$weights $profile $stock")
+                plan.forEachIndexed { i, step ->
+                    assertEquals(weights[i], profile.baseKg + step.loading.perSideKg * profile.loadingPoints, 1e-6, "$weights")
+                    if (i > 0 && weights[i] < weights[i - 1] && step.stacked) {
+                        assertTrue(step.add.isEmpty(), "heavy → light puts on ${step.add} for $weights with $stock")
+                        // What comes off is the outside of the previous stack, outer first.
+                        assertEquals(plan[i - 1].loading.plates.reversed().take(step.remove.size), step.remove, "$weights")
+                    }
+                }
+                if (stock == plenty) assertTrue(plan.all { it.stacked }, "not stacked: $weights")
             }
         }
     }

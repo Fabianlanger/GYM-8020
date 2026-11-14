@@ -49,6 +49,32 @@ class MaterialTest {
     }
 
     @Test
+    fun `#71 stacking - owner's back squat 110 90 40 only takes plates off`() {
+        val plenty = PlateStock(mapOf(20.0 to 8, 15.0 to 8, 10.0 to 8, 5.0 to 8, 2.5 to 8, 1.25 to 8))
+        val plan = assertNotNull(WeightCalculator(bar, plenty).plan(listOf(110.0, 90.0, 40.0)))
+        // Each weight's stack per side, inside → outside.
+        assertEquals(listOf(10.0, 15.0, 10.0, 10.0), plan[0].loading.plates)
+        assertEquals(listOf(10.0, 15.0, 10.0), plan[1].loading.plates)
+        assertEquals(listOf(10.0), plan[2].loading.plates)
+        // Between sets only taking off, outer plate first.
+        assertEquals(listOf(10.0), plan[1].remove)
+        assertTrue(plan[1].add.isEmpty())
+        assertEquals(listOf(10.0, 15.0), plan[2].remove)
+        assertTrue(plan[2].add.isEmpty())
+        assertTrue(plan.all { it.stacked })
+    }
+
+    @Test
+    fun `#71 too few plates to stack - fewest changes, and the plan says so`() {
+        // One 20 and one 10 per side: 40 kg (10) cannot sit inside 60 kg (20).
+        val home = WeightCalculator(bar, PlateStock(mapOf(20.0 to 2, 10.0 to 2)))
+        val plan = assertNotNull(home.plan(listOf(60.0, 40.0)))
+        assertEquals(listOf(20.0), plan[1].remove)
+        assertEquals(listOf(10.0), plan[1].add)
+        assertFalse(plan.any { it.stacked })
+    }
+
+    @Test
     fun `unachievable weight gives no plan`() {
         assertNull(calc.plan(listOf(61.0)))
     }
