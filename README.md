@@ -1,41 +1,47 @@
 # GYM-8020
 
-Android app for strength training with a fixed method: per exercise a **heavy** set (aim for ~6 reps) and a **light** set (aim for ~16 reps), straight after each other and both to failure. After each exercise you set the **weight for next time**, so you keep pushing yourself.
+Android app for strength training with a fixed method: per exercise a **heavy** set (aim for ~6 reps) and a **light** set (aim for ~16 reps), straight after each other and both to failure. After each exercise you set the **target for next time**, so you keep pushing yourself.
 
-*Ontwikkeld onder de vlag van Isatis Business Solutions.*
+Made by [Fabian Langer](https://fabianlanger.nl), with a nod to [Isatis Business Solutions](https://i-b-s.nl) in the logo.
+
+> **Status: preview before 1.0.** The app is in daily use, but still changing. Make an export now and then (Settings → Export all data).
 
 ## Features
 
-- **Training**: optional warm-up, **GO** → 3-2-1 → exercise timer, swipe to the next exercise; add, skip or move exercises on the fly
-- **Goal for next time** per set (too light / good / too heavy), planned on weight only
-- **Material**: bars, plates, pin stacks, cables and dumbbells; the app only suggests weights you can actually load and shows which plates to put on or take off
-- **Schemas and week plans** (Full body, Push/Pull/Legs, Upper/Lower) with day recognition on the home screen
+- **Training**: optional warm-up with your own default, **GO** → 3-2-1 → exercise timer, swipe to the next exercise; add, skip or move exercises on the fly
+- **Target for next time** per set: the app gives advice (too light / good / too heavy), but your target is yours. Change one set and the others keep following your performance
+- **Plate stacking**: the heavy weight is the light weight plus extra plates on the outside, so between the heavy and the light set you only take plates off
+- **Material**: bars, plates, pin stacks, cables and dumbbells; the app only suggests weights you can actually load
+- **Bodyweight exercises** with extra weight or assistance, counted as effective weight (your body weight plus or minus the load)
+- **Body weight**: several measurements a day; the one that counts for a training is the last one before you start
+- **Workouts and programs** (Full body, Push/Pull/Legs, Upper/Lower) with day recognition on the home screen
 - **Library** of ~55 exercises with muscles and movement icons, plus your own exercises
-- **Dashboard**: progress per exercise, muscle and muscle group, push/pull and upper/legs balance, frequency, durations, records, body weight trend
-- **Heatmap**: an art deco body figure (front and back) with volume and progress per muscle
-- **Bodyweight exercises** with extra weight or assistance
+- **Summary** after each training: comparison per exercise and per workout, records, and a muscle map
+- **Dashboard**: progress per exercise, muscle and muscle group, balance, frequency, durations, records, body weight trend
 - **Log**: all finished trainings; correct sets, exercises, date and duration afterwards
 - **Reminders** (optional, local): training day, week target, training still open, body weight
-- **Backup**: Android backup via your Google account, plus an automatic backup after each training to a folder you choose (e.g. Google Drive)
-- Introduction for new users and an in-app explanation of the method
-- Export and import of all data as one JSON file; English and Dutch
+- **Backup**: Android backup via your Google account, an automatic backup after each training to a folder you choose, and export/import of all data as one file
+- Introduction for new users, an in-app explanation of the method; English and Dutch
 
 ## Installing
 
-1. Download the newest build: **https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk** (always the latest; tagged versions such as `v0.1.0` get their own release).
+1. Download the newest build: **https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk** (always the latest; versions get their own release, see [CHANGELOG.md](CHANGELOG.md)).
 2. On your phone, allow installing apps from unknown sources for your browser or file manager.
 3. Open the APK. Updates install over the previous version and keep your data.
 
-> **All data is stored only on your phone.** Uninstalling the app deletes it, unless you have made an export (Settings → Export all data).
+> **Installing an APK from the internet skips the checks of the Play Store.** Only do this if you trust the source. The code is open: you can read exactly what the app does.
+
+> **All data is stored only on your phone.** No account, no server. Uninstalling the app deletes your data, unless you have made an export (Settings → Export all data).
 
 ## Development
 
 - Kotlin, Jetpack Compose (Material 3), Room, DataStore. Min. Android 8.0.
-- `core/` holds the pure-Kotlin logic (goals, effective weight, e1RM, day recognition, library, backup format) with unit tests: `./gradlew :core:test` (add `-PcoreOnly` to build without the Android SDK).
-- `app/` is the Android app. `./gradlew :app:assembleDebug`
-- The debug build is signed with the committed `app/debug.keystore`, so every build installs over the previous one. Version releases can be signed with your own key from GitHub Secrets: see [`docs/RELEASE.md`](docs/RELEASE.md).
+- `core/` holds the pure-Kotlin logic (targets, advice, effective weight, plate stacking, comparisons, backup format) with unit tests: `./gradlew :core:test` (add `-PcoreOnly` to build without the Android SDK).
+- `app/` is the Android app: `./gradlew :app:assembleDebug`. CI builds every push and publishes the dev build.
+- Builds from CI are signed with the project's own key, kept in GitHub Secrets only. A local build without that key falls back to the committed debug key (`app/debug.keystore`), which cannot update an installed release build. See [`docs/RELEASE.md`](docs/RELEASE.md).
+- How we work: [`GLOSSARY.md`](GLOSSARY.md) (shared language), [`docs/adr/`](docs/adr) (decisions), GitHub Issues (work and decisions), [`docs/TESTING.md`](docs/TESTING.md) (test strategy).
 
-Docs: [`docs/SPEC.md`](docs/SPEC.md) (specification and decisions), [`docs/DESIGN.md`](docs/DESIGN.md) (visual style), [`docs/methode.md`](docs/methode.md) (the method, in Dutch; also in the app under Settings → About the method), [`docs/RELEASE.md`](docs/RELEASE.md) (releases and signing).
+Docs: [`docs/DESIGN.md`](docs/DESIGN.md) (visual style), [`docs/methode.md`](docs/methode.md) (the method, in Dutch; also in the app under Settings → About the method), [`docs/RELEASE.md`](docs/RELEASE.md) (releases and signing). [`docs/SPEC.md`](docs/SPEC.md) is the original specification (archive).
 
 ## License
 
