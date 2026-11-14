@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AutoBackup
 import nl.ibs.gym8020.data.BackupService
+import nl.ibs.gym8020.data.BodyweightTargets
 import nl.ibs.gym8020.data.Gyms
 import nl.ibs.gym8020.data.Seeder
 import nl.ibs.gym8020.data.SettingsStore
@@ -39,6 +40,8 @@ class AppContainer(val app: Application) {
     val seeder = Seeder(db, settings, dutch = dutch)
     /** One-time steps after the move to schema v3 (#11). */
     val upgrade = V3Upgrade(app, db, settings, gyms, dutch)
+    /** The targets of bodyweight exercises in effective weight, converted once (#87). */
+    val bodyweightTargets = BodyweightTargets(db, settings)
 }
 
 class GymApp : Application() {
@@ -58,6 +61,7 @@ class GymApp : Application() {
         container = AppContainer(this)
         seeding = container.appScope.launch {
             container.upgrade.run()
+            container.bodyweightTargets.convertIfNeeded()
             container.seeder.seedIfNeeded()
         }
         Reminders.createChannel(this)

@@ -559,8 +559,13 @@ private fun LastTimeLine(item: TrainingItem, unit: WeightUnit) {
         val summary = perSet.joinToString("  ·  ") { l ->
             val s = l.set
             val w = PerformanceWeight.orNone(s.weightKg, ex.progression, ex.loadType)
-            val value = if (ex.progression == Progression.REPS && (w == null || w == 0.0)) "${s.reps}"
-            else "${w?.let { WeightFormat.format(it, unit, signed) } ?: "—"} × ${s.reps}"
+            // A bodyweight exercise in effective weight with the body weight of that day (#87); signed when unknown.
+            val moved = if (signed) l.effectiveKg(ex.loadType, ex.bodyweightFactor) else null
+            val value = when {
+                ex.progression == Progression.REPS && (w == null || w == 0.0) -> "${s.reps}"
+                moved != null -> "${kgText(moved, unit)} × ${s.reps}"
+                else -> "${w?.let { WeightFormat.format(it, unit, signed) } ?: "—"} × ${s.reps}"
+            }
             val role = if (s.role == SetRole.LIGHT) light else heavy
             if (shared == null) "$role $value · ${l.date.format(lastTimeDate)}" else "$role $value"
         }
@@ -656,6 +661,15 @@ private fun GoalCard(item: TrainingItem, unit: WeightUnit, targetOf: (SetRole) -
                     if (step != null && item.calc?.profile?.kind == MaterialKind.PLATES && step.loading.plates.isNotEmpty()) {
                         PlateStrip(step.loading.plates, removed = plan?.getOrNull(i + 1)?.remove.orEmpty(), modifier = Modifier.height(40.dp))
                     }
+                }
+                // Bodyweight exercise (#87): the target is an effective weight; the big number is what you hang today.
+                val effective = item.targetEffectiveKg.getOrNull(item.sets.indexOf(set))
+                val today = weights[i]
+                if (effective != null && today != null) {
+                    Text(
+                        stringResource(R.string.tr_bodyweight_target_today, kgText(effective, unit), kgText(today, unit, signed = true)),
+                        style = MaterialTheme.typography.bodySmall, color = Gym.Gold,
+                    )
                 }
                 loadText(weights[i], item.calc, plan?.getOrNull(i), i == 0, unit)?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)

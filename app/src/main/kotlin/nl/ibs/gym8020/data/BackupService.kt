@@ -112,6 +112,7 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
             },
             plateStock = plateStockFor(null, gyms, settings.current().plateStock).encode(),
             gyms = gyms.map { GymDto(it.id, it.name, it.plates, it.archived) },
+            bodyweightTargetsEffective = settings.current().bodyweightTargetsEffective,
             plans = db.plans().all().map { p ->
                 PlanDto(
                     p.exerciseId, p.note,
@@ -238,6 +239,9 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
             if (b.version < 3) V3Upgrade.backfillTargets(db)
             V3Upgrade.fillLibraryCodes(db)
         }
+        // Bodyweight targets (#87): as the backup holds them; signed loads are converted to effective weights.
+        settings.update { it.copy(bodyweightTargetsEffective = b.bodyweightTargetsEffective) }
+        BodyweightTargets(db, settings).convertIfNeeded()
     }
 
     /** Called after [import]: the plate stock is also kept in the settings (fallback, and for older backups). */
