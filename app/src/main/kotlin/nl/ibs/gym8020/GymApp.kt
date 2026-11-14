@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AutoBackup
 import nl.ibs.gym8020.data.BackupService
+import nl.ibs.gym8020.data.BodyweightRepository
 import nl.ibs.gym8020.data.BodyweightTargets
 import nl.ibs.gym8020.data.Gyms
 import nl.ibs.gym8020.data.Seeder
