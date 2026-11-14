@@ -33,7 +33,11 @@ data class ExerciseEntity(
     val materialProfileId: Long? = null,
     /** Movement pattern for the icon; null = derived from the library or equipment. */
     val movement: Movement? = null,
-    /** Default warm-up (schema v3): a weight, signed for bodyweight exercises (ADR 0001); null = none. */
+    /**
+     * Default warm-up (schema v3, #93): a weight, signed for bodyweight exercises (ADR 0001); null = none. Despite the
+     * name, for an exercise whose warm-up is on reps (`WarmupMeasure.REPS`) it holds a number of reps: read and write it
+     * only through `DefaultWarmup` (`ExerciseEntity.defaultWarmup`, `withDefaultWarmup`).
+     */
     val defaultWarmupKg: Double? = null,
     /** Short note with the default warm-up (schema v3). */
     val defaultWarmupNote: String? = null,

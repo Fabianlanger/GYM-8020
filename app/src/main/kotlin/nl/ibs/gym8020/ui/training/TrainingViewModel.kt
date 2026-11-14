@@ -207,7 +207,8 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
 
     /** The default target (#52): per set the weight you lifted today; never the advice. Null until reps are in. */
     private fun defaultTarget(ex: ExerciseEntity, sets: List<SetEntity>, extra: ExerciseExtra?): PlanDraft? {
-        if (extra == null || sets.none { it.reps != null }) return null
+        // Warm-up reps (prefilled from the default warm-up, #93) are no performance.
+        if (extra == null || sets.none { it.role.isWork && it.reps != null }) return null
         val today = sets.map { PerformedSet(it.role, it.weightKg, it.reps) }
         return PlanDraft(DefaultTarget.of(extra.stored, extra.workout, today, ex.progression, ex.loadType))
     }
@@ -218,16 +219,18 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     fun go(seId: Long) = launch { repo.markGo(seId) }
     fun firstInput(seId: Long) = launch { repo.markFirstInput(seId) }
 
-    /** Starts the warm-up: timer mark plus a warm-up set if there is none yet. */
+    /** Starts the warm-up: timer mark plus a warm-up set filled in with your default warm-up (#93). */
     fun startWarmup(seId: Long) = launch {
         repo.markWarmup(seId)
-        val item = state.value.items.firstOrNull { it.se.id == seId }
-        if (item != null && item.sets.none { it.role == SetRole.WARMUP }) repo.addSet(seId, SetRole.WARMUP)
+        repo.startWarmupSet(seId)
     }
+
+    /** "Bewaar … als standaard" (#93): the value of your warm-up set becomes the exercise's default warm-up. */
+    fun saveDefaultWarmup(exerciseId: Long, value: Double) = launch { repo.saveDefaultWarmupValue(exerciseId, value) }
 
     // ---- sets ----
     fun updateSet(set: SetEntity) = launch { repo.updateSet(set) }
-    fun addSet(seId: Long, role: SetRole) = launch { repo.addSet(seId, role) }
+    fun addSet(seId: Long, role: SetRole) = launch { repo.addSet(seId, role, withDefaultWarmup = true) }
     fun deleteSet(id: Long) = launch { repo.deleteSet(id) }
     fun toggleRole(set: SetEntity) = launch {
         val next = if (set.role == SetRole.HEAVY) SetRole.LIGHT else SetRole.HEAVY

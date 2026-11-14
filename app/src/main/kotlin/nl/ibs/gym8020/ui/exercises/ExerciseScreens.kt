@@ -73,6 +73,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import nl.ibs.gym8020.ui.theme.Gym
+import nl.ibs.gym8020.core.logic.DefaultWarmup
+import nl.ibs.gym8020.core.logic.Warmup
+import nl.ibs.gym8020.core.logic.WarmupMeasure
+import nl.ibs.gym8020.core.material.PlateStock
+import nl.ibs.gym8020.data.Calculators
+import nl.ibs.gym8020.data.defaultWarmup
+import nl.ibs.gym8020.data.warmupMeasure
+import nl.ibs.gym8020.data.withDefaultWarmup
 
 @Composable
 fun muscleName(m: Muscle): String = stringResource(
@@ -250,10 +258,21 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
     var hasHistory by remember { mutableStateOf(false) }
     var materialId by remember { mutableStateOf<Long?>(null) }
     var movement by remember { mutableStateOf<Movement?>(null) }
+    // Default warm-up (#93): your value in the measure it was set in; without one the prefill from the material shows.
+    var warmupValue by remember { mutableStateOf<Double?>(null) }
+    var warmupIn by remember { mutableStateOf<WarmupMeasure?>(null) }
+    var warmupNote by remember { mutableStateOf("") }
+    var bodyweightKg by remember { mutableStateOf<Double?>(null) }
+    var assistPercent by remember { mutableStateOf(Warmup.DEFAULT_ASSIST_PERCENT) }
+    var plateStock by remember { mutableStateOf(PlateStock.DEFAULT) }
     val profiles by container.db.materials().observeActive().collectAsStateWithLifecycle(emptyList())
     val unit by container.settings.settings.map { it.unit }.collectAsStateWithLifecycle(WeightUnit.KG)
 
     LaunchedEffect(exerciseId) {
+        val current = container.settings.current()
+        assistPercent = current.warmupAssistPercent
+        plateStock = current.plateStock
+        bodyweightKg = container.db.bodyweights().latestOnOrBefore(java.time.LocalDate.now().toEpochDay())?.kg
         if (exerciseId != 0L) {
             val e = container.db.exercises().get(exerciseId)
             if (e != null) {
@@ -264,11 +283,26 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
                 factor = e.bodyweightFactor; heavy = e.heavyTarget?.toDouble(); light = e.lightTarget?.toDouble()
                 shares = container.db.exercises().muscles(e.id).associate { it.muscle to it.percent }
                 hasHistory = container.db.exercises().historyCount(e.id) > 0
+                val warmup = e.defaultWarmup
+                warmupNote = warmup?.note.orEmpty()
+                warmup?.value?.let { v ->
+                    warmupValue = v
+                    warmupIn = e.warmupMeasure
+                }
             }
             loaded = true
         }
     }
     if (!loaded) return
+
+    // The default warm-up matches the exercise as it is now; while it has none of yours in that measure, the prefill
+    // from the material shows (once: saving keeps it, after that it is yours).
+    val bwFactor = factor ?: 1.0
+    val warmupMeasure = DefaultWarmup.measureOf(loadType, progression, bwFactor)
+    val warmupCalc = profiles.firstOrNull { it.id == materialId }?.let { Calculators.of(it.toProfile(), plateStock) }
+    val warmupAssist = if (Warmup.needsAssistance(loadType, bwFactor)) Warmup.assistKg(bodyweightKg, bwFactor, assistPercent, warmupCalc) else null
+    val warmupShown = if (warmupIn == warmupMeasure) warmupValue
+    else DefaultWarmup.prefill(warmupMeasure, loadType, bwFactor, equipment, warmupCalc, warmupAssist)
 
     fun save() = scope.launch {
         val entity = (original ?: ExerciseEntity(name = name, equipment = equipment, loadType = loadType, progression = progression)).copy(
@@ -276,7 +310,7 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
             bodyweightFactor = (factor ?: 1.0).coerceIn(0.0, 1.5),
             heavyTarget = heavy?.toInt()?.takeIf { it > 0 }, lightTarget = light?.toInt()?.takeIf { it > 0 },
             materialProfileId = materialId, movement = movement,
-        )
+        ).withDefaultWarmup(DefaultWarmup(warmupMeasure, warmupShown, warmupNote))
         val id = if (original == null) container.db.exercises().insert(entity) else entity.id.also { container.db.exercises().update(entity) }
         container.db.exercises().replaceMuscles(id, shares.map { (m, p) -> ExerciseMuscleEntity(id, m, p) })
         onDone()
@@ -349,6 +383,13 @@ fun ExerciseEditScreen(container: AppContainer, exerciseId: Long, onDone: () -> 
                 NumberStepper(light, { light = it }, step = 1.0, decimals = false, min = 0.0, formatter = { it.toInt().toString() }, buttonSize = 44.dp, textSize = 22.sp)
             }
         }
+
+        DecoDivider()
+        DefaultWarmupBlock(
+            measure = warmupMeasure, value = warmupShown, note = warmupNote, unit = unit, calc = warmupCalc,
+            onValue = { warmupValue = it; warmupIn = warmupMeasure },
+            onNote = { warmupNote = it },
+        )
 
         DecoDivider()
         Eyebrow(stringResource(R.string.exercise_muscles))

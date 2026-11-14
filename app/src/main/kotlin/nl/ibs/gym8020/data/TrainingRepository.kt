@@ -4,10 +4,12 @@ import androidx.room.withTransaction
 import nl.ibs.gym8020.core.logic.BodyShare
 import nl.ibs.gym8020.core.logic.BodyweightTarget
 import nl.ibs.gym8020.core.logic.DefaultTarget
+import nl.ibs.gym8020.core.logic.DefaultWarmup
 import nl.ibs.gym8020.core.logic.Measurement
 import nl.ibs.gym8020.core.logic.PastSession
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
+import nl.ibs.gym8020.core.logic.Warmup
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.Progression
@@ -164,7 +166,16 @@ class TrainingRepository(
 
     suspend fun updateSet(set: SetEntity) = sessions.updateSet(set)
 
-    suspend fun addSet(seId: Long, role: SetRole) = db.withTransaction {
+    /**
+     * Adds a set; a warm-up goes before the work sets. During a training ([withDefaultWarmup]) a warm-up set starts
+     * filled in with your default warm-up (#93); correcting a finished training leaves it empty.
+     */
+    suspend fun addSet(seId: Long, role: SetRole, withDefaultWarmup: Boolean = false) {
+        val warmup = if (role == SetRole.WARMUP && withDefaultWarmup) warmupFor(seId) else null
+        addSetInternal(seId, role, warmup)
+    }
+
+    private suspend fun addSetInternal(seId: Long, role: SetRole, warmup: DefaultWarmup?) = db.withTransaction {
         val sets = sessions.setsOf(seId)
         val se = requireNotNull(sessions.exercise(seId))
         val session = requireNotNull(sessions.get(se.sessionId))
@@ -173,7 +184,12 @@ class TrainingRepository(
         if (role == SetRole.WARMUP) {
             // Warm-ups go before the work sets.
             sessions.updateSets(sets.map { it.copy(position = it.position + 1) })
-            sessions.insertSet(SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.WARMUP, bodyweightKg = bw))
+            sessions.insertSet(
+                SetEntity(
+                    sessionExerciseId = seId, position = 0, role = SetRole.WARMUP, bodyweightKg = bw,
+                    weightKg = warmup?.weightKg, reps = warmup?.reps,
+                ),
+            )
         } else {
             // Weight stays empty: you fill in what you did (#47).
             sessions.insertSet(
@@ -183,6 +199,63 @@ class TrainingRepository(
     }
 
     suspend fun deleteSet(setId: Long) = sessions.deleteSet(setId)
+
+    // ---- default warm-up (#93) ----
+
+    /** The default warm-up of an exercise as stored, in the exercise's measure; null without one. */
+    suspend fun defaultWarmup(exerciseId: Long): DefaultWarmup? = db.exercises().get(exerciseId)?.defaultWarmup
+
+    /**
+     * Sets the default warm-up of an exercise (#93, variant A): [value] in the exercise's measure (kg, signed extra,
+     * or reps; null = none) and a short [note].
+     */
+    suspend fun setDefaultWarmup(exerciseId: Long, value: Double?, note: String?) {
+        val exercise = db.exercises().get(exerciseId) ?: return
+        db.exercises().update(exercise.withDefaultWarmup(DefaultWarmup(exercise.warmupMeasure, value, note)))
+    }
+
+    /**
+     * Tapping Warm-up (#93): the warm-up set appears filled in with your default warm-up. Without a warm-up set one is
+     * added before the work sets; an empty one (from your target) is filled in; one you already filled in stays.
+     */
+    suspend fun startWarmupSet(seId: Long) {
+        val first = sessions.setsOf(seId).filter { it.role == SetRole.WARMUP }.minByOrNull { it.position }
+            ?: return addSet(seId, SetRole.WARMUP, withDefaultWarmup = true)
+        if (first.weightKg != null || first.reps != null) return
+        val warmup = warmupFor(seId) ?: return
+        sessions.updateSet(first.copy(weightKg = warmup.weightKg, reps = warmup.reps))
+    }
+
+    /** "Bewaar … als standaard" (#93, variant B): [value] becomes the default warm-up; the note stays. */
+    suspend fun saveDefaultWarmupValue(exerciseId: Long, value: Double) {
+        val exercise = db.exercises().get(exerciseId) ?: return
+        setDefaultWarmup(exerciseId, value, exercise.defaultWarmupNote)
+    }
+
+    /**
+     * The default warm-up for a warm-up set in session exercise [seId]. While the exercise has no default value it
+     * is prefilled once from this training's material (empty bar, lightest pin, assistance, mini-reps) and stored on
+     * the exercise: after that it is yours. Null when there is nothing to fill in.
+     */
+    private suspend fun warmupFor(seId: Long): DefaultWarmup? {
+        val se = sessions.exercise(seId) ?: return null
+        val session = sessions.get(se.sessionId) ?: return null
+        val exercise = db.exercises().get(se.exerciseId) ?: return null
+        val stored = exercise.defaultWarmup
+        if (stored?.value != null) return stored
+        val current = settings.current()
+        val stock = plateStockFor(session.gymId, db.gyms().all(), current.plateStock)
+        val calc = Calculators.forExercise(exercise, db.materials().all().associateBy { it.id }, stock, se.materialProfileId)
+        val assist = if (Warmup.needsAssistance(exercise.loadType, exercise.bodyweightFactor)) {
+            Warmup.assistKg(session.bodyweightKg, exercise.bodyweightFactor, current.warmupAssistPercent, calc)
+        } else null
+        val measure = exercise.warmupMeasure
+        val prefill = DefaultWarmup.prefill(measure, exercise.loadType, exercise.bodyweightFactor, exercise.equipment, calc, assist)
+            ?: return stored
+        val filled = DefaultWarmup.effective(stored, measure, prefill)
+        db.exercises().update(exercise.withDefaultWarmup(filled))
+        return filled
+    }
 
     // ---- bodyweight exercises: the target in effective weight (#87, ADR 0002) ----
 
@@ -321,7 +394,8 @@ class TrainingRepository(
     /** "Volgende keer op gewicht / op reps" (#52): the exercise's progression, from the next session on. */
     suspend fun setProgression(exerciseId: Long, progression: Progression) {
         val exercise = db.exercises().get(exerciseId) ?: return
-        if (exercise.progression != progression) db.exercises().update(exercise.copy(progression = progression))
+        // A default warm-up on reps is no weight (#93): when its meaning changes it is prefilled again.
+        if (exercise.progression != progression) db.exercises().update(exercise.copy(progression = progression).keepingWarmupMeaning(exercise))
     }
 
     /** Whether [sessionId] is the most recent finished training with this exercise (then it drives the plan). */

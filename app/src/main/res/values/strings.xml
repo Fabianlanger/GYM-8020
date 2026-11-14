@@ -384,6 +384,13 @@
     </plurals>
     <string name="tr_warmup_hint_assist">With assistance: %1$s</string>
     <string name="tr_warmup_hint_assist_pct">With assistance, about %1$d%% of your body weight</string>
+    <!-- Default warm-up (#93) -->
+    <string name="warmup_default_title">Default warm-up</string>
+    <string name="warmup_default_help">As light as possible, for form and activation. Filled in when you tap Warm-up; it never counts.</string>
+    <string name="warmup_default_note">Note</string>
+    <string name="warmup_default_note_hint">e.g. slow, full range</string>
+    <string name="warmup_save_default">Save %1$s as default</string>
+    <string name="warmup_reps_value">%1$d reps</string>
     <string name="settings_warmup_assist" formatted="false">Warm-up assistance for pull-ups and dips (% of body weight)</string>
     <string name="settings_language">Language</string>
     <string name="rem_bw_weekly">Weekly</string>
