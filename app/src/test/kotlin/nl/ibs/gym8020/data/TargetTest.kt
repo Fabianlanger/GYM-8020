@@ -197,6 +197,53 @@ class TargetTest {
         assertEquals(heavy(90.0), repository().target(exerciseId))
     }
 
+    // ---- #72: two heavy sets ----
+
+    private val h60h50l20 = Target(
+        listOf(PlannedSet(SetRole.WARMUP, null), PlannedSet(SetRole.HEAVY, 60.0), PlannedSet(SetRole.HEAVY, 50.0), PlannedSet(SetRole.LIGHT, 20.0)),
+    )
+
+    @Test
+    fun `issue 72 - a target with two heavy sets comes back set by set, in order`() = runBlocking {
+        repository().storeDefaultTarget(seId = se(1), exerciseId = exerciseId, target = h60h50l20)
+
+        assertEquals(h60h50l20, repository().target(exerciseId))
+        assertEquals(h60h50l20, repository().targetOf(se(1)))
+    }
+
+    @Test
+    fun `issue 72 - the next training aims each set at its own target`() = runBlocking {
+        repository().storeDefaultTarget(seId = se(1), exerciseId = exerciseId, target = h60h50l20)
+        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Pull", startedAt = 5_000L))
+
+        repository().addExercise(sessionId, exerciseId)
+
+        val sets = db.sessions().setsOf(db.sessions().exercises(sessionId).single().id)
+        assertEquals(listOf(SetRole.WARMUP, SetRole.HEAVY, SetRole.HEAVY, SetRole.LIGHT), sets.map { it.role })
+        assertEquals(listOf(null, 60.0, 50.0, 20.0), sets.map { it.goalWeightKg })
+    }
+
+    @Test
+    fun `issue 72 - correcting a training with two heavy sets keeps each at its own place`() = runBlocking {
+        repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = Target(listOf(PlannedSet(SetRole.HEAVY, 70.0), PlannedSet(SetRole.LIGHT, 40.0))))
+        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Pull", startedAt = 1_000L, endedAt = 2_000L))
+        val seId = db.sessions().insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exerciseId, position = 0))
+        db.sessions().insertSets(
+            listOf(
+                SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.HEAVY, weightKg = 60.0, reps = 7),
+                SetEntity(sessionExerciseId = seId, position = 1, role = SetRole.HEAVY, weightKg = 50.0, reps = 3),
+                SetEntity(sessionExerciseId = seId, position = 2, role = SetRole.LIGHT, weightKg = 20.0, reps = 18),
+            ),
+        )
+        val expected = Target(listOf(PlannedSet(SetRole.HEAVY, 60.0), PlannedSet(SetRole.HEAVY, 50.0), PlannedSet(SetRole.LIGHT, 20.0)))
+
+        assertEquals(expected, repository().nextTargetIn(sessionId, db.exercises().get(exerciseId)!!))
+        repository().applyCorrection(sessionId, listOf(exerciseId))
+
+        assertEquals(expected, repository().target(exerciseId))
+        assertEquals(expected, repository().targetOf(seId))
+    }
+
     @Test
     fun `correcting an older training does not change the target`() = runBlocking {
         repository().storeDefaultTarget(seId = se(9), exerciseId = exerciseId, target = heavy(80.0))

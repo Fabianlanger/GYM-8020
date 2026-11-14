@@ -39,4 +39,15 @@ object Advice {
                 .takeIf { set.weightKg == null || abs(it - set.weightKg) > 1e-9 }
         }
     }
+
+    /**
+     * The advice as one line next to the collapsed target (#72): per work set of [target], in its order, the
+     * advised weight from [advice] (as [perSet] gives it), or the set's own target where there is none to show.
+     * So with two heavy sets the k-th entry is always the k-th set ("H 60 · H 47,5 · L 22,5"), never the advice
+     * of the second heavy set next to the first. Null when no set has advice.
+     */
+    fun line(target: List<PlannedSet>, advice: List<Double?>): List<PlannedSet>? {
+        if (advice.none { it != null }) return null
+        return target.withIndex().filter { it.value.role.isWork }.map { (i, set) -> PlannedSet(set.role, advice.getOrNull(i) ?: set.weightKg) }
+    }
 }

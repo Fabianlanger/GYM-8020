@@ -925,10 +925,13 @@ private fun NextTimePlanner(
                     }
                 }
                 if (!open) Text(summary, style = MaterialTheme.typography.titleMedium, color = Gym.Yellow)
-                // Collapsed: a hint that there is advice; open the target to take it over.
-                val hint = plan.sets.withIndex().mapNotNull { (i, p) -> advice.getOrNull(i)?.let { "${letters.getValue(p.role)} ${WeightFormat.format(it, unit, signed)}" } }
-                if (!open && hint.isNotEmpty()) {
-                    Text(stringResource(R.string.tr_advice, hint.joinToString("  ·  ")), style = MaterialTheme.typography.bodySmall, color = Gym.Advice)
+                // Collapsed: a hint that there is advice; open the target to take it over. Set by set like the
+                // target above it (#72), so with two heavy sets each advice stands under its own set.
+                val hint = Advice.line(plan.sets, advice)?.joinToString("  ·  ") { p ->
+                    "${letters.getValue(p.role)} ${p.weightKg?.let { WeightFormat.format(it, unit, signed) } ?: "–"}"
+                }
+                if (!open && hint != null) {
+                    Text(stringResource(R.string.tr_advice, hint), style = MaterialTheme.typography.bodySmall, color = Gym.Advice)
                 }
             }
             Icon(if (open) Icons.Filled.Check else Icons.Filled.Edit, stringResource(R.string.tr_edit_plan), tint = Gym.Gold, modifier = Modifier.size(20.dp))
