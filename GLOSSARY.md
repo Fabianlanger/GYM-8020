@@ -61,6 +61,11 @@ Wat je gebruikt om gewicht te maken (stang, dumbbells, kabel, machine, ondersteu
 het toelaat.
 _Vermijd_: material
 
+**Stapelen** (EN: Stacking):
+Hoe de schijven per kant op de stang liggen, zo dat je van het zwaarste naar een lichter gewicht alleen
+schijven afhaalt: de schijven van het lichtste gewicht zitten het dichtst bij het midden, elk zwaarder
+gewicht komt erbuiten.
+
 **Nog over** (EN: Reps in reserve, RIR):
 Hoeveel herhalingen je bij een set nog had gekund. Leeg betekent tot falen, zoals de methode vraagt.
 
@@ -78,6 +83,8 @@ Wat jij voor de volgende keer van een oefening vastzet: per set een gewicht en/o
 zet een doel. Elke sessie bewaart het doel dat erin gezet is, ook als een latere sessie het vervangt, met zijn
 herkomst.
 _Vermijd_: plan, next time, goal
+Bij een lichaamsgewicht-oefening is het doel een effectief gewicht; wat je erbij hangt of aan ondersteuning
+nodig hebt, volgt uit je lichaamsgewicht van die dag.
 
 **Sessiedoel** (EN: Session target):
 Het doel dat gold toen je een sessie begon: waar je die dag op mikte, per set. Blijft per sessie bewaard,
