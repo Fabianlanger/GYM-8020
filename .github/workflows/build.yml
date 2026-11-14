@@ -30,6 +30,9 @@ jobs:
       RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.release }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history with tags: the dev build's version name is the last v* tag plus "-dev" (#88).
+          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
@@ -140,8 +143,20 @@ jobs:
             apk=$(ls app/build/outputs/apk/debug/*.apk | head -1)
           fi
           cp "$apk" "gym-8020-${RELEASE_TAG}.apk"
+          # Release notes: the section of this version in CHANGELOG.md (a heading "## 1.2.0" or "## v1.2.0",
+          # up to the next "## "); without that section GitHub's generated notes (#88).
+          awk -v v="${RELEASE_TAG#v}" '
+            /^## / { if (found) exit; h = $2; gsub(/\[|\]/, "", h); sub(/^v/, "", h); if (h == v) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > release-notes.md 2>/dev/null || true
+          if grep -q '[^[:space:]]' release-notes.md 2>/dev/null; then
+            notes=(--notes-file release-notes.md)
+          else
+            echo "::warning::No section for ${RELEASE_TAG} in CHANGELOG.md; using generated release notes."
+            notes=(--generate-notes)
+          fi
           gh release create "$RELEASE_TAG" "gym-8020-${RELEASE_TAG}.apk" \
-            --target "$GITHUB_SHA" --title "GYM-8020 ${RELEASE_TAG}" --generate-notes
+            --target "$GITHUB_SHA" --title "GYM-8020 ${RELEASE_TAG}" "${notes[@]}"
 
       - name: Upload reports
         if: failure()

@@ -22,6 +22,7 @@ welke je wanneer gebruikt, en legt vast wat alleen voor deze repo geldt. Bij twi
 | Werk, bugs, vragen | GitHub Issues (`docs/agents/issue-tracker.md`), labels volgens `docs/agents/triage-labels.md` |
 | Groot doel | Issue met label `epic`, de tickets eronder als sub-issues |
 | Release | Mijlpaal, één epic per release. Overzicht: `docs/ROADMAP.md` |
+| Wijzigingenlijst per versie, releaseproces | `CHANGELOG.md`, `docs/RELEASE.md` |
 | Besluit | In het afgesloten ticket. Moeilijk omkeerbaar → ook een ADR in `docs/adr/` |
 | Woorden | `GLOSSARY.md` |
 | Teststrategie, kritieke flows (F-nummers) | `docs/TESTING.md` |
@@ -77,3 +78,18 @@ Daarna:
 1. Het issue sluiten met een reactie (wat is gebouwd, wat getest); de epic en `docs/TESTING.md` bijwerken.
 2. Melding aan de eigenaar in gewone taal: wat er veranderd is, wat de eigenaar handmatig moet nalopen, en de open
    vragen (genummerd, met advies).
+3. Iets wat gebruikers merken: een regel onder `## Unreleased / Nog niet uitgebracht` in `CHANGELOG.md`, in
+   gewone taal, Engels én Nederlands.
+
+## Versie uitbrengen
+
+Details in `docs/RELEASE.md`. **Nooit een versie zonder "go" van de eigenaar.** De dev-link blijft bestaan.
+1. De eigenaar zegt "release".
+2. Claude controleert of alles groen is: core-tests, CI op `main`, geen open tickets in de mijlpaal.
+3. Claude schrijft de wijzigingenlijst: in `CHANGELOG.md` wordt `Unreleased` de nieuwe versie (`## 1.2.0`;
+   minor bij nieuwe functies, patch bij alleen fixes), uit de gesloten tickets van de release. Committen op
+   `main` en de tekst en het versienummer aan de eigenaar laten zien.
+4. Na de "go" wordt de versie gemaakt: **Actions → Build → Run workflow** met release-tag (`v1.2.0`), die de
+   eigenaar start, of Claude als dat kan; of een gepushte tag. De versienaam in de app en de releasetekst komen
+   vanzelf uit de tag en `CHANGELOG.md`.
+5. Claude controleert de releasepagina en meldt de link.

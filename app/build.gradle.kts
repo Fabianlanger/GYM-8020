@@ -6,6 +6,34 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
+/**
+ * Version name (#88, docs/RELEASE.md). A version build (tag v1.2.3) is "1.2.3"; every other build is the last
+ * version plus "-dev (build N)", e.g. "1.2.3-dev (build 140)". The last version is the newest v* tag in git;
+ * without tags (shallow clone, no git) it falls back to [fallback], the last version when this was written.
+ */
+fun versionNameFor(releaseTag: String?, lastTag: String?, build: Int, fallback: String = "0.6.1"): String {
+    val semver = Regex("""v(\d+\.\d+\.\d+)""")
+    semver.matchEntire(releaseTag?.trim().orEmpty())?.let { return it.groupValues[1] }
+    val last = semver.matchEntire(lastTag?.trim().orEmpty())?.groupValues?.get(1) ?: fallback
+    return "$last-dev (build $build)"
+}
+
+// CI build number, so every build is a real update and visible under "About".
+val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+
+// The tag of a version build: RELEASE_TAG from the workflow (a pushed v* tag or the manual run's release input),
+// else a pushed tag in GITHUB_REF. Null for dev builds.
+val releaseTag: String? = System.getenv("RELEASE_TAG")?.takeIf { it.isNotBlank() }
+    ?: System.getenv("GITHUB_REF")?.takeIf { it.startsWith("refs/tags/") }?.removePrefix("refs/tags/")
+
+// The newest version tag reachable from this commit; null when git or the tags are not there.
+val lastVersionTag: String? = runCatching {
+    providers.exec {
+        commandLine("git", "describe", "--tags", "--match", "v*", "--abbrev=0")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get()
+}.getOrNull()
+
 android {
     namespace = "nl.ibs.gym8020"
     compileSdk = 35
@@ -15,10 +43,8 @@ android {
         applicationId = "nl.fabianlanger.gym8020"
         minSdk = 26
         targetSdk = 35
-        // CI build number, so every build is a real update and visible under "About".
-        val build = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
-        versionCode = build
-        versionName = "0.6.2 (build $build)"
+        versionCode = buildNumber
+        versionName = versionNameFor(releaseTag, lastVersionTag, buildNumber)
     }
 
     signingConfigs {
