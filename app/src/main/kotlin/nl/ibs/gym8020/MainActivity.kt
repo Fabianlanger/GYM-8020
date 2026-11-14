@@ -265,7 +265,7 @@ private fun GymNavHost(container: AppContainer) {
                 Box(Modifier.systemBarsPadding().imePadding()) { WeekPlanEditScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { if (nav.currentDestination?.route == Routes.INTRO) nav.popBackStack() }) }
             }
             composable(Routes.EXERCISE, idArg) { e ->
-                Box(Modifier.systemBarsPadding().imePadding()) { ExerciseEditScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { if (nav.currentDestination?.route == Routes.INTRO) nav.popBackStack() }) }
+                Box(Modifier.systemBarsPadding().imePadding()) { ExerciseEditScreen(container, e.arguments?.getLong("id") ?: 0L, onDone = { if (nav.currentDestination?.route == Routes.EXERCISE) nav.popBackStack() }) }
             }
             composable(Routes.TRAINING, idArg) { e ->
                 val id = e.arguments?.getLong("id") ?: 0L
@@ -273,6 +273,7 @@ private fun GymNavHost(container: AppContainer) {
                     container, id,
                     onFinished = { sid -> nav.navigate("summary/$sid") { popUpTo(Routes.HOME) } },
                     onExit = { nav.popBackStack(Routes.HOME, inclusive = false) },
+                    onEditExercise = { exerciseId -> nav.navigate("exercise/$exerciseId") },
                 )
             }
             composable(Routes.SUMMARY, idArg) { e ->

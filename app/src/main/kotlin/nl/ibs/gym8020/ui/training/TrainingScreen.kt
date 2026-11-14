@@ -190,7 +190,7 @@ fun warmupHint(ex: ExerciseEntity, calc: WeightCalculator?, unit: WeightUnit): S
 }
 
 @Composable
-fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) -> Unit, onExit: () -> Unit) {
+fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) -> Unit, onExit: () -> Unit, onEditExercise: (Long) -> Unit = {}) {
     val vm: TrainingViewModel = viewModel(key = "training-$sessionId") { TrainingViewModel(container, sessionId) }
     val state by vm.state.collectAsStateWithLifecycle()
     val session = state.session
@@ -288,6 +288,7 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
                             onGo = { dropFocus(); countdownStart = System.currentTimeMillis(); countdownFor = item.se.id },
                             onFinish = { askFinish() },
                             focus = focus?.takeIf { it.first.sessionExerciseId == item.se.id },
+                            onEditExercise = { onEditExercise(item.exercise.id) },
                         )
                     }
                     // Art deco ribbons at the edges: pull them (or tap) to go to the next/previous exercise.
@@ -434,6 +435,7 @@ private fun ExercisePage(
     onGo: () -> Unit,
     onFinish: () -> Unit,
     focus: Pair<Finding, Int>? = null,
+    onEditExercise: () -> Unit = {},
 ) {
     val ex = item.exercise
     val se = item.se
@@ -473,6 +475,8 @@ private fun ExercisePage(
                     )
                     DropdownMenuItem(text = { Text(stringResource(R.string.tr_move_end)) }, onClick = { menu = false; vm.moveToEnd(se.id) })
                     DropdownMenuItem(text = { Text(stringResource(R.string.tr_add_exercise)) }, onClick = { menu = false; picker = true })
+                    // The default warm-up and more (#93).
+                    DropdownMenuItem(text = { Text(stringResource(R.string.exercise_edit)) }, onClick = { menu = false; onEditExercise() })
                 }
             }
         }
@@ -490,10 +494,8 @@ private fun ExercisePage(
             if (warmingUp) {
                 Text(stringResource(R.string.tr_warmup_running, formatDuration(now - (se.warmupAt ?: now))), color = Gym.Gold, style = MaterialTheme.typography.bodyMedium)
             } else if (se.warmupAt == null) {
-                LineButton(
-                    stringResource(R.string.tr_warmup_button, warmupHint(item, unit, assistPercent)),
-                    onClick = { vm.startWarmup(se.id) }, icon = Icons.Filled.LocalFireDepartment, modifier = Modifier.fillMaxWidth(),
-                )
+                // Your default warm-up on the button (#93); not tapped = skipped, no warning.
+                WarmupButton(item, unit, assistPercent, onClick = { vm.startWarmup(se.id) })
             }
             GoButton(stringResource(R.string.tr_go), onClick = onGo)
         }
@@ -505,7 +507,15 @@ private fun ExercisePage(
             val target = headerTarget(item, set, targetOf)
             // Reps progression: the reps to beat are the header number, your reps target for this set (#52, #69).
             val prevReps = if (item.repsTargets != null) target else item.extra?.last?.sets?.filter { it.role == set.role }?.maxOfOrNull { it.reps ?: 0 }
-            if (openSet == set.id) {
+            if (openSet == set.id && set.role == SetRole.WARMUP) {
+                WarmupSetEditor(
+                    item, set, unit, step, onChange = vm::updateSet, onDelete = { vm.deleteSet(set.id) },
+                    onDone = {
+                        val i = item.sets.indexOfFirst { it.id == set.id }
+                        openSet = item.sets.drop(i + 1).firstOrNull { it.reps == null }?.id
+                    },
+                )
+            } else if (openSet == set.id) {
                 SetEditor(
                     set = set, ex = ex, calc = item.calc, warmupText = warmupHint(item, unit, assistPercent), unit = unit, step = step, target = target, goodMargin = goodMargin,
                     previousReps = prevReps, isReps = isReps,
@@ -520,6 +530,8 @@ private fun ExercisePage(
             } else {
                 SetLine(set, ex, unit, target, goodMargin, prevReps, isReps, onClick = { openSet = set.id })
             }
+            // The note of your default warm-up, and "Bewaar … als standaard" when you entered something else (#93).
+            if (set.role == SetRole.WARMUP) WarmupSetFooter(item, set, unit, onSave = { vm.saveDefaultWarmup(ex.id, it) })
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             LineButton(stringResource(R.string.tr_add_set), onClick = { vm.addSet(se.id, SetRole.HEAVY) }, icon = Icons.Filled.Add, modifier = Modifier.weight(1f))

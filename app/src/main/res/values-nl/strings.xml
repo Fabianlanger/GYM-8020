@@ -377,6 +377,13 @@
     </plurals>
     <string name="tr_warmup_hint_assist">Met ondersteuning: %1$s</string>
     <string name="tr_warmup_hint_assist_pct">Met ondersteuning, ongeveer %1$d%% van je gewicht</string>
+    <!-- Default warm-up (#93) -->
+    <string name="warmup_default_title">Standaard-warming-up</string>
+    <string name="warmup_default_help">Zo licht mogelijk, voor houding en activatie. Wordt ingevuld als je op Warm-up tikt; telt nergens mee.</string>
+    <string name="warmup_default_note">Notitie</string>
+    <string name="warmup_default_note_hint">bv. rustig, volle bewegingsbaan</string>
+    <string name="warmup_save_default">Bewaar %1$s als standaard</string>
+    <string name="warmup_reps_value">%1$d reps</string>
     <string name="settings_warmup_assist" formatted="false">Warming-up-ondersteuning bij optrekken en dippen (% van je gewicht)</string>
     <string name="settings_language">Taal</string>
     <string name="rem_bw_weekly">Wekelijks</string>
