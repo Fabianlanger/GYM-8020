@@ -83,6 +83,8 @@ Wat jij voor de volgende keer van een oefening vastzet: per set een gewicht en/o
 zet een doel. Elke sessie bewaart het doel dat erin gezet is, ook als een latere sessie het vervangt, met zijn
 herkomst.
 _Vermijd_: plan, next time, goal
+"Zelf gezet" geldt per set: een set die je zelf aanpaste of waarvan je het advies overnam, staat vast; de andere
+sets volgen je prestatie.
 Bij een lichaamsgewicht-oefening is het doel een effectief gewicht; wat je erbij hangt of aan ondersteuning
 nodig hebt, volgt uit je lichaamsgewicht van die dag.
 
@@ -90,6 +92,8 @@ nodig hebt, volgt uit je lichaamsgewicht van die dag.
 Het doel dat gold toen je een sessie begon: waar je die dag op mikte, per set. Blijft per sessie bewaard,
 naast je prestatie, zodat je later ziet hoe goed je jezelf inschat.
 _Vermijd_: oud doel, vorig doel
+Het hoort bij de rol van een set (de k-de zware mikt op het doel van de k-de zware); een set die je tijdens de
+sessie toevoegt en waarvoor geen doel was, heeft geen sessiedoel.
 
 **Inschatting** (EN: Calibration):
 Je sessiedoel tegenover je prestatie, door de tijd: overschat (prestatie onder je doel) of onderschat (erboven).
