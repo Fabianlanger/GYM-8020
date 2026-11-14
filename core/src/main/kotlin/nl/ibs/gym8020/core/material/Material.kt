@@ -58,10 +58,18 @@ data class Loading(val plates: List<Double>) {
 }
 
 /**
- * Loading instructions for a sequence of sets (D-24): the first set's full loading, then per next set
- * what to take off / put on, chosen so switching costs as few plate changes as possible.
+ * Loading instructions for a sequence of sets (D-24): per set the plates per side (inside → outside), and what
+ * to take off (outer plate first) / put on coming from the previous set. [stacked] (#71): the plates are stacked
+ * (GLOSSARY "Stapelen"), so heavy → light only takes plates off; false when the plate stock cannot do that and
+ * the plan falls back to the fewest changes.
  */
-data class LoadStep(val totalKg: Double, val loading: Loading, val remove: List<Double>, val add: List<Double>)
+data class LoadStep(
+    val totalKg: Double,
+    val loading: Loading,
+    val remove: List<Double>,
+    val add: List<Double>,
+    val stacked: Boolean = true,
+)
 
 private fun g(kg: Double): Int = (kg * 1000).roundToInt()
 private fun kg(grams: Int): Double = grams / 1000.0
@@ -200,14 +208,92 @@ class WeightCalculator(val profile: MaterialProfile, private val stock: PlateSto
     }
 
     /**
-     * Loading plan for consecutive work sets (heavy first). The first loading is chosen together with the
-     * second so that heavy → light ideally means taking off only the outer plate(s); later sets follow
-     * with the fewest changes. Returns null for non-plate profiles or unachievable weights.
+     * Loading plan for consecutive sets, in the order they are done. The plates are stacked (#71, GLOSSARY
+     * "Stapelen"): the lightest weight's plates sit innermost and each heavier weight only adds plates outside,
+     * so heavy → light only takes plates off. Each step adds as few plates as possible; on a tie the stack with
+     * the fewest different plate sizes wins (fewer plates to fetch). When the stock cannot stack every weight,
+     * the plan falls back to the fewest changes between sets ([LoadStep.stacked] false).
+     * Returns null for non-plate profiles or unachievable weights.
      */
     fun plan(weightsKg: List<Double>): List<LoadStep>? {
         if (profile.kind != MaterialKind.PLATES && profile.kind != MaterialKind.BODYWEIGHT) return null
         if (weightsKg.isEmpty()) return emptyList()
         val targets = weightsKg.map { perSideGrams(it) ?: if (profile.kind == MaterialKind.BODYWEIGHT && it <= 0) 0 else return null }
+        val levels = targets.distinct().sorted()
+        val stacks = stack(levels) ?: return fewestChanges(weightsKg, targets)
+        val byTarget = levels.indices.associate { levels[it] to stacks[it] }
+        return weightsKg.indices.map { i ->
+            val now = byTarget.getValue(targets[i])
+            val before = if (i == 0) emptyList() else byTarget.getValue(targets[i - 1])
+            val remove = if (i > 0 && now.size < before.size) before.drop(now.size).reversed() else emptyList()
+            val add = if (i > 0 && now.size > before.size) now.drop(before.size) else emptyList()
+            LoadStep(weightsKg[i], Loading(now), remove, add)
+        }
+    }
+
+    /**
+     * Stacks per level (ascending per-side grams), each inside → outside, every stack a prefix of the next; null
+     * when the stock cannot. Branch and bound over the plates each level adds.
+     */
+    private fun stack(levels: List<Int>): List<List<Double>>? {
+        val increments = levels.mapIndexed { i, t -> t - (if (i == 0) 0 else levels[i - 1]) }
+        val options: List<List<IntArray>> = increments.map { inc ->
+            if (inc == 0) return@map listOf(IntArray(sizes.size))
+            val all = combos[inc] ?: return null
+            val fewest = all.minOf(::pieces)
+            all.filter { pieces(it) <= fewest + 2 }
+                .sortedWith { a, b -> compareValuesBy(a, b, ::pieces).takeIf { it != 0 } ?: biggerFirst(a, b) }
+                .take(MAX_OPTIONS)
+        }
+        // Lower bound on the plates still to add from level i on.
+        val bound = IntArray(options.size + 1)
+        for (i in options.indices.reversed()) bound[i] = bound[i + 1] + options[i].minOf(::pieces)
+
+        val chosen = arrayOfNulls<IntArray>(options.size)
+        var best: List<IntArray>? = null
+        var bestScore = intArrayOf(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
+        var nodes = 0
+        val left = perSide.copyOf()
+        fun search(i: Int, plates: Int) {
+            if (++nodes > MAX_NODES || plates + bound[i] > bestScore[0]) return
+            if (i == options.size) {
+                val used = IntArray(sizes.size) { k -> chosen.sumOf { it!![k] } }
+                val score = intArrayOf(plates, used.count { it > 0 }, chosen.maxOf { pieces(it!!) })
+                if (compareScores(score, bestScore) < 0) { bestScore = score; best = chosen.map { it!! } }
+                return
+            }
+            for (c in options[i]) {
+                if (c.indices.any { c[it] > left[it] }) continue
+                for (k in c.indices) left[k] -= c[k]
+                chosen[i] = c
+                search(i + 1, plates + pieces(c))
+                for (k in c.indices) left[k] += c[k]
+            }
+        }
+        search(0, 0)
+        val steps = best ?: return null
+        val out = mutableListOf<List<Double>>()
+        var acc = emptyList<Double>()
+        for (c in steps) { acc = acc + toLoading(c).plates; out += acc }
+        return out
+    }
+
+    private fun compareScores(a: IntArray, b: IntArray): Int {
+        for (i in a.indices) if (a[i] != b[i]) return a[i].compareTo(b[i])
+        return 0
+    }
+
+    /** More of the bigger plates first (counts are ordered big → small). */
+    private fun biggerFirst(a: IntArray, b: IntArray): Int {
+        for (i in a.indices) if (a[i] != b[i]) return b[i].compareTo(a[i])
+        return 0
+    }
+
+    /**
+     * Fallback when the stock cannot stack: the first loading is chosen together with the second so that heavy →
+     * light ideally means taking off only the outer plate(s); later sets follow with the fewest changes.
+     */
+    private fun fewestChanges(weightsKg: List<Double>, targets: List<Int>): List<LoadStep> {
         fun candidates(t: Int) = combos[t] ?: listOf(IntArray(sizes.size))
 
         // First loading: best pair with the second set (or simply fewest plates).
@@ -229,11 +315,11 @@ class WeightCalculator(val profile: MaterialProfile, private val stock: PlateSto
         var current = first
         // Plates that stay on for the second set go inside, the ones to take off go outside.
         val firstOrder = if (targets.size > 1) ordered(current, bestTransition(current, candidates(targets[1]))) else ordered(current, null)
-        steps += LoadStep(weightsKg[0], firstOrder, emptyList(), emptyList())
+        steps += LoadStep(weightsKg[0], firstOrder, emptyList(), emptyList(), stacked = false)
         for (i in 1 until targets.size) {
             val next = bestTransition(current, candidates(targets[i]))
             val (rem, add) = changes(current, next)
-            steps += LoadStep(weightsKg[i], ordered(next, current), expand(rem, descending = false), expand(add, descending = true))
+            steps += LoadStep(weightsKg[i], ordered(next, current), expand(rem, descending = false), expand(add, descending = true), stacked = false)
             current = next
         }
         return steps
@@ -265,5 +351,9 @@ class WeightCalculator(val profile: MaterialProfile, private val stock: PlateSto
 
         /** The most assistance listed for an assisted machine (signed: down to −100 kg). */
         const val MAX_ASSIST_KG = 100.0
+
+        /** Stacking search limits: plate choices per step and search nodes (#71). */
+        private const val MAX_OPTIONS = 40
+        private const val MAX_NODES = 200_000
     }
 }

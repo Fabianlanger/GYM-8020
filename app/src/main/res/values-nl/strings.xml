@@ -202,7 +202,8 @@
     <string name="ld_belt">Aan de dipriem: %s</string>
     <string name="ld_dumbbells">2× %s</string>
     <string name="ld_no_plates">Geen schijven</string>
-    <string name="ld_per_side">Per kant: %s</string>
+    <string name="ld_not_stacked">Te weinig schijven om tussen sets alleen af te halen</string>
+    <string name="ld_per_side">Per kant, binnen → buiten: %s</string>
     <string name="ld_pin">Pin op %s</string>
     <string name="ld_remove">Haal eraf: %s per kant</string>
     <string name="mat_assist_step">Stap ondersteuning</string>

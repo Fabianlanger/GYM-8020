@@ -592,22 +592,18 @@ private fun loadText(weightKg: Double?, calc: WeightCalculator?, step: LoadStep?
     val w: Double = weightKg
     fun plates(l: List<Double>) = l.joinToString(" · ") { WeightFormat.format(it, unit) }
     return when (p.kind) {
-        MaterialKind.PLATES -> when {
-            step == null -> null
-            isFirst -> {
-                val base = if (p.baseKg > 0) "  ·  " + stringResource(R.string.ld_base, kgText(p.baseKg, unit)) else ""
-                if (step.loading.plates.isEmpty()) stringResource(R.string.ld_no_plates) + base
-                else stringResource(R.string.ld_per_side, plates(step.loading.plates)) + base
-            }
-            // The change from the previous set, then what is on the bar after it, so the sum can be checked.
-            else -> listOfNotNull(
+        MaterialKind.PLATES -> if (step == null) null else {
+            // Stacked plates (#71): between sets only what comes off; putting on only when the stock cannot stack.
+            val change: String? = if (isFirst) null else listOfNotNull(
                 step.remove.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.ld_remove, plates(it)) },
                 step.add.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.ld_add, plates(it)) },
-            ).joinToString("  ·  ").ifEmpty { null }?.let { change ->
-                val after = if (step.loading.plates.isEmpty()) stringResource(R.string.ld_no_plates)
-                else stringResource(R.string.ld_per_side, plates(step.loading.plates))
-                "$change\n→ $after"
-            }
+            ).joinToString("  ·  ").ifEmpty { null }
+            // Every weight shows its stack per side, inside → outside.
+            val stack: String = if (step.loading.plates.isEmpty()) stringResource(R.string.ld_no_plates)
+            else stringResource(R.string.ld_per_side, plates(step.loading.plates))
+            val base: String = if (isFirst && p.baseKg > 0) "  ·  " + stringResource(R.string.ld_base, kgText(p.baseKg, unit)) else ""
+            val note: String? = if (isFirst && !step.stacked) stringResource(R.string.ld_not_stacked) else null
+            listOfNotNull(change, stack + base, note).joinToString("\n")
         }
         MaterialKind.STACK -> stringResource(R.string.ld_pin, kgText(w, unit))
         MaterialKind.DUMBBELLS -> stringResource(R.string.ld_dumbbells, kgText(w, unit))
