@@ -50,7 +50,8 @@ _Vermijd_: assistentie-instelling, aparte velden voor extra en ondersteuning
 **Effectief gewicht** (EN: Effective weight):
 Bij een lichaamsgewicht-oefening: je lichaamsgewicht maal het aandeel van de oefening, plus of min het
 plus-of-min-gewicht. Daarmee vergelijk je kracht eerlijk door de tijd. Als lichaamsgewicht telt de laatste
-meting op of vóór de dag van de training; een dag kan meerdere metingen hebben.
+meting vóór de start van de training; een dag kan meerdere metingen hebben, en een meting later die dag verandert
+een begonnen training niet.
 
 **Gym** (EN: Gym):
 De plek waar je traint, met de schijven die er zijn. Elke sessie hoort bij een gym. Tot er een gymscherm is

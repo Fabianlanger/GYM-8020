@@ -51,12 +51,13 @@ object BodyweightTarget {
         if (share == null) sets else sets.map { s -> s.weightKg?.takeIf { s.role.isWork }?.let { s.copy(weightKg = f(share, it)) } ?: s }
 
     /**
-     * The body weight of a training on [epochDay]: the one it kept ([sessionKg]), else the last measurement on or
-     * before that day, else the first measurement there is; null when none is known.
+     * The body weight of a training that started at [startedAt] (epoch millis) on local day [startDay]: the one it
+     * kept ([sessionKg]), else the last measurement before its start (`BodyweightLog.countsFor`, #94), else the
+     * first measurement there is; null when none is known.
      */
-    fun bodyweightFor(sessionKg: Double?, measurements: List<Measurement>, epochDay: Long): Double? =
+    fun bodyweightFor(sessionKg: Double?, measurements: List<Measurement>, startedAt: Long, startDay: Long): Double? =
         sessionKg
-            ?: BodyweightLog.lastOnOrBefore(measurements, epochDay)?.kg
+            ?: BodyweightLog.countsFor(measurements, startedAt, startDay)?.kg
             ?: measurements.minWithOrNull(compareBy({ it.epochDay }, { it.measuredAt }))?.kg
 
     /**
