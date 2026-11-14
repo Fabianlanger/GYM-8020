@@ -1,7 +1,10 @@
 package nl.ibs.gym8020.data
 
 import androidx.room.withTransaction
+import nl.ibs.gym8020.core.logic.BodyShare
+import nl.ibs.gym8020.core.logic.BodyweightTarget
 import nl.ibs.gym8020.core.logic.DefaultTarget
+import nl.ibs.gym8020.core.logic.Measurement
 import nl.ibs.gym8020.core.logic.PastSession
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
@@ -28,7 +31,11 @@ fun defaultRoles(count: Int): List<SetRole> = List(count.coerceAtLeast(1)) { i -
 
 fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDate()
 
-/** Your target for next time for one exercise: per set the role and weight (or reps, #69), plus a note. */
+/**
+ * Your target for next time for one exercise: per set the role and weight (or reps, #69), plus a note. Read and set
+ * through a training, the weight of a bodyweight exercise is the signed load on the day of that training (exact,
+ * not rounded); it is stored as an effective weight (#87, ADR 0002).
+ */
 data class Target(val sets: List<PlannedSet>, val note: String? = null)
 
 /** What was done last time for an exercise (reference and "vorige keer"). */
@@ -43,7 +50,13 @@ class TrainingRepository(
 
     private val sessions get() = db.sessions()
 
-    suspend fun startSession(schemaId: Long, now: Long = System.currentTimeMillis()): Long = db.withTransaction {
+    suspend fun startSession(schemaId: Long, now: Long = System.currentTimeMillis()): Long {
+        // A body weight entered just before starting makes converting the bodyweight targets possible (#87).
+        BodyweightTargets(db, settings).convertIfNeeded()
+        return startSessionInternal(schemaId, now)
+    }
+
+    private suspend fun startSessionInternal(schemaId: Long, now: Long): Long = db.withTransaction {
         val schema = requireNotNull(db.schemas().get(schemaId))
         val method = settings.current().method
         val bodyweight = db.bodyweights().latestOnOrBefore(now.toLocalDate().toEpochDay())?.kg
@@ -54,7 +67,7 @@ class TrainingRepository(
         db.schemas().entries(schemaId).forEachIndexed { i, entry ->
             val exercise = db.exercises().get(entry.exerciseId) ?: return@forEachIndexed
             if (exercise.archived) return@forEachIndexed
-            addExerciseInternal(sessionId, exercise, i, entry.setCount, method, bodyweight)
+            addExerciseInternal(sessionId, exercise, i, entry.setCount, method)
         }
         sessionId
     }
@@ -65,9 +78,9 @@ class TrainingRepository(
      */
     suspend fun addExercise(sessionId: Long, exerciseId: Long, withGoals: Boolean = true) = db.withTransaction {
         val exercise = requireNotNull(db.exercises().get(exerciseId))
-        val session = requireNotNull(sessions.get(sessionId))
+        requireNotNull(sessions.get(sessionId))
         val position = (sessions.exercises(sessionId).maxOfOrNull { it.position } ?: -1) + 1
-        addExerciseInternal(sessionId, exercise, position, null, settings.current().method, session.bodyweightKg, withGoals)
+        addExerciseInternal(sessionId, exercise, position, null, settings.current().method, withGoals)
     }
 
     /** Removes an exercise (with its sets) from a training. */
@@ -85,13 +98,16 @@ class TrainingRepository(
         position: Int,
         setCount: Int?,
         method: MethodSettings,
-        bodyweight: Double?,
         withGoals: Boolean = true,
     ) {
         val seId = sessions.insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = exercise.id, position = position))
+        val bodyweight = sessions.get(sessionId)?.bodyweightKg
         val plan = db.plans().sets(exercise.id)
         val planned: List<PlannedSet> = if (plan.isNotEmpty()) {
-            plan.map { p -> PlannedSet(p.role, p.weightKg, p.reps) }
+            // A bodyweight exercise aims at an effective weight: today that is this signed load, rounded to the material (#87).
+            val kept = plan.map { p -> PlannedSet(p.role, p.weightKg, p.reps) }
+            val share = shareIn(exercise, sessionId)
+            if (share == null) kept else BodyweightTarget.forToday(kept, share, snapFor(exercise, sessionId, method))
         } else {
             val zero = if (exercise.loadType == LoadType.BODYWEIGHT) 0.0 else null
             defaultRoles(setCount ?: method.defaultSetCount).map { PlannedSet(it, zero) }
@@ -167,9 +183,45 @@ class TrainingRepository(
 
     suspend fun deleteSet(setId: Long) = sessions.deleteSet(setId)
 
+    // ---- bodyweight exercises: the target in effective weight (#87, ADR 0002) ----
+
+    /**
+     * The share of body weight a bodyweight exercise moves in training [sessionId], to convert its target between the
+     * signed load of that day and the stored effective weight. Null (no conversion) for other exercises, while the
+     * targets are not converted yet (`BodyweightTargets`), or without a known body weight.
+     */
+    private suspend fun shareIn(exercise: ExerciseEntity, sessionId: Long): BodyShare? {
+        if (exercise.loadType != LoadType.BODYWEIGHT || !settings.current().bodyweightTargetsEffective) return null
+        val session = sessions.get(sessionId) ?: return null
+        val measurements = db.bodyweights().all().map { Measurement(it.epochDay, it.measuredAt, it.kg) }
+        val kg = BodyweightTarget.bodyweightFor(session.bodyweightKg, measurements, session.startedAt.toLocalDate().toEpochDay())
+            // As in `BodyweightTargets`: as a last resort the most recent body weight a training kept.
+            ?: sessions.all().filter { it.bodyweightKg != null }.maxByOrNull { it.startedAt }?.bodyweightKg
+            ?: return null
+        return BodyShare(kg, exercise.bodyweightFactor)
+    }
+
+    /** [shareIn] for the training of session exercise [seId]. */
+    private suspend fun shareOf(seId: Long): BodyShare? {
+        val se = sessions.exercise(seId) ?: return null
+        val exercise = db.exercises().get(se.exerciseId) ?: return null
+        return shareIn(exercise, se.sessionId)
+    }
+
+    /** Rounding to what the material allows: the exercise's profile, else the weight step from the settings. */
+    private suspend fun snapFor(exercise: ExerciseEntity, sessionId: Long, method: MethodSettings): (Double) -> Double {
+        val stock = plateStockFor(sessions.get(sessionId)?.gymId, db.gyms().all(), settings.current().plateStock)
+        val calc = Calculators.forExercise(exercise, db.materials().all().associateBy { it.id }, stock)
+        val step = method.weightStepKg
+        return calc?.let { c -> { kg: Double -> c.snap(kg) } } ?: { kg: Double -> BodyweightTarget.roundToStep(kg, step) }
+    }
+
     // ---- plan for next time ----
 
-    /** Stores the current target of an exercise: what the next session starts from. */
+    /**
+     * Stores the current target of an exercise as it is kept (a bodyweight exercise in effective weight): what the
+     * next session starts from.
+     */
     suspend fun savePlan(exerciseId: Long, sets: List<PlannedSet>, note: String?) {
         val target = stored(Target(sets, note))
         db.plans().replace(
@@ -189,8 +241,8 @@ class TrainingRepository(
      * with who set it.
      */
     private suspend fun storeTarget(seId: Long, exerciseId: Long, target: Target, origin: TargetOrigin) = db.withTransaction {
-        savePlan(exerciseId, target.sets, target.note)
-        val kept = stored(target)
+        val kept = stored(Target(BodyweightTarget.toEffective(target.sets, shareOf(seId)), target.note))
+        savePlan(exerciseId, kept.sets, kept.note)
         db.targets().replace(
             TargetEntity(sessionExerciseId = seId, origin = origin, note = kept.note, setAt = System.currentTimeMillis()),
             kept.sets.map { TargetSetEntity(sessionExerciseId = seId, position = 0, role = it.role, weightKg = it.weightKg, reps = it.reps) },
@@ -200,20 +252,29 @@ class TrainingRepository(
     /** Whether you set the target yourself in session exercise [seId]. */
     private suspend fun isSetByYou(seId: Long): Boolean = db.targets().get(seId)?.origin == TargetOrigin.YOURS
 
-    /** The target kept for session exercise [seId] (schema v3), whoever set it; null when it has none. */
+    /**
+     * The target kept for session exercise [seId] (schema v3), whoever set it; null when it has none. A bodyweight
+     * exercise's weight as the signed load on the day of that training.
+     */
     suspend fun targetOf(seId: Long): Target? {
         val target = db.targets().get(seId) ?: return null
-        return Target(db.targets().sets(seId).map { PlannedSet(it.role, it.weightKg, it.reps) }, target.note)
+        val sets = db.targets().sets(seId).map { PlannedSet(it.role, it.weightKg, it.reps) }
+        return Target(BodyweightTarget.toSigned(sets, shareOf(seId)), target.note)
     }
 
     suspend fun planNote(exerciseId: Long): String? = db.plans().get(exerciseId)?.note
 
     // ---- target for next time (B-6, D-97) ----
 
-    /** The stored target for an exercise: what the next session starts from. */
-    suspend fun target(exerciseId: Long): Target? {
+    /**
+     * The stored target for an exercise: what the next session starts from. With [sessionId], a bodyweight
+     * exercise's weight is the signed load on the day of that training (exact, #87); without, as kept.
+     */
+    suspend fun target(exerciseId: Long, sessionId: Long? = null): Target? {
         val plan = db.plans().get(exerciseId) ?: return null
-        return Target(db.plans().sets(exerciseId).map { s -> PlannedSet(s.role, s.weightKg, s.reps) }, plan.note)
+        val sets = db.plans().sets(exerciseId).map { s -> PlannedSet(s.role, s.weightKg, s.reps) }
+        val share = sessionId?.let { id -> db.exercises().get(exerciseId)?.let { shareIn(it, id) } }
+        return Target(BodyweightTarget.toSigned(sets, share), plan.note)
     }
 
     /** You set your target during session exercise [seId]: stored right away, and kept as yours in that session. */
@@ -227,7 +288,7 @@ class TrainingRepository(
      */
     suspend fun withdrawTarget(seId: Long, exerciseId: Long, before: Target) {
         db.withTransaction {
-            savePlan(exerciseId, before.sets, before.note)
+            savePlan(exerciseId, BodyweightTarget.toEffective(before.sets, shareOf(seId)), before.note)
             db.targets().delete(seId)
         }
     }
@@ -281,7 +342,7 @@ class TrainingRepository(
     private suspend fun defaultTargetFrom(exercise: ExerciseEntity, sessionId: Long, seId: Long): List<PlannedSet>? {
         val sets = sessions.setsOf(seId)
         if (sets.none { it.reps != null }) return null
-        val stored = target(exercise.id)?.sets
+        val stored = target(exercise.id, sessionId)?.sets
         return DefaultTarget.of(
             stored,
             if (stored.isNullOrEmpty()) workoutRoles(sessionId, exercise.id) else emptyList(),
@@ -314,7 +375,7 @@ class TrainingRepository(
         targetSetIn(se.id, exercise.id)?.let { return it }
         val note = planNote(exercise.id)
         defaultTargetFrom(exercise, sessionId, se.id)?.let { return Target(it, note) }
-        return target(exercise.id)
+        return target(exercise.id, sessionId)
     }
 
     // ---- history ----
@@ -332,10 +393,13 @@ class TrainingRepository(
     suspend fun lastTimeHistory(exerciseId: Long, excludeSession: Long): List<PastSession> {
         val sets = sessions.historySets(exerciseId, excludeSession).groupBy { it.sessionExerciseId }
         return sessions.historyDates(exerciseId, excludeSession).map { row ->
+            val done = sets[row.sessionExerciseId].orEmpty()
             PastSession(
                 date = row.startedAt.toLocalDate(),
-                sets = sets[row.sessionExerciseId].orEmpty().map { PerformedSet(it.role, it.weightKg, it.reps) },
+                sets = done.map { PerformedSet(it.role, it.weightKg, it.reps) },
                 skipped = row.skipped,
+                // The body weight of that training, kept with its bodyweight sets: "Laatste keer" in effective weight (#87).
+                bodyweightKg = done.firstNotNullOfOrNull { it.bodyweightKg },
             )
         }
     }

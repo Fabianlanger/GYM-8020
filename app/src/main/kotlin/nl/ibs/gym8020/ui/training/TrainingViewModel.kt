@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.AppContainer
+import nl.ibs.gym8020.core.logic.BodyShare
 import nl.ibs.gym8020.core.logic.DefaultTarget
 import nl.ibs.gym8020.core.logic.FinishCheck
 import nl.ibs.gym8020.core.logic.FinishExercise
@@ -23,6 +24,7 @@ import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.ProgressionSwitch
 import nl.ibs.gym8020.core.logic.RepsTarget
 import nl.ibs.gym8020.core.logic.Warmup
+import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.MethodSettings
 import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
@@ -43,7 +45,10 @@ data class ExerciseExtra(
     val lastNote: String?,
     /** Only when there is no history: similar exercises as a reference (D-68). */
     val similar: List<Pair<ExerciseEntity, LastPerformance>> = emptyList(),
-    /** Your stored target as this session started: the sets and previous values of the default target (#52). */
+    /**
+     * Your stored target as this session started: the sets and previous values of the default target (#52). A
+     * bodyweight exercise's weights as the signed load of this training's day, exact (#87).
+     */
     val stored: List<PlannedSet>? = null,
     /** The set roles from the workout, for the default target when there is no stored target. */
     val workout: List<SetRole> = emptyList(),
@@ -81,6 +86,11 @@ data class TrainingItem(
     val repsTargets: List<Int?>? = null,
     /** "Laatste keer" (#65): per set in [sets] its most recent performance with the date; null for warm-ups. */
     val lastPerSet: List<LastSet?> = emptyList(),
+    /**
+     * Bodyweight exercise on weight (#87): per set in [sets] the target as an effective weight, next to what you hang
+     * today (its session target); null for warm-ups, other exercises or without a known body weight.
+     */
+    val targetEffectiveKg: List<Double?> = emptyList(),
 ) {
     val hasInput: Boolean get() = sets.any { it.reps != null }
 }
@@ -141,7 +151,10 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
                 list.mapIndexed { i, set -> set.goalReps ?: lastTime[i] }
             } else null
             val lastPerSet = extraMap[ex.id]?.let { e -> LastTime.perSet(list.map { it.role }, e.history) }.orEmpty()
-            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist, today, repsTargets, lastPerSet)
+            val effectiveTargets = if (ex.loadType == LoadType.BODYWEIGHT && today == Progression.WEIGHT) {
+                targetEffective(list, extraMap[ex.id]?.stored, session?.bodyweightKg?.let { BodyShare(it, ex.bodyweightFactor) })
+            } else emptyList()
+            TrainingItem(se, ex, list, extraMap[ex.id], plan, noteMap[se.id] ?: plan?.note ?: "", calc, assist, today, repsTargets, lastPerSet, effectiveTargets)
         }
         items.forEach {
             if (it.extra == null) loadExtra(it.exercise.id)
@@ -170,11 +183,25 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             val similar = if (last == null) repo.similarPerformances(exerciseId, sessionId) else emptyList()
             val extra = ExerciseExtra(
                 last, repo.planNote(exerciseId), similar,
-                stored = repo.target(exerciseId)?.sets,
+                // As the signed load of this training's day (#87), so the default target compares on one body weight.
+                stored = repo.target(exerciseId, sessionId)?.sets,
                 workout = repo.workoutRoles(sessionId, exerciseId),
                 history = repo.lastTimeHistory(exerciseId, sessionId),
             )
             extras.update { it + (exerciseId to extra) }
+        }
+    }
+
+    /**
+     * Per set the target this training started from as an effective weight (#87): the k-th heavy set takes the k-th
+     * heavy set of [stored] (the signed load of today, exact). Only for sets that aim at a weight today.
+     */
+    private fun targetEffective(sets: List<SetEntity>, stored: List<PlannedSet>?, share: BodyShare?): List<Double?> {
+        if (stored == null || share == null) return emptyList()
+        return sets.mapIndexed { i, set ->
+            if (!set.role.isWork || set.goalWeightKg == null) return@mapIndexed null
+            val k = sets.take(i).count { it.role == set.role }
+            stored.filter { it.role == set.role }.getOrNull(k)?.weightKg?.let(share::effective)
         }
     }
 

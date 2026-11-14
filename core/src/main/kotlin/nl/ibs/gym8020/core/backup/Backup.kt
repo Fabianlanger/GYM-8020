@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
  * - 3 (schema v3, #11): gyms, the target per session exercise, session target in reps, "nog over" (RIR),
  *   origin of a training and of a body weight measurement, default warm-up and codes per exercise, material per
  *   session. `maxKg` of a material profile is gone (older files still have it; it is ignored).
+ *   Later added: [bodyweightTargetsEffective] (#87); absent in older files, whose targets are signed loads.
  */
 @Serializable
 data class Backup(
@@ -28,6 +29,11 @@ data class Backup(
     /** The plate stock of the first gym; kept for older app versions (v2). */
     val plateStock: String? = null,
     val gyms: List<GymDto> = emptyList(),
+    /**
+     * The weights in the targets of bodyweight exercises (plans and per session exercise) are effective weights
+     * (#87, ADR 0002); false: signed loads, converted after importing.
+     */
+    val bodyweightTargetsEffective: Boolean = false,
 ) {
     companion object {
         const val FORMAT = "gym-8020-backup"

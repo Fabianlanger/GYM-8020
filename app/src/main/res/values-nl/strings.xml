@@ -165,6 +165,7 @@
     <string name="tr_swipe_hint">Swipe naar de volgende oefening</string>
     <string name="tr_take_off">Haal er in totaal %s af</string>
     <string name="tr_target">doel %d</string>
+    <string name="tr_bodyweight_target_today">doel %1$s · %2$s vandaag</string>
     <string name="tr_next_by_weight">Volgende keer op gewicht</string>
     <string name="tr_next_by_reps">Volgende keer op reps</string>
     <string name="tr_advice">Advies %s</string>

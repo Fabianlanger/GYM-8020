@@ -49,6 +49,14 @@ class BackupFormatV3Test {
         assertEquals(3, BackupJson.decode(BackupJson.encode(b)).version)
     }
 
+    @Test
+    fun `the backup says whether bodyweight targets are effective weights, older files hold signed loads (#87)`() {
+        val effective = Backup(exportedAt = 1L, bodyweightTargetsEffective = true)
+
+        assertEquals(true, BackupJson.decode(BackupJson.encode(effective)).bodyweightTargetsEffective)
+        assertEquals(false, BackupJson.decode("""{"format":"gym-8020-backup","version":3,"exportedAt":1}""").bodyweightTargetsEffective)
+    }
+
     /** A version 2 file as the app wrote it before schema v3 (synthetic data). */
     private val v2 = """
         {"format":"gym-8020-backup","version":2,"exportedAt":1,

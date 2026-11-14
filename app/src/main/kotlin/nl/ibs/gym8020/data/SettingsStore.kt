@@ -41,6 +41,11 @@ data class AppSettings(
     val warmupAssistPercent: Int = Warmup.DEFAULT_ASSIST_PERCENT,
     /** The one-time move of data into schema v3 is done (`V3Upgrade`, #11). */
     val v3DataMoved: Boolean = false,
+    /**
+     * The targets of bodyweight exercises are stored as effective weights (#87, ADR 0002; `BodyweightTargets`).
+     * False until they were converted, which needs a known body weight; until then they are signed loads.
+     */
+    val bodyweightTargetsEffective: Boolean = false,
 )
 
 class SettingsStore(private val context: Context) {
@@ -66,6 +71,7 @@ class SettingsStore(private val context: Context) {
         val backupFailed = booleanPreferencesKey("backup_failed")
         val warmupAssist = intPreferencesKey("warmup_assist_percent")
         val v3DataMoved = booleanPreferencesKey("v3_data_moved")
+        val bodyweightTargetsEffective = booleanPreferencesKey("bodyweight_targets_effective")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { it.toSettings() }
@@ -100,6 +106,7 @@ class SettingsStore(private val context: Context) {
             backupFailed = this[Keys.backupFailed] ?: false,
             warmupAssistPercent = this[Keys.warmupAssist] ?: Warmup.DEFAULT_ASSIST_PERCENT,
             v3DataMoved = this[Keys.v3DataMoved] ?: false,
+            bodyweightTargetsEffective = this[Keys.bodyweightTargetsEffective] ?: false,
         )
     }
 
@@ -127,6 +134,7 @@ class SettingsStore(private val context: Context) {
             prefs[Keys.backupFailed] = next.backupFailed
             prefs[Keys.warmupAssist] = next.warmupAssistPercent
             prefs[Keys.v3DataMoved] = next.v3DataMoved
+            prefs[Keys.bodyweightTargetsEffective] = next.bodyweightTargetsEffective
         }
     }
 }

@@ -181,7 +181,9 @@ class V3UpgradeTest {
         assertEquals("Cable", db.materials().all().single().name)
         // Older trainings get their target like the migration does.
         val (first, second) = sessions.map { s -> db.sessions().exercises(s.id).single().id }
-        assertEquals(listOf(2.5), db.targets().sets(first).map { it.weightKg })
+        // A bodyweight exercise's target is kept in effective weight (#87): 2,5 + 80,5 × 0,3; read back as that day's load.
+        assertEquals(listOf(26.65), db.targets().sets(first).map { it.weightKg })
+        assertEquals(listOf(2.5), TrainingRepository(db, settings).targetOf(first)?.sets?.map { it.weightKg })
         assertEquals(TargetOrigin.UNKNOWN, db.targets().get(second)?.origin)
         assertEquals("CRUNCH", db.exercises().get(exId)!!.healthConnectType)
     }

@@ -4,6 +4,7 @@ import nl.ibs.gym8020.core.logic.LastSet
 import nl.ibs.gym8020.core.logic.LastTime
 import nl.ibs.gym8020.core.logic.PastSession
 import nl.ibs.gym8020.core.logic.PerformedSet
+import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.SetRole.HEAVY
 import nl.ibs.gym8020.core.model.SetRole.LIGHT
 import nl.ibs.gym8020.core.model.SetRole.WARMUP
@@ -102,5 +103,24 @@ class LastTimeTest {
         assertEquals(oct2, LastTime.sharedDate(same))
         val mixed = listOf(LastSet(PerformedSet(HEAVY, 80.0, 7), oct2), LastSet(PerformedSet(LIGHT, 40.0, 15), sep28))
         assertEquals(null, LastTime.sharedDate(mixed))
+    }
+    @Test
+    fun `a bodyweight exercise shows last time in effective weight, with the body weight of that training (#87)`() {
+        val history = listOf(PastSession(oct2, listOf(PerformedSet(HEAVY, 0.0, 8), PerformedSet(LIGHT, -20.0, 12)), bodyweightKg = 80.0))
+
+        val last = LastTime.perSet(listOf(HEAVY, LIGHT), history)
+
+        assertEquals(listOf(80.0, 60.0), last.map { it?.effectiveKg(LoadType.BODYWEIGHT, factor = 1.0) })
+        assertEquals(listOf(72.0, 52.0), last.map { it?.effectiveKg(LoadType.BODYWEIGHT, factor = 0.9) })
+    }
+
+    @Test
+    fun `last time without the body weight of that training has no effective weight, an external weight is itself`() {
+        val history = listOf(PastSession(oct2, listOf(PerformedSet(HEAVY, 5.0, 8))))
+
+        val last = LastTime.perSet(listOf(HEAVY), history).single()!!
+
+        assertEquals(null, last.effectiveKg(LoadType.BODYWEIGHT, factor = 1.0))
+        assertEquals(5.0, last.effectiveKg(LoadType.EXTERNAL, factor = 1.0))
     }
 }
