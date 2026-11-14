@@ -113,10 +113,12 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
         val done = list.filter { it.role.isWork && it.reps != null }
         work += done.size
         val previousReps = c.training.lastPerformance(ex.id, sessionId)?.sets
+        // With session targets in reps, an extra set without one does not count (#92).
+        val withRepsTargets = list.any { it.goalReps != null }
         for (s in done) {
             val prog = if (ex.progression == Progression.REPS && (s.weightKg ?: 0.0) == 0.0) Progression.REPS else Progression.WEIGHT
-            // Reps: your session target reps (#69) when there is one, else the best reps of that role last time.
-            val prev = s.goalReps ?: previousReps?.filter { it.role == s.role }?.maxOfOrNull { it.reps ?: 0 }
+            // Reps: your session target reps (#69) when there is one, else (older trainings) the best reps of that role last time.
+            val prev = s.goalReps ?: if (withRepsTargets) null else previousReps?.filter { it.role == s.role }?.maxOfOrNull { it.reps ?: 0 }
             GoalAdvisor.goalReached(prog, s.goalWeightKg, PerformanceWeight.orNone(s.weightKg, ex.progression, ex.loadType), prev, s.reps)?.let {
                 total++
                 if (it) reached++

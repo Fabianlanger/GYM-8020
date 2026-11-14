@@ -6,11 +6,11 @@ import nl.ibs.gym8020.core.backup.BodyweightDto
 import nl.ibs.gym8020.core.backup.ExerciseDto
 import nl.ibs.gym8020.core.backup.GymDto
 import nl.ibs.gym8020.core.backup.MaterialDto
-import nl.ibs.gym8020.core.backup.PlanSetDto
 import nl.ibs.gym8020.core.backup.SessionDto
 import nl.ibs.gym8020.core.backup.SessionExerciseDto
 import nl.ibs.gym8020.core.backup.SetDto
 import nl.ibs.gym8020.core.backup.TargetDto
+import nl.ibs.gym8020.core.backup.TargetSetDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -38,7 +38,7 @@ class BackupFormatV3Test {
                         SessionExerciseDto(
                             exerciseId = 1, materialId = 4,
                             sets = listOf(SetDto("HEAVY", -10.0, 6, 80.5, goalWeightKg = -12.5, goalReps = 6, repsInReserve = 1)),
-                            target = TargetDto("YOURS", "next week", 15, listOf(PlanSetDto("HEAVY", -7.5, 6))),
+                            target = TargetDto("YOURS", "next week", 15, listOf(TargetSetDto("HEAVY", -7.5, 6))),
                         ),
                     ),
                 ),
@@ -46,7 +46,7 @@ class BackupFormatV3Test {
         )
 
         assertEquals(b, BackupJson.decode(BackupJson.encode(b)))
-        assertEquals(3, BackupJson.decode(BackupJson.encode(b)).version)
+        assertEquals(Backup.VERSION, BackupJson.decode(BackupJson.encode(b)).version)
     }
 
     @Test
@@ -99,6 +99,6 @@ class BackupFormatV3Test {
 
     @Test
     fun `a backup from a newer app is refused`() {
-        assertFailsWith<IllegalArgumentException> { BackupJson.decode("""{"format":"gym-8020-backup","version":4,"exportedAt":1}""") }
+        assertFailsWith<IllegalArgumentException> { BackupJson.decode("""{"format":"gym-8020-backup","version":5,"exportedAt":1}""") }
     }
 }

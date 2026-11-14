@@ -24,7 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * F-4: existing users keep their data when the database schema changes. Opening with Room runs the migrations and
+ * F-4: existing users keep their data when the database schema changes (1 → 4, 2 → 4, 3 → 4). Opening with Room runs the migrations and
  * validates the result against the current entities (columns, types, NOT NULL, indices, foreign keys).
  * All data here is synthetic.
  */
@@ -43,7 +43,7 @@ class MigrationTest {
 
     private fun open(): AppDatabase =
         Room.databaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java, dbName)
-            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
             .allowMainThreadQueries()
             .build()
 
@@ -228,6 +228,9 @@ class MigrationTest {
             assertEquals("deeper", latest.note)
             assertEquals(listOf(105.0, 85.0), db.targets().sets(12).map { it.weightKg })
             assertEquals(listOf(5, 14), db.targets().sets(12).map { it.reps })
+            // Per set (schema v4, #92): the older one unknown, every set of yours yours.
+            assertEquals(listOf(TargetOrigin.UNKNOWN, TargetOrigin.UNKNOWN), db.targets().sets(11).map { it.origin })
+            assertEquals(listOf(TargetOrigin.YOURS, TargetOrigin.YOURS), db.targets().sets(12).map { it.origin })
             // Library exercises got their codes; own exercises stay empty.
             assertEquals("SQUAT", db.exercises().get(7)!!.healthConnectType)
             assertEquals("squat", db.exercises().get(7)!!.garminCategory)
@@ -237,6 +240,58 @@ class MigrationTest {
             V3Upgrade.moveInto(db, stores)
             assertEquals(2, db.targets().all().size)
             assertEquals(4, db.targets().allSets().size)
+        }
+        db.close()
+    }
+
+    /** A version 3 database (synthetic data): three trainings of the squat, each with its kept target. */
+    private fun createVersion3() {
+        helper.createDatabase(dbName, 3).apply {
+            execSQL(
+                "INSERT INTO exercises (id, libraryKey, name, equipment, loadType, progression, bodyweightFactor, archived) " +
+                    "VALUES (7, 'back_squat', 'Back squat', 'BARBELL', 'EXTERNAL', 'WEIGHT', 1.0, 0)",
+            )
+            execSQL("INSERT INTO gyms (id, name, plates, archived) VALUES (1, 'Gym', NULL, 0)")
+            for (i in 1..3) {
+                execSQL("INSERT INTO sessions (id, schemaId, schemaName, startedAt, endedAt, origin, gymId) VALUES ($i, NULL, 'Legs', ${i * 1000}, ${i * 1000 + 500}, 'LIVE', 1)")
+                execSQL("INSERT INTO session_exercises (id, sessionId, exerciseId, position, skipped) VALUES (${10 + i}, $i, 7, 0, 0)")
+            }
+            execSQL("INSERT INTO sets (id, sessionExerciseId, position, role, weightKg, reps, goalWeightKg) VALUES (101, 13, 0, 'HEAVY', 100.0, 6, 97.5)")
+            execSQL("INSERT INTO targets (sessionExerciseId, origin, note, setAt) VALUES (11, 'UNKNOWN', NULL, NULL)")
+            execSQL("INSERT INTO targets (sessionExerciseId, origin, note, setAt) VALUES (12, 'DEFAULT', NULL, 2600)")
+            execSQL("INSERT INTO targets (sessionExerciseId, origin, note, setAt) VALUES (13, 'YOURS', 'deeper', 3600)")
+            execSQL("INSERT INTO target_sets (id, sessionExerciseId, position, role, weightKg, reps) VALUES (1, 11, 0, 'HEAVY', 95.0, NULL)")
+            execSQL("INSERT INTO target_sets (id, sessionExerciseId, position, role, weightKg, reps) VALUES (2, 12, 0, 'HEAVY', 97.5, NULL)")
+            execSQL("INSERT INTO target_sets (id, sessionExerciseId, position, role, weightKg, reps) VALUES (3, 12, 1, 'LIGHT', 70.0, 15)")
+            execSQL("INSERT INTO target_sets (id, sessionExerciseId, position, role, weightKg, reps) VALUES (4, 13, 0, 'HEAVY', 102.5, NULL)")
+            execSQL("INSERT INTO target_sets (id, sessionExerciseId, position, role, weightKg, reps) VALUES (5, 13, 1, 'LIGHT', 72.5, NULL)")
+            close()
+        }
+    }
+
+    @Test
+    fun migrate3To4GivesEveryTargetSetTheOriginOfItsTarget() {
+        createVersion3()
+        val db = open()
+        runBlocking {
+            // Every row kept.
+            val sets = db.targets().allSets().sortedBy { it.id }
+            assertEquals(listOf(1L, 2L, 3L, 4L, 5L), sets.map { it.id })
+            assertEquals(listOf(95.0, 97.5, 70.0, 102.5, 72.5), sets.map { it.weightKg })
+            assertEquals(listOf(null, null, 15, null, null), sets.map { it.reps })
+            assertEquals(listOf(SetRole.HEAVY, SetRole.HEAVY, SetRole.LIGHT, SetRole.HEAVY, SetRole.LIGHT), sets.map { it.role })
+            // Each set has the origin of its target: a target you set yourself stays yours as a whole.
+            assertEquals(
+                listOf(TargetOrigin.UNKNOWN, TargetOrigin.DEFAULT, TargetOrigin.DEFAULT, TargetOrigin.YOURS, TargetOrigin.YOURS),
+                sets.map { it.origin },
+            )
+            assertEquals(listOf(TargetOrigin.UNKNOWN, TargetOrigin.DEFAULT, TargetOrigin.YOURS), db.targets().all().sortedBy { it.sessionExerciseId }.map { it.origin })
+            assertEquals("deeper", db.targets().get(13)!!.note)
+            assertEquals(97.5, db.sessions().allSets().single().goalWeightKg!!, 0.0)
+            // The target a training started from: the latest earlier one kept (#92).
+            assertEquals(12L, db.targets().latestBefore(7, 3, 3000)!!.sessionExerciseId)
+            assertEquals(13L, db.targets().latestBefore(7, 99, 5000)!!.sessionExerciseId)
+            assertNull(db.targets().latestBefore(7, 1, 1000))
         }
         db.close()
     }
