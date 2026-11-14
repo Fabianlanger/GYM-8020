@@ -8,14 +8,17 @@ import nl.ibs.gym8020.core.model.SetRole
  */
 object RepsTarget {
 
-    /** One number per set in [roles]; null when there is no last time to beat. */
+    /**
+     * One number per set in [roles]; null when there is no last time to beat. The k-th heavy set aims at the k-th
+     * heavy set of last time; when that set was skipped it has no number (#91: a skipped set must not shift the
+     * sets after it). A set beyond last time's count aims at the last set of that role you really did.
+     */
     fun forSets(roles: List<SetRole>, last: List<PerformedSet>?): List<Int?> {
-        // Only sets you really did count; the k-th heavy set aims at the k-th heavy set (else the last one).
-        val done = last.orEmpty().filter { it.role.isWork && it.reps != null }.groupBy { it.role }
+        val byRole = last.orEmpty().filter { it.role.isWork }.groupBy { it.role }
         return roles.mapIndexed { i, role ->
-            val sameRole = done[role] ?: return@mapIndexed null
+            val sameRole = byRole[role] ?: return@mapIndexed null
             val k = roles.take(i).count { it == role }
-            (sameRole.getOrNull(k) ?: sameRole.last()).reps
+            if (k < sameRole.size) sameRole[k].reps else sameRole.lastOrNull { it.reps != null }?.reps
         }
     }
 }
