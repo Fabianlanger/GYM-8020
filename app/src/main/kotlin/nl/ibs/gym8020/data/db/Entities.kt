@@ -235,7 +235,8 @@ data class PlanSetEntity(
 
 /**
  * The target for next time set in a session exercise (schema v3): kept for every session, also when a later
- * session replaces it. [origin] says who set it; [setAt] is null when unknown (derived afterwards, A-6).
+ * session replaces it. [origin] says who set it: YOURS when you set at least one of its sets yourself (schema v4,
+ * #92; who set each set is in [TargetSetEntity.origin]). [setAt] is null when unknown (derived afterwards, A-6).
  */
 @Entity(
     tableName = "targets",
@@ -248,7 +249,10 @@ data class TargetEntity(
     val setAt: Long? = null,
 )
 
-/** One set of a [TargetEntity]: role, weight and/or reps. */
+/**
+ * One set of a [TargetEntity]: role, weight and/or reps, and who set this set (schema v4, #92): YOURS when you changed
+ * it or took over its advice, DEFAULT when it follows your performance, UNKNOWN when derived afterwards.
+ */
 @Entity(
     tableName = "target_sets",
     indices = [Index("sessionExerciseId")],
@@ -261,4 +265,5 @@ data class TargetSetEntity(
     val role: SetRole,
     val weightKg: Double? = null,
     val reps: Int? = null,
+    val origin: TargetOrigin = TargetOrigin.DEFAULT,
 )

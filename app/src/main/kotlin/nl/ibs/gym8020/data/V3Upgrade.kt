@@ -101,13 +101,19 @@ class V3Upgrade(
                 val se = db.sessions().exercise(seId) ?: return@forEach
                 val kept = db.targets().get(seId)
                 if (kept != null) {
-                    if (kept.origin != TargetOrigin.YOURS) db.targets().update(kept.copy(origin = TargetOrigin.YOURS))
+                    // Every set of it is yours as well (schema v4, #92).
+                    if (kept.origin != TargetOrigin.YOURS || db.targets().sets(seId).any { it.origin != TargetOrigin.YOURS }) {
+                        db.targets().replace(kept.copy(origin = TargetOrigin.YOURS), db.targets().sets(seId).map { it.copy(origin = TargetOrigin.YOURS) })
+                    }
                 } else {
                     val plan = db.plans().get(se.exerciseId) ?: return@forEach
                     db.targets().replace(
                         TargetEntity(sessionExerciseId = seId, origin = TargetOrigin.YOURS, note = plan.note, setAt = null),
                         db.plans().sets(se.exerciseId).map {
-                            TargetSetEntity(sessionExerciseId = seId, position = 0, role = it.role, weightKg = it.weightKg, reps = it.reps)
+                            TargetSetEntity(
+                                sessionExerciseId = seId, position = 0, role = it.role, weightKg = it.weightKg, reps = it.reps,
+                                origin = TargetOrigin.YOURS,
+                            )
                         },
                     )
                 }
@@ -148,7 +154,12 @@ class V3Upgrade(
                 if (target.isEmpty()) continue
                 db.targets().replace(
                     TargetEntity(sessionExerciseId = b.sessionExerciseId, origin = TargetOrigin.UNKNOWN, note = note, setAt = null),
-                    target.map { TargetSetEntity(sessionExerciseId = b.sessionExerciseId, position = 0, role = it.role, weightKg = it.weightKg, reps = it.reps) },
+                    target.map {
+                        TargetSetEntity(
+                            sessionExerciseId = b.sessionExerciseId, position = 0, role = it.role, weightKg = it.weightKg, reps = it.reps,
+                            origin = TargetOrigin.UNKNOWN,
+                        )
+                    },
                 )
                 stored++
             }

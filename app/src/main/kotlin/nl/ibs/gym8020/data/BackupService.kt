@@ -16,6 +16,7 @@ import nl.ibs.gym8020.core.backup.SessionDto
 import nl.ibs.gym8020.core.backup.SessionExerciseDto
 import nl.ibs.gym8020.core.backup.SetDto
 import nl.ibs.gym8020.core.backup.TargetDto
+import nl.ibs.gym8020.core.backup.TargetSetDto
 import nl.ibs.gym8020.core.backup.WeekPlanDto
 import nl.ibs.gym8020.core.backup.WeekPlanSlotDto
 import nl.ibs.gym8020.core.logic.BodyweightLog
@@ -100,7 +101,7 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                             target = targets[se.id]?.let { t ->
                                 TargetDto(
                                     t.origin.name, t.note, t.setAt,
-                                    targetSets[se.id].orEmpty().sortedBy { it.position }.map { PlanSetDto(it.role.name, it.weightKg, it.reps) },
+                                    targetSets[se.id].orEmpty().sortedBy { it.position }.map { TargetSetDto(it.role.name, it.weightKg, it.reps, it.origin.name) },
                                 )
                             },
                         )
@@ -219,10 +220,15 @@ class BackupService(private val db: AppDatabase, private val settings: SettingsS
                         },
                     )
                     se.target?.let { t ->
+                        val origin = enumOr(t.origin, TargetOrigin.UNKNOWN)
                         db.targets().replace(
-                            TargetEntity(sessionExerciseId = seId, origin = enumOr(t.origin, TargetOrigin.UNKNOWN), note = t.note, setAt = t.setAt),
+                            TargetEntity(sessionExerciseId = seId, origin = origin, note = t.note, setAt = t.setAt),
                             t.sets.map {
-                                TargetSetEntity(sessionExerciseId = seId, position = 0, role = enumOr(it.role, SetRole.HEAVY), weightKg = it.weightKg, reps = it.reps)
+                                TargetSetEntity(
+                                    sessionExerciseId = seId, position = 0, role = enumOr(it.role, SetRole.HEAVY), weightKg = it.weightKg, reps = it.reps,
+                                    // Before v4 (#92) a set has the origin of its target.
+                                    origin = it.origin?.let { o -> enumOr(o, origin) } ?: origin,
+                                )
                             },
                         )
                     }

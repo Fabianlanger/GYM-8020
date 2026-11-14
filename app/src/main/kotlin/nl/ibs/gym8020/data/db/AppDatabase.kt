@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MaterialProfileEntity::class,
         GymEntity::class, TargetEntity::class, TargetSetEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,7 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
             // Before Room opens (and migrates) an older database: a copy of its files, once (#11, Q4).
             PreMigrationCopy.copyIfNeeded(context, NAME)
             return Room.databaseBuilder(context, AppDatabase::class.java, NAME)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
         }
 
@@ -145,6 +145,20 @@ abstract class AppDatabase : RoomDatabase() {
                         "ON UPDATE NO ACTION ON DELETE CASCADE )",
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_target_sets_sessionExerciseId` ON `target_sets` (`sessionExerciseId`)")
+            }
+        }
+
+        /**
+         * Schema v4 (#92): "zelf gezet" per set. Every set of a kept target gets an origin of its own; existing sets
+         * take the origin of their target, so a target you set yourself stays yours as a whole. Only adds and keeps.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `target_sets` ADD COLUMN `origin` TEXT NOT NULL DEFAULT 'UNKNOWN'")
+                db.execSQL(
+                    "UPDATE `target_sets` SET `origin` = COALESCE((SELECT `targets`.`origin` FROM `targets` " +
+                        "WHERE `targets`.`sessionExerciseId` = `target_sets`.`sessionExerciseId`), 'UNKNOWN')",
+                )
             }
         }
     }

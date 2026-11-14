@@ -13,6 +13,8 @@ import kotlinx.serialization.json.Json
  *   origin of a training and of a body weight measurement, default warm-up and codes per exercise, material per
  *   session. `maxKg` of a material profile is gone (older files still have it; it is ignored).
  *   Later added: [bodyweightTargetsEffective] (#87); absent in older files, whose targets are signed loads.
+ * - 4 (schema v4, #92): who set each set of a target ([TargetSetDto.origin]); absent in older files, where every set
+ *   has the origin of its target.
  */
 @Serializable
 data class Backup(
@@ -37,7 +39,7 @@ data class Backup(
 ) {
     companion object {
         const val FORMAT = "gym-8020-backup"
-        const val VERSION = 3
+        const val VERSION = 4
     }
 }
 
@@ -148,9 +150,19 @@ data class SessionExerciseDto(
     val target: TargetDto? = null,
 )
 
-/** The target for next time of a session exercise: [origin] is YOURS, DEFAULT or UNKNOWN. */
+/**
+ * The target for next time of a session exercise: [origin] is YOURS, DEFAULT or UNKNOWN; YOURS when you set at least
+ * one set yourself (v4).
+ */
 @Serializable
-data class TargetDto(val origin: String, val note: String? = null, val setAt: Long? = null, val sets: List<PlanSetDto> = emptyList())
+data class TargetDto(val origin: String, val note: String? = null, val setAt: Long? = null, val sets: List<TargetSetDto> = emptyList())
+
+/**
+ * One set of a [TargetDto]. [origin] (v4, #92) says who set this set: YOURS, DEFAULT or UNKNOWN; null in older
+ * backups, then the set has the origin of its target.
+ */
+@Serializable
+data class TargetSetDto(val role: String, val weightKg: Double? = null, val reps: Int? = null, val origin: String? = null)
 
 @Serializable
 data class SetDto(

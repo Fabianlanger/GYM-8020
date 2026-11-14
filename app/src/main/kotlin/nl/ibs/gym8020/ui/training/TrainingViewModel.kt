@@ -18,11 +18,13 @@ import nl.ibs.gym8020.core.logic.FinishSet
 import nl.ibs.gym8020.core.logic.Finding
 import nl.ibs.gym8020.core.logic.LastSet
 import nl.ibs.gym8020.core.logic.LastTime
+import nl.ibs.gym8020.core.logic.OwnSets
 import nl.ibs.gym8020.core.logic.PastSession
 import nl.ibs.gym8020.core.logic.PerformedSet
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.logic.ProgressionSwitch
 import nl.ibs.gym8020.core.logic.RepsTarget
+import nl.ibs.gym8020.core.logic.SetByYou
 import nl.ibs.gym8020.core.logic.Warmup
 import nl.ibs.gym8020.core.model.LoadType
 import nl.ibs.gym8020.core.model.MethodSettings
@@ -56,11 +58,20 @@ data class ExerciseExtra(
     val history: List<PastSession> = emptyList(),
 )
 
-/** The plan for next time as edited on the training screen. */
-data class PlanDraft(val sets: List<PlannedSet>, val note: String = "", val edited: Boolean = false)
+/**
+ * The plan for next time as edited on the training screen. [yours] says per set whether you set it yourself (#92);
+ * [edited] whether you set at least one set yourself.
+ */
+data class PlanDraft(val sets: List<PlannedSet>, val note: String = "", val edited: Boolean = false, val yours: List<Boolean> = emptyList()) {
+    /** The sets with, per set, whether you set it yourself; without [yours] every set counts as [edited]. */
+    fun own(): OwnSets = OwnSets(sets, if (yours.size == sets.size) yours else sets.map { edited })
+}
 
-/** An advice you took over (#63): the weight it set and the target it replaced, for "Ongedaan". */
-data class TakenAdvice(val adviceKg: Double, val previousKg: Double?)
+/**
+ * An advice you took over (#63): the weight it set and the target it replaced, for "Ongedaan"; [wasYours] whether you
+ * had set that set yourself before (#92).
+ */
+data class TakenAdvice(val adviceKg: Double, val previousKg: Double?, val wasYours: Boolean = false)
 
 data class TrainingItem(
     val se: SessionExerciseEntity,
@@ -119,8 +130,6 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     /** Advice you took over on this screen (#63): per session exercise, per set of the target. */
     private val taken = MutableStateFlow<Map<Long, Map<Int, TakenAdvice>>>(emptyMap())
     val takenAdvice: StateFlow<Map<Long, Map<Int, TakenAdvice>>> = taken
-    /** Session exercises whose target was the default target before you took over advice. */
-    private val wasDefault = HashSet<Long>()
 
     val state: StateFlow<TrainingState> = combine(
         c.db.sessions().observe(sessionId),
@@ -141,7 +150,7 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
             val ex = byId[se.exerciseId] ?: return@mapNotNull null
             val list = setsBySe[se.id].orEmpty()
             val calc = Calculators.forExercise(ex, profiles, stock, se.materialProfileId)
-            val plan = (draftMap[se.id] ?: defaultTarget(ex, list, extraMap[ex.id]))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
+            val plan = followed(draftMap[se.id], defaultTarget(ex, list, extraMap[ex.id]))?.let { p -> noteMap[se.id]?.let { p.copy(note = it) } ?: p }
             val assist = if (Warmup.needsAssistance(ex.loadType, ex.bodyweightFactor)) {
                 Warmup.assistKg(session?.bodyweightKg, ex.bodyweightFactor, settings.warmupAssistPercent, calc)
             } else null
@@ -171,8 +180,16 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     private fun loadOwnTarget(seId: Long, exerciseId: Long) {
         if (!loadingTargets.add(seId)) return
         viewModelScope.launch {
-            val own = repo.targetSetIn(seId, exerciseId) ?: return@launch
-            ownTargets.update { it + (seId to PlanDraft(own.sets, own.note.orEmpty(), edited = true)) }
+            val own = repo.targetSetIn(seId, exerciseId)
+            if (own == null) {
+                // A note you wrote without setting a set yourself (#92): the sets keep following your performance.
+                val kept = repo.targetOf(seId)?.takeIf { !it.note.isNullOrBlank() } ?: return@launch
+                ownTargets.update { it + (seId to PlanDraft(kept.sets, kept.note.orEmpty())) }
+                return@launch
+            }
+            // Per set whether you set it yourself (#92); the other sets keep following your performance.
+            val yours = repo.yoursIn(seId).takeIf { it.size == own.sets.size } ?: own.sets.map { true }
+            ownTargets.update { it + (seId to PlanDraft(own.sets, own.note.orEmpty(), edited = true, yours = yours)) }
         }
     }
 
@@ -205,6 +222,16 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         }
     }
 
+    /**
+     * Your target for next time (#92): the sets you set yourself in [draft] as you set them, the others following the
+     * [default] target. Without a default target yet, the draft as it is.
+     */
+    private fun followed(draft: PlanDraft?, default: PlanDraft?): PlanDraft? {
+        if (draft == null || default == null) return draft ?: default
+        val own = SetByYou.follow(draft.own(), default.sets)
+        return PlanDraft(own.sets, draft.note, edited = own.anyYours, yours = own.yours)
+    }
+
     /** The default target (#52): per set the weight you lifted today; never the advice. Null until reps are in. */
     private fun defaultTarget(ex: ExerciseEntity, sets: List<SetEntity>, extra: ExerciseExtra?): PlanDraft? {
         if (extra == null || sets.none { it.reps != null }) return null
@@ -227,11 +254,13 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
 
     // ---- sets ----
     fun updateSet(set: SetEntity) = launch { repo.updateSet(set) }
-    fun addSet(seId: Long, role: SetRole) = launch { repo.addSet(seId, role) }
+    /** ＋ Set: the session target follows the role (#92). */
+    fun addSet(seId: Long, role: SetRole) = launch { repo.addSet(seId, role, followRole = true) }
     fun deleteSet(id: Long) = launch { repo.deleteSet(id) }
+    /** Heavy ↔ light: the session target follows the role (#92). */
     fun toggleRole(set: SetEntity) = launch {
         val next = if (set.role == SetRole.HEAVY) SetRole.LIGHT else SetRole.HEAVY
-        repo.updateSet(set.copy(role = next))
+        repo.switchRole(set, next)
     }
 
     // ---- exercise order ----
@@ -240,50 +269,70 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
     fun addExercise(exerciseId: Long) = launch { repo.addExercise(sessionId, exerciseId) }
 
     // ---- plan for next time (D-18a) ----
-    /** You change your target: shown at once and stored right away (B-6). */
+    /**
+     * You change the sets of your target (add, remove, switch a role or the progression): shown at once and stored
+     * right away (B-6). The target is then yours as a whole.
+     */
     fun editPlan(seId: Long, transform: (PlanDraft) -> PlanDraft) {
         val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
         val current = item.plan ?: return
-        val next = transform(current).copy(note = item.note, edited = true)
+        val next = transform(current).let { d -> d.copy(note = item.note, edited = true, yours = d.sets.map { true }) }
         drafts.update { it + (seId to next) }
         launch { repo.setTarget(seId, item.exercise.id, Target(next.sets, next.note)) }
     }
 
-    /** Overnemen (#63): the advice becomes your target for set [index], set by you and stored right away. */
+    /**
+     * You change set [index] of your target (its weight or reps, or by taking over its advice): only that set is yours
+     * from now on (#92); the other sets keep following your performance. Stored right away.
+     */
+    fun editPlanSet(seId: Long, index: Int, change: (PlannedSet) -> PlannedSet) {
+        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
+        val current = item.plan ?: return
+        val set = current.sets.getOrNull(index) ?: return
+        store(item, SetByYou.change(current.own(), index, change(set)))
+    }
+
+    /** Shows [own] as your target at once and stores it right away, with per set whether you set it yourself. */
+    private fun store(item: TrainingItem, own: OwnSets) {
+        val next = PlanDraft(own.sets, item.note, edited = own.anyYours, yours = own.yours)
+        drafts.update { it + (item.se.id to next) }
+        launch { repo.setTarget(item.se.id, item.exercise.id, Target(next.sets, next.note), next.yours) }
+    }
+
+    /** Overnemen (#63): the advice becomes your target for set [index], set by you (#92) and stored right away. */
     fun takeAdvice(seId: Long, index: Int, advice: Double) {
         val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
-        val previous = item.plan?.sets?.getOrNull(index) ?: return
-        // The first advice taken over a default target: remember that, so undoing it brings the default back.
-        if (item.plan?.edited != true && taken.value[seId].isNullOrEmpty()) wasDefault += seId
-        taken.update { it + (seId to (it[seId].orEmpty() + (index to TakenAdvice(advice, previous.weightKg)))) }
-        editPlan(seId) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = advice) else s }) }
+        val plan = item.plan ?: return
+        val previous = plan.sets.getOrNull(index) ?: return
+        val wasYours = plan.own().yours[index]
+        taken.update { it + (seId to (it[seId].orEmpty() + (index to TakenAdvice(advice, previous.weightKg, wasYours)))) }
+        editPlanSet(seId, index) { it.copy(weightKg = advice) }
     }
 
     /**
-     * Ongedaan (#63): set [index] gets back the target it had before you took over the advice. When that was the
-     * default target and no other advice is still taken, the target is no longer yours: the default applies again.
+     * Ongedaan (#63, #92): only set [index] goes back. Had you set it yourself before, it gets back that weight; else it
+     * follows your performance again, like the sets you did not set yourself.
      */
     fun undoAdvice(seId: Long, index: Int) {
         val undone = taken.value[seId]?.get(index) ?: return
         taken.update { it + (seId to (it[seId].orEmpty() - index)) }
-        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
-        if (seId in wasDefault && taken.value[seId].isNullOrEmpty()) {
-            wasDefault -= seId
-            drafts.update { it - seId }
-            ownTargets.update { it - seId }
-            launch { repo.withdrawTarget(seId, item.exercise.id, Target(item.extra?.stored.orEmpty(), item.extra?.lastNote)) }
+        if (undone.wasYours) {
+            editPlanSet(seId, index) { it.copy(weightKg = undone.previousKg) }
             return
         }
-        editPlan(seId) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == index) s.copy(weightKg = undone.previousKg) else s }) }
+        val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
+        val plan = item.plan ?: return
+        val default = defaultTarget(item.exercise, item.sets, item.extra) ?: return
+        store(item, SetByYou.release(plan.own(), index, default.sets))
     }
 
-    /** A note is part of your target, so it is stored right away as well. */
+    /** A note is part of your target, so it is stored right away as well; it does not make a set yours (#92). */
     fun setPlanNote(seId: Long, note: String) {
         notes.update { it + (seId to note) }
         val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
         val plan = item.plan ?: return
-        drafts.update { it + (seId to plan.copy(note = note, edited = true)) }
-        launch { repo.setTarget(seId, item.exercise.id, Target(plan.sets, note)) }
+        drafts.update { it + (seId to plan.copy(note = note)) }
+        launch { repo.setTarget(seId, item.exercise.id, Target(plan.sets, note), plan.own().yours) }
     }
 
     /**
@@ -299,11 +348,14 @@ class TrainingViewModel(private val c: AppContainer, private val sessionId: Long
         launch { repo.setProgression(ex.id, to) }
     }
 
-    /** Moving on or finishing: the default target is stored, unless you set a target yourself. */
+    /**
+     * Moving on or finishing: the default target is stored for the sets you did not set yourself (#92); a target you
+     * set as a whole stays as it is.
+     */
     private suspend fun persistPlan(seId: Long) {
         val item = state.value.items.firstOrNull { it.se.id == seId } ?: return
         val plan = item.plan ?: return
-        if (item.se.skipped || plan.sets.isEmpty() || plan.edited) return
+        if (item.se.skipped || plan.sets.isEmpty() || plan.own().allYours) return
         repo.storeDefaultTarget(seId, item.exercise.id, Target(plan.sets, plan.note))
     }
 

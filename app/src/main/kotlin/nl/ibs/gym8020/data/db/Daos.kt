@@ -410,6 +410,19 @@ interface TargetDao {
     @Query("SELECT * FROM target_sets WHERE sessionExerciseId = :seId ORDER BY position")
     suspend fun sets(seId: Long): List<TargetSetEntity>
 
+    /**
+     * The target kept by the latest other training with this exercise that started no later than [startedAt]: the
+     * target a training started at that moment started from (#92). Null when there is none.
+     */
+    @Query(
+        "SELECT targets.* FROM targets " +
+            "INNER JOIN session_exercises ON session_exercises.id = targets.sessionExerciseId " +
+            "INNER JOIN sessions ON sessions.id = session_exercises.sessionId " +
+            "WHERE session_exercises.exerciseId = :exerciseId AND sessions.id != :sessionId AND sessions.startedAt <= :startedAt " +
+            "ORDER BY sessions.startedAt DESC, session_exercises.id DESC LIMIT 1",
+    )
+    suspend fun latestBefore(exerciseId: Long, sessionId: Long, startedAt: Long): TargetEntity?
+
     @Query("SELECT * FROM targets")
     suspend fun all(): List<TargetEntity>
 

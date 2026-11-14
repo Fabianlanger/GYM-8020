@@ -958,7 +958,7 @@ private fun NextTimePlanner(
                         NumberStepper(
                             value = p.reps?.toDouble(),
                             onValueChange = { v ->
-                                vm.editPlan(item.se.id) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == i) s.copy(reps = v?.toInt()?.coerceAtLeast(0)) else s }) }
+                                vm.editPlanSet(item.se.id, i) { s -> s.copy(reps = v?.toInt()?.coerceAtLeast(0)) }
                             },
                             step = 1.0,
                             decimals = false,
@@ -973,7 +973,7 @@ private fun NextTimePlanner(
                     } else if (p.role.isWork) {
                         NumberStepper(
                             value = p.weightKg,
-                            onValueChange = { v -> vm.editPlan(item.se.id) { d -> d.copy(sets = d.sets.mapIndexed { j, s -> if (j == i) s.copy(weightKg = v) else s }) } },
+                            onValueChange = { v -> vm.editPlanSet(item.se.id, i) { s -> s.copy(weightKg = v) } },
                             step = step,
                             allowNegative = signed,
                             min = if (signed) null else 0.0,

@@ -141,7 +141,7 @@ class BodyweightTargetRepositoryTest {
         settings.update { it.copy(bodyweightTargetsEffective = false) }
         val (_, older) = training(80.0, startedAt = 1_000)
         val (_, latest) = training(76.0, startedAt = 100_000)
-        db.targets().replace(TargetEntity(older, TargetOrigin.YOURS, setAt = 2_000), listOf(TargetSetEntity(sessionExerciseId = older, position = 0, role = SetRole.HEAVY, weightKg = 5.0)))
+        db.targets().replace(TargetEntity(older, TargetOrigin.YOURS, setAt = 2_000), listOf(TargetSetEntity(sessionExerciseId = older, position = 0, role = SetRole.HEAVY, weightKg = 5.0, origin = TargetOrigin.YOURS)))
         db.targets().replace(TargetEntity(latest, TargetOrigin.DEFAULT, setAt = 101_000), listOf(TargetSetEntity(sessionExerciseId = latest, position = 0, role = SetRole.HEAVY, weightKg = 2.5)))
         db.plans().replace(PlanEntity(pullUp, updatedAt = 101_000), listOf(PlanSetEntity(exerciseId = pullUp, position = 0, role = SetRole.HEAVY, weightKg = 2.5)))
 
