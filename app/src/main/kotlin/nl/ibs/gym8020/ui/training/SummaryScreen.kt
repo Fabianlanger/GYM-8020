@@ -42,6 +42,7 @@ import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.logic.GoalAdvisor
 import nl.ibs.gym8020.core.logic.PerformanceWeight
+import nl.ibs.gym8020.core.logic.RepsRecord
 import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
@@ -72,7 +73,11 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-data class RecordLine(val exercise: ExerciseEntity, val weightKg: Double, val reps: Int)
+/**
+ * A record in the summary: on weight the heavy set with the best e1RM ([weightKg] × [reps]); with reps progression
+ * the record on reps ([onReps], #73).
+ */
+data class RecordLine(val exercise: ExerciseEntity, val weightKg: Double, val reps: Int, val onReps: RepsRecord? = null)
 
 /** One exercise in the summary: strength today next to the last time of that exercise (#66). */
 data class ExerciseLine(val exercise: ExerciseEntity, val comparison: ExerciseComparison)
@@ -135,6 +140,12 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
         val ex = stats.exercises[exId] ?: continue
         val today = currentByExercise[exId].orEmpty()
         Comparison.exercise(today, previous[exId])?.let { lines += ExerciseLine(ex, it) }
+        // With reps progression (#73): the most reps in a work set, at a load at least as heavy as the record's.
+        if (ex.progression == Progression.REPS) {
+            val before = earlier.reversed().map { s -> bySession[s.id].orEmpty().filter { it.exerciseId == exId } }
+            RepsRecord.of(today, before)?.let { records += RecordLine(ex, it.effectiveKg ?: it.loadKg, it.reps, onReps = it) }
+            continue
+        }
         // Record: best heavy-set e1RM higher than in any other session of this exercise.
         val best = Strength.bestSet(today) ?: continue
         val bestNow = Strength.e1rm(best) ?: continue
@@ -190,7 +201,9 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, 
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Eyebrow(stringResource(R.string.sum_record), color = Gym.Gold)
                         Text(r.exercise.name, style = MaterialTheme.typography.titleLarge)
-                        WeightText(r.weightKg, s.unit, size = 40.sp, signed = r.exercise.loadType == LoadType.BODYWEIGHT, suffix = "${s.unit.name.lowercase()} × ${r.reps}")
+                        val onReps = r.onReps
+                        if (onReps != null) RepsRecordText(onReps, s.unit)
+                        else WeightText(r.weightKg, s.unit, size = 40.sp, signed = r.exercise.loadType == LoadType.BODYWEIGHT, suffix = "${s.unit.name.lowercase()} × ${r.reps}")
                     }
                 }
             }
@@ -205,6 +218,28 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, 
         LineButton(stringResource(R.string.log_edit_title), onClick = onEdit, icon = Icons.Filled.Edit, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
     }
+}
+
+/**
+ * A record on reps (#73): big the reps ("22 reps"), small the weight you moved ("76 kg", never "bodyweight") and the
+ * improvement ("+3 reps").
+ */
+@Composable
+private fun RepsRecordText(r: RepsRecord, unit: WeightUnit) {
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            "${r.reps}", fontFamily = Poppins, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Gym.Yellow, lineHeight = 40.sp,
+        )
+        Text(
+            " " + stringResource(R.string.tr_reps_suffix), fontFamily = Poppins, fontSize = 14.sp, color = Gym.Cream,
+            modifier = Modifier.padding(bottom = 3.dp),
+        )
+    }
+    val detail = listOfNotNull(
+        r.effectiveKg?.let { WeightFormat.format(it, unit) + " " + unit.name.lowercase() },
+        stringResource(R.string.sum_reps_change, ComparisonFormat.count(r.improvement)),
+    ).joinToString(" · ")
+    Text(detail, style = MaterialTheme.typography.bodySmall, color = Gym.Positive)
 }
 
 @Composable
