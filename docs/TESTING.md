@@ -101,11 +101,12 @@ Het Android-equivalent van Playwright, zonder telefoon, gewoon in CI (T-4, T-5).
 - **Downloaden:** de screenshots komen als download bij elke build. Zo kun je een nieuwe versie bekijken
   zonder te installeren, en ziet Claude wat er gebouwd is.
 
-## 5. End-to-end op een echte emulator — *later*
+## 5. End-to-end op een echte emulator — *release 1.1*
 
 Een echte Android-emulator in GitHub Actions (bijv. met Maestro, dat stappen doorloopt zoals Playwright).
 Het nadeel: ongeveer 10 minuten per run, en gevoeliger voor haperingen. Als we het doen: 2 à 3
-rooktests (starten → training → afronden → samenvatting), alleen bij een versierelease (T-6).
+rooktests (starten → training → afronden → samenvatting), alleen bij een versierelease (T-6). Besloten in
+#84: niet in 1.0 (daar volstaat de handmatige controle uit `docs/RELEASE.md`), wel in release 1.1.
 
 ## 6. Bugs versus nieuwe features — *afgesproken*
 
