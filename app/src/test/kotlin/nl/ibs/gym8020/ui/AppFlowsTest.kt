@@ -126,7 +126,7 @@ class AppFlowsTest {
     @Test
     fun `F-1 start a workout`() {
         freshInstall()
-        runBlocking { (context as GymApp).container.db.bodyweights().replaceManualOfDay(manualMeasurement(80.0)) }
+        runBlocking { (context as GymApp).container.db.bodyweights().insert(manualMeasurement(80.0)) }
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
             rule.shot("en_07_home_weight_logged")
@@ -158,7 +158,7 @@ class AppFlowsTest {
     fun `F-2 warm-up, GO, countdown, timer, first input stops the timer`() {
         freshInstall()
         val db = (context as GymApp).container.db
-        runBlocking { db.bodyweights().replaceManualOfDay(manualMeasurement(80.0)) }
+        runBlocking { db.bodyweights().insert(manualMeasurement(80.0)) }
         ActivityScenario.launch(MainActivity::class.java).use {
             rule.toHome("Skip", "Weight today")
             rule.onAllNodesWithText("Full body").onLast().performClick()

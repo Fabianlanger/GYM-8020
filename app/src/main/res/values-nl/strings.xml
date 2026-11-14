@@ -17,7 +17,13 @@
     <string name="action_skip">Overslaan</string>
     <string name="body_empty">Nog geen metingen</string>
     <string name="body_title">Lichaamsgewicht</string>
-    <string name="body_today">Vandaag</string>
+    <string name="body_add">Meting toevoegen</string>
+    <string name="body_at_now">Nu</string>
+    <string name="body_edit">Meting aanpassen</string>
+    <plurals name="body_measurements">
+        <item quantity="one">%1$d meting</item>
+        <item quantity="other">%1$d metingen</item>
+    </plurals>
     <string name="bw_ask_body">Nodig voor oefeningen met lichaamsgewicht. Alleen opgeslagen op deze telefoon.</string>
     <string name="bw_ask_title">Wat weeg je vandaag?</string>
     <string name="day_none">Geen vaste dag</string>

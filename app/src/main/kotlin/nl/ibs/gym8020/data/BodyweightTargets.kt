@@ -45,9 +45,11 @@ class BodyweightTargets(private val db: AppDatabase, private val settings: Setti
             val anySession = sessions.values.filter { it.bodyweightKg != null }.maxByOrNull { it.startedAt }?.bodyweightKg
             if (measurements.isEmpty() && anySession == null) return@withTransaction false
 
-            fun bodyweightOf(session: SessionEntity?): Double? =
-                BodyweightTarget.bodyweightFor(session?.bodyweightKg, measurements, (session?.startedAt ?: now).toLocalDate().toEpochDay())
+            fun bodyweightOf(session: SessionEntity?): Double? {
+                val startedAt = session?.startedAt ?: now
+                return BodyweightTarget.bodyweightFor(session?.bodyweightKg, measurements, startedAt, startedAt.toLocalDate().toEpochDay())
                     ?: anySession
+            }
 
             val exercises = db.exercises().all().filter { it.loadType == LoadType.BODYWEIGHT }.associateBy { it.id }
             val sessionExercises = db.sessions().allExercises().filter { it.exerciseId in exercises }.associateBy { it.id }

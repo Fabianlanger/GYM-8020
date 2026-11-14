@@ -59,7 +59,8 @@ class TrainingRepository(
     private suspend fun startSessionInternal(schemaId: Long, now: Long): Long = db.withTransaction {
         val schema = requireNotNull(db.schemas().get(schemaId))
         val method = settings.current().method
-        val bodyweight = db.bodyweights().latestOnOrBefore(now.toLocalDate().toEpochDay())?.kg
+        // The last measurement before the start counts (#94); one taken later that day does not change this training.
+        val bodyweight = BodyweightRepository(db).countingFor(now)?.kg
         val gymId = defaultGym(db.gyms().all())?.id
         val sessionId = sessions.insert(
             SessionEntity(schemaId = schemaId, schemaName = schema.name, startedAt = now, bodyweightKg = bodyweight, gymId = gymId),
@@ -194,7 +195,7 @@ class TrainingRepository(
         if (exercise.loadType != LoadType.BODYWEIGHT || !settings.current().bodyweightTargetsEffective) return null
         val session = sessions.get(sessionId) ?: return null
         val measurements = db.bodyweights().all().map { Measurement(it.epochDay, it.measuredAt, it.kg) }
-        val kg = BodyweightTarget.bodyweightFor(session.bodyweightKg, measurements, session.startedAt.toLocalDate().toEpochDay())
+        val kg = BodyweightTarget.bodyweightFor(session.bodyweightKg, measurements, session.startedAt, session.startedAt.toLocalDate().toEpochDay())
             // As in `BodyweightTargets`: as a last resort the most recent body weight a training kept.
             ?: sessions.all().filter { it.bodyweightKg != null }.maxByOrNull { it.startedAt }?.bodyweightKg
             ?: return null

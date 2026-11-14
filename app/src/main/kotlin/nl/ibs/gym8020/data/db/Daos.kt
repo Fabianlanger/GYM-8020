@@ -156,8 +156,8 @@ interface WeekPlanDao {
 }
 
 /**
- * Body weight measurements; a day can have several (schema v3, V-14). The last one on or before a day counts
- * (`BodyweightLog`): latest day first, then latest moment.
+ * Body weight measurements; a day can have several (schema v3, V-14, #94). The last one on or before a day counts
+ * (`BodyweightLog`): latest day first, then latest moment. Adding never replaces; go through `BodyweightRepository`.
  */
 @Dao
 interface BodyweightDao {
@@ -173,21 +173,15 @@ interface BodyweightDao {
     @Query("SELECT * FROM bodyweights WHERE epochDay <= :epochDay ORDER BY epochDay DESC, measuredAt DESC, id DESC LIMIT 1")
     suspend fun latestOnOrBefore(epochDay: Long): BodyweightEntity?
 
+    @Query("SELECT * FROM bodyweights WHERE id = :id")
+    suspend fun get(id: Long): BodyweightEntity?
+
+    /** Adds a measurement; it never replaces one, also not of the same day (#94). */
     @Insert
     suspend fun insert(b: BodyweightEntity): Long
 
-    @Query("DELETE FROM bodyweights WHERE epochDay = :epochDay AND origin = 'MANUAL'")
-    suspend fun deleteManualOfDay(epochDay: Long)
-
-    /**
-     * Your measurement of a day as the screens enter it today: it replaces your earlier manual measurement of that
-     * day; measurements from a wearable stay. Adding several per day comes with the body weight screen (V-14).
-     */
-    @Transaction
-    suspend fun replaceManualOfDay(b: BodyweightEntity) {
-        deleteManualOfDay(b.epochDay)
-        insert(b)
-    }
+    @Update
+    suspend fun update(b: BodyweightEntity)
 
     @Query("DELETE FROM bodyweights WHERE id = :id")
     suspend fun delete(id: Long)

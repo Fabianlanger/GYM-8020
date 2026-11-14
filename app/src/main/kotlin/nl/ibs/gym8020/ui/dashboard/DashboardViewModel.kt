@@ -38,6 +38,10 @@ data class DashboardData(
     val goalRate: List<WeekValue> = emptyList(),
     val bodyweight: List<Point> = emptyList(),
     val bodyweightTrend: List<Point> = emptyList(),
+    /** Days with several measurements: low to high (#94). */
+    val bodyweightRanges: List<DayRange> = emptyList(),
+    /** The measurements before the last of their day, as small dots (#94). */
+    val bodyweightOthers: List<Point> = emptyList(),
     /** Exercises with history, most recently trained first. */
     val exercises: List<ExerciseEntity> = emptyList(),
     val progress: Map<Long, ExerciseProgress> = emptyMap(),
@@ -96,8 +100,9 @@ class DashboardViewModel(private val c: AppContainer) : ViewModel() {
         val sessionRecords = sessions.map { SessionRecord(it.id, it.startedAt.toLocalDate(), it.endedAt!! - it.startedAt) }
         val timings = ses.map { ExerciseTiming(it.sessionId, it.position + 1, if (it.goAt != null && it.firstInputAt != null) it.firstInputAt - it.goAt else null) }
 
-        // Per day the measurement that counts: the last one (V-14).
-        val bw = BodyweightLog.lastPerDay(db.bodyweights().all().map { it.toMeasurement() }).map { Point(LocalDate.ofEpochDay(it.epochDay), it.kg) }
+        // Per day the measurement that counts: the last one (V-14); the others and the spread around it (#94).
+        val bwDays = BodyweightLog.days(db.bodyweights().all().map { it.toMeasurement() })
+        val bw = bwDays.map { Point(LocalDate.ofEpochDay(it.epochDay), it.last.kg) }
         val goalResults = Dashboard.goalResults(sets)
         val setsPerMuscle = Dashboard.setsPerMuscle(sets, muscles, today, DASHBOARD_WEEKS)
         val volumePerMuscle = Dashboard.volumePerMuscle(sets, muscles, today, DASHBOARD_WEEKS)
@@ -117,6 +122,8 @@ class DashboardViewModel(private val c: AppContainer) : ViewModel() {
             goalRate = Dashboard.goalRatePerWeek(goalResults, today, DASHBOARD_WEEKS),
             bodyweight = bw,
             bodyweightTrend = Dashboard.movingAverage(bw, 7),
+            bodyweightRanges = bwDays.filter { it.count > 1 }.map { DayRange(LocalDate.ofEpochDay(it.epochDay), it.lowKg, it.highKg) },
+            bodyweightOthers = bwDays.flatMap { day -> day.others.map { Point(LocalDate.ofEpochDay(day.epochDay), it.kg) } },
             exercises = lastTrained.keys.mapNotNull { exercises[it] }.sortedByDescending { lastTrained[it.id] },
             progress = lastTrained.keys.associateWith { Dashboard.exerciseProgress(sets, it) },
             records = Dashboard.records(sets),

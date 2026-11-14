@@ -99,15 +99,26 @@ class BodyweightTargetTest {
     }
 
     @Test
-    fun `the body weight of a training - its own, else the last measurement on or before, else the first one`() {
-        val log = listOf(Measurement(epochDay = 10, measuredAt = 1, kg = 81.0), Measurement(epochDay = 20, measuredAt = 2, kg = 78.0))
+    fun `the body weight of a training - its own, else the last measurement before its start, else the first one`() {
+        val log = listOf(Measurement(epochDay = 10, measuredAt = at(10, 8), kg = 81.0), Measurement(epochDay = 20, measuredAt = at(20, 8), kg = 78.0))
 
-        assertEquals(79.5, BodyweightTarget.bodyweightFor(79.5, log, epochDay = 25))
-        assertEquals(78.0, BodyweightTarget.bodyweightFor(null, log, epochDay = 25))
-        assertEquals(81.0, BodyweightTarget.bodyweightFor(null, log, epochDay = 15))
-        assertEquals(81.0, BodyweightTarget.bodyweightFor(null, log, epochDay = 5))
-        assertNull(BodyweightTarget.bodyweightFor(null, emptyList(), epochDay = 5))
+        assertEquals(79.5, BodyweightTarget.bodyweightFor(79.5, log, startedAt = at(25, 18), startDay = 25))
+        assertEquals(78.0, BodyweightTarget.bodyweightFor(null, log, startedAt = at(25, 18), startDay = 25))
+        assertEquals(81.0, BodyweightTarget.bodyweightFor(null, log, startedAt = at(15, 18), startDay = 15))
+        assertEquals(81.0, BodyweightTarget.bodyweightFor(null, log, startedAt = at(5, 18), startDay = 5))
+        assertNull(BodyweightTarget.bodyweightFor(null, emptyList(), startedAt = at(5, 18), startDay = 5))
     }
+
+    @Test
+    fun `#94 the target in effective weight uses the measurement before the start, not a later one that day`() {
+        val log = listOf(Measurement(20, at(20, 7), 80.0), Measurement(20, at(20, 21), 82.0))
+
+        // Trained at 18:00: the evening measurement comes after the start.
+        assertEquals(80.0, BodyweightTarget.bodyweightFor(null, log, startedAt = at(20, 18), startDay = 20))
+    }
+
+    /** Moment [hour]:00 (UTC) of [day], in epoch millis. */
+    private fun at(day: Long, hour: Int): Long = day * 86_400_000L + hour * 3_600_000L
     @Test
     fun `the session target - each work set of the target as what you hang today`() {
         val target = listOf(PlannedSet(WARMUP, null), PlannedSet(HEAVY, 80.0), PlannedSet(LIGHT, 60.0))

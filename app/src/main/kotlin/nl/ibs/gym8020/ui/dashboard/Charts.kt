@@ -41,6 +41,7 @@ import nl.ibs.gym8020.core.stats.AxisTicks
 import nl.ibs.gym8020.core.stats.Point
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.abs
@@ -54,6 +55,9 @@ private val axisStyle = TextStyle(fontFamily = Poppins, fontSize = 10.sp, color 
 private val valueStyle = TextStyle(fontFamily = Poppins, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Gym.Cream)
 private val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
 private val shortDate = DateTimeFormatter.ofPattern("d MMM")
+
+/** The spread of one day, e.g. its lowest and highest body weight (#94): drawn as a thin bar. */
+data class DayRange(val date: LocalDate, val low: Double, val high: Double)
 
 /** Axis tick text: plain numbers with the right decimals and a decimal comma. */
 private fun tickText(v: Double, decimals: Int): String = "%.${decimals}f".format(v).replace('.', ',')
@@ -76,11 +80,16 @@ fun LineChart(
     extraDots: List<Point> = emptyList(),
     /** Text for the value axis; plain numbers by default. */
     tickFormat: ((Double) -> String)? = null,
+    /** Per day a thin bar from low to high (e.g. several weigh-ins on one day, #94); behind the line. */
+    ranges: List<DayRange> = emptyList(),
+    /** Radius of the dot on each point. */
+    dotRadius: Dp = 2.dp,
 ) {
     if (points.isEmpty()) return
     val measurer = rememberTextMeasurer()
     var selected by remember(points) { mutableStateOf<Int?>(null) }
-    val values = points.map { it.value } + trend.orEmpty().map { it.value } + extraDots.map { it.value }
+    val values = points.map { it.value } + trend.orEmpty().map { it.value } + extraDots.map { it.value } +
+        ranges.flatMap { listOf(it.low, it.high) }
     val ticks = AxisTicks.nice(fixedMin ?: values.min(), fixedMax ?: values.max(), 4)
     val lo = fixedMin ?: ticks.values.first()
     val hi = fixedMax ?: ticks.values.last()
@@ -139,13 +148,17 @@ fun LineChart(
             tr.forEachIndexed { i, pt -> if (i == 0) p.moveTo(x(pt), y(pt.value)) else p.lineTo(x(pt), y(pt.value)) }
             drawPath(p, Gym.Cream.copy(alpha = .45f), style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))))
         }
-        extraDots.forEach { drawCircle(Gym.Yellow.copy(alpha = .45f), 2.5.dp.toPx(), Offset(x(it), y(it.value))) }
+        ranges.forEach { r ->
+            val xx = xOf(r.date.toEpochDay())
+            drawLine(Gym.Yellow.copy(alpha = .4f), Offset(xx, y(r.high)), Offset(xx, y(r.low)), 2.dp.toPx(), cap = StrokeCap.Round)
+        }
+        extraDots.forEach { drawCircle(Gym.Yellow.copy(alpha = .45f), 2.dp.toPx(), Offset(x(it), y(it.value))) }
         if (points.size > 1) {
             val p = Path()
             points.forEachIndexed { i, pt -> if (i == 0) p.moveTo(x(pt), y(pt.value)) else p.lineTo(x(pt), y(pt.value)) }
             drawPath(p, Gym.Yellow, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
         }
-        points.forEach { drawCircle(Gym.Yellow, 2.dp.toPx(), Offset(x(it), y(it.value))) }
+        points.forEach { drawCircle(Gym.Yellow, dotRadius.toPx(), Offset(x(it), y(it.value))) }
         val idx = selected ?: points.lastIndex
         val pt = points[idx]
         val c = Offset(x(pt), y(pt.value))

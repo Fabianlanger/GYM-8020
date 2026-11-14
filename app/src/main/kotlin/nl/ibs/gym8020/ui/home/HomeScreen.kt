@@ -3,8 +3,6 @@ package nl.ibs.gym8020.ui.home
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Add
-import nl.ibs.gym8020.ui.components.NumberStepper
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +49,7 @@ import nl.ibs.gym8020.core.logic.PlanSlot
 import nl.ibs.gym8020.core.model.Movement
 import nl.ibs.gym8020.data.movementOrDefault
 import nl.ibs.gym8020.ui.deco.MovementStrip
-import nl.ibs.gym8020.data.manualMeasurement
+import nl.ibs.gym8020.ui.body.MeasurementDialog
 import nl.ibs.gym8020.data.db.SchemaEntity
 import nl.ibs.gym8020.data.db.SessionEntity
 import nl.ibs.gym8020.data.db.WeekPlanEntity
@@ -126,7 +124,7 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
     fun start(schemaId: Long, bodyweightKg: Double? = null, onStarted: (Long) -> Unit) {
         viewModelScope.launch {
             if (bodyweightKg != null) {
-                c.db.bodyweights().replaceManualOfDay(manualMeasurement(bodyweightKg))
+                c.bodyweights.add(bodyweightKg)
             }
             val id = c.training.startSession(schemaId)
             Reminders.onTrainingStarted(c.app, id, c.settings.current())
@@ -134,9 +132,9 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         }
     }
 
-    /** Quick card (V-10): today's measurement; saving again on the same day replaces it. */
-    fun saveBodyweight(kg: Double) {
-        viewModelScope.launch { c.db.bodyweights().replaceManualOfDay(manualMeasurement(kg)) }
+    /** Quick card (V-10): adds a measurement; earlier ones of the same day stay (#94). */
+    fun saveBodyweight(kg: Double, measuredAt: Long) {
+        viewModelScope.launch { c.bodyweights.add(kg, measuredAt) }
     }
 
     fun discard(id: Long) {
@@ -162,10 +160,12 @@ fun HomeScreen(container: AppContainer, onOpenTraining: (Long) -> Unit, onAllSch
     }
 
     if (editWeight) {
-        QuickWeightDialog(
+        MeasurementDialog(
+            title = stringResource(R.string.home_weight_today),
             initialKg = state.lastBodyweightKg,
+            initialAt = null,
             unit = unit,
-            onSave = { kg -> editWeight = false; vm.saveBodyweight(kg) },
+            onSave = { kg, at -> editWeight = false; vm.saveBodyweight(kg, at) },
             onDismiss = { editWeight = false },
         )
     }
@@ -252,29 +252,6 @@ private fun QuickWeightCard(state: HomeState, unit: nl.ibs.gym8020.core.logic.We
         }
         Icon(if (today) Icons.Filled.Check else Icons.Filled.Add, contentDescription = null, tint = if (today) Gym.Positive else Gym.Yellow)
     }
-}
-
-/** Small input window for today's body weight, pre-filled with the last measurement (V-10). */
-@Composable
-private fun QuickWeightDialog(initialKg: Double?, unit: nl.ibs.gym8020.core.logic.WeightUnit, onSave: (Double) -> Unit, onDismiss: () -> Unit) {
-    var value by remember { mutableStateOf(initialKg) }
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.home_weight_today)) },
-        text = {
-            NumberStepper(
-                value = value, onValueChange = { value = it }, step = 0.1, min = 0.0, startFrom = 75.0,
-                formatter = { nl.ibs.gym8020.core.logic.WeightFormat.format(it, unit) }, parser = unit::toKg,
-                suffix = unit.name.lowercase(), textSize = 26.sp,
-            )
-        },
-        confirmButton = {
-            androidx.compose.material3.TextButton(onClick = { value?.takeIf { it > 0 }?.let(onSave) }, enabled = (value ?: 0.0) > 0) {
-                Text(stringResource(R.string.action_save))
-            }
-        },
-        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
 }
 
 @Composable
