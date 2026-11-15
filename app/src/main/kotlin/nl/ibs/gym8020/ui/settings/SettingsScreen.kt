@@ -80,7 +80,13 @@ private const val IBS_URL = "https://i-b-s.nl"
 private const val MAKER_URL = "https://fabianlanger.nl"
 
 @Composable
-fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMethod: () -> Unit, onOpenIntro: () -> Unit) {
+fun SettingsScreen(
+    container: AppContainer,
+    onOpenMaterial: () -> Unit,
+    onOpenMethod: () -> Unit,
+    onOpenIntro: () -> Unit,
+    onOpenPractice: () -> Unit = {},
+) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -247,6 +253,8 @@ fun SettingsScreen(container: AppContainer, onOpenMaterial: () -> Unit, onOpenMe
                 Text(stringResource(R.string.about_method_text), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
                 LineButton(stringResource(R.string.about_method), onClick = onOpenMethod, icon = Icons.AutoMirrored.Filled.MenuBook)
                 LineButton(stringResource(R.string.intro_again), onClick = onOpenIntro, icon = Icons.Filled.School)
+                // The practice workout with the tour, again (#97); nothing is saved.
+                LineButton(stringResource(R.string.practice_open), onClick = onOpenPractice, icon = Icons.Filled.FitnessCenter)
             }
         }
         Spacer(Modifier.height(24.dp))

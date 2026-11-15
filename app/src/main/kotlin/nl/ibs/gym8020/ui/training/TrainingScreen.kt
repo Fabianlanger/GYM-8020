@@ -140,6 +140,8 @@ import nl.ibs.gym8020.ui.deco.drawRibbon
 import nl.ibs.gym8020.ui.exercises.ExercisePickerDialog
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
+import nl.ibs.gym8020.ui.tour.tourTarget
+import nl.ibs.gym8020.core.logic.TourStep
 import java.time.format.DateTimeFormatter
 
 /** Test tags for the UI tests of F-2 (TESTING.md): the exercise timer and the 3-2-1 countdown. */
@@ -190,7 +192,15 @@ fun warmupHint(ex: ExerciseEntity, calc: WeightCalculator?, unit: WeightUnit): S
 }
 
 @Composable
-fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) -> Unit, onExit: () -> Unit, onEditExercise: (Long) -> Unit = {}) {
+fun TrainingScreen(
+    container: AppContainer,
+    sessionId: Long,
+    onFinished: (Long) -> Unit,
+    onExit: () -> Unit,
+    onEditExercise: (Long) -> Unit = {},
+    /** The 3-2-1 before an exercise; shorter in the practice workout (#97). */
+    countdownSeconds: Int = 3,
+) {
     val vm: TrainingViewModel = viewModel(key = "training-$sessionId") { TrainingViewModel(container, sessionId) }
     val state by vm.state.collectAsStateWithLifecycle()
     val session = state.session
@@ -312,7 +322,7 @@ fun TrainingScreen(container: AppContainer, sessionId: Long, onFinished: (Long) 
             }
         }
         countdownFor?.let { seId ->
-            CountdownOverlay(startedAt = countdownStart, onDone = { vm.go(seId); countdownFor = null; dropFocus() })
+            CountdownOverlay(startedAt = countdownStart, seconds = countdownSeconds, onDone = { vm.go(seId); countdownFor = null; dropFocus() })
         }
     }
 
@@ -486,7 +496,7 @@ private fun ExercisePage(
 
         when {
             running -> RunningTimer(now - (se.goAt ?: now))
-            beforeGo -> GoalCard(item, unit, targetOf)
+            beforeGo -> Box(Modifier.tourTarget(TourStep.GOAL)) { GoalCard(item, unit, targetOf) }
             else -> {}
         }
 
@@ -495,9 +505,9 @@ private fun ExercisePage(
                 Text(stringResource(R.string.tr_warmup_running, formatDuration(now - (se.warmupAt ?: now))), color = Gym.Gold, style = MaterialTheme.typography.bodyMedium)
             } else if (se.warmupAt == null) {
                 // Your default warm-up on the button (#93); not tapped = skipped, no warning.
-                WarmupButton(item, unit, assistPercent, onClick = { vm.startWarmup(se.id) })
+                Box(Modifier.tourTarget(TourStep.WARMUP)) { WarmupButton(item, unit, assistPercent, onClick = { vm.startWarmup(se.id) }) }
             }
-            GoButton(stringResource(R.string.tr_go), onClick = onGo)
+            GoButton(stringResource(R.string.tr_go), onClick = onGo, modifier = Modifier.tourTarget(TourStep.GO))
         }
 
         DecoDivider()
@@ -526,6 +536,8 @@ private fun ExercisePage(
                         val i = item.sets.indexOfFirst { it.id == set.id }
                         openSet = item.sets.drop(i + 1).firstOrNull { it.reps == null }?.id
                     },
+                    // The tour points at the reps once GO was tapped (#97).
+                    repsModifier = Modifier.tourTarget(TourStep.REPS, active = !beforeGo && set.role.isWork),
                 )
             } else {
                 SetLine(set, ex, unit, target, goodMargin, prevReps, isReps, onClick = { openSet = set.id })
@@ -538,7 +550,9 @@ private fun ExercisePage(
             LineButton(stringResource(R.string.tr_add_warmup), onClick = { vm.addSet(se.id, SetRole.WARMUP) }, icon = Icons.Filled.LocalFireDepartment, modifier = Modifier.weight(1f))
         }
 
-        item.plan?.let { plan -> NextTimePlanner(item, plan, unit, step, targetOf, goodMargin, vm, assistPercent, focus) }
+        item.plan?.let { plan ->
+            Box(Modifier.tourTarget(TourStep.NEXT_GOAL)) { NextTimePlanner(item, plan, unit, step, targetOf, goodMargin, vm, assistPercent, focus) }
+        }
 
         Spacer(Modifier.height(4.dp))
         if (isLast) {
@@ -680,7 +694,11 @@ private fun GoalCard(item: TrainingItem, unit: WeightUnit, targetOf: (SetRole) -
                     )
                 }
                 loadText(weights[i], item.calc, plan?.getOrNull(i), i == 0, unit)?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = Gym.Muted)
+                    // The tour explains stacking at what comes off for the second set (#97).
+                    Text(
+                        it, style = MaterialTheme.typography.bodySmall, color = Gym.Muted,
+                        modifier = Modifier.tourTarget(TourStep.STACKING, active = i == 1 && plan?.getOrNull(i)?.remove?.isNotEmpty() == true),
+                    )
                 }
             }
         }
@@ -798,6 +816,7 @@ private fun SetEditor(
     onToggleRole: () -> Unit,
     onDelete: () -> Unit,
     onDone: () -> Unit,
+    repsModifier: Modifier = Modifier,
 ) {
     val signed = ex.loadType == LoadType.BODYWEIGHT
     var showWeight by remember(set.id) { mutableStateOf(!isReps || (set.weightKg ?: 0.0) != 0.0) }
@@ -845,7 +864,7 @@ private fun SetEditor(
                     )
                 }
             }
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).then(repsModifier)) {
                 Eyebrow(stringResource(R.string.tr_reps))
                 NumberStepper(
                     value = set.reps?.toDouble(),
@@ -1091,9 +1110,9 @@ private fun AdviceChip(text: String, action: String, onClick: () -> Unit) {
 /** 3-2-1 with sound and vibration (D-32), then the exercise timer starts. */
 /** 3-2-1 before an exercise. Counts from [startedAt], so it continues where it was after a rotation (B-5). */
 @Composable
-private fun CountdownOverlay(startedAt: Long, onDone: () -> Unit) {
+private fun CountdownOverlay(startedAt: Long, seconds: Int = 3, onDone: () -> Unit) {
     val context = LocalContext.current
-    fun remaining() = (3 - ((System.currentTimeMillis() - startedAt) / 1000L).toInt()).coerceIn(0, 3)
+    fun remaining() = (seconds - ((System.currentTimeMillis() - startedAt) / 1000L).toInt()).coerceIn(0, seconds)
     var count by remember { mutableIntStateOf(remaining().coerceAtLeast(1)) }
     val tone = remember { runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90) }.getOrNull() }
     DisposableEffect(Unit) { onDispose { tone?.release() } }

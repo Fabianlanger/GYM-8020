@@ -85,6 +85,8 @@ import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.GymTheme
 import nl.ibs.gym8020.ui.training.SummaryScreen
 import nl.ibs.gym8020.ui.training.TrainingScreen
+import nl.ibs.gym8020.ui.tour.PracticeScreen
+import nl.ibs.gym8020.ui.tour.TourOfferScreen
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -128,6 +130,8 @@ private object Routes {
     const val INTRO = "intro"
     const val LOG = "log"
     const val SESSION = "session/{id}"
+    const val TOUR_OFFER = "tour_offer"
+    const val PRACTICE = "practice"
 }
 
 private data class Tab(val route: String, val label: Int, val icon: ImageVector)
@@ -156,7 +160,8 @@ private fun GymNavHost(container: AppContainer) {
                 // Navigation must run on the main thread; after a database call we may be elsewhere.
                 withContext(Dispatchers.Main) { nav.navigate(Routes.INTRO) }
             } else {
-                container.settings.update { it.copy(onboarded = true) }
+                // Existing users do not get the practice workout unasked either (#97).
+                container.settings.update { it.copy(onboarded = true, tourOffered = true) }
             }
         }
     }
@@ -193,7 +198,8 @@ private fun GymNavHost(container: AppContainer) {
         // Each area has its own art deco pattern: lattice at home, fan scales while training, arches elsewhere.
         val pattern = when {
             route == Routes.HOME -> DecoPattern.LATTICE
-            route == Routes.TRAINING || route == Routes.SUMMARY || route == Routes.INTRO -> DecoPattern.FANS
+            route == Routes.TRAINING || route == Routes.SUMMARY || route == Routes.INTRO ||
+                route == Routes.TOUR_OFFER || route == Routes.PRACTICE -> DecoPattern.FANS
             else -> DecoPattern.ARCHES
         }
         Box(Modifier.fillMaxSize()) {
@@ -243,13 +249,35 @@ private fun GymNavHost(container: AppContainer) {
                     onOpenMaterial = { nav.navigate(Routes.MATERIAL) },
                     onOpenMethod = { nav.navigate(Routes.METHOD) },
                     onOpenIntro = { nav.navigate(Routes.INTRO) },
+                    onOpenPractice = { nav.navigate(Routes.PRACTICE) },
                 )
             }
             composable(Routes.METHOD) { Box(Modifier.systemBarsPadding()) { MethodScreen(onBack = { if (nav.currentDestination?.route == Routes.METHOD) nav.popBackStack() }) } }
             composable(Routes.INTRO) {
                 Box(Modifier.systemBarsPadding()) {
-                    OnboardingScreen(container, onOpenMethod = { nav.navigate(Routes.METHOD) }, onDone = { if (nav.currentDestination?.route == Routes.INTRO) nav.popBackStack() })
+                    OnboardingScreen(
+                        container, onOpenMethod = { nav.navigate(Routes.METHOD) },
+                        onDone = { offerPractice ->
+                            if (nav.currentDestination?.route == Routes.INTRO) {
+                                nav.popBackStack()
+                                // Once, after the first introduction: a practice workout with the tour (#97).
+                                if (offerPractice) nav.navigate(Routes.TOUR_OFFER)
+                            }
+                        },
+                    )
                 }
+            }
+            composable(Routes.TOUR_OFFER) {
+                Box(Modifier.systemBarsPadding()) {
+                    TourOfferScreen(
+                        onStart = { nav.navigate(Routes.PRACTICE) { popUpTo(Routes.TOUR_OFFER) { inclusive = true } } },
+                        onSkip = { if (nav.currentDestination?.route == Routes.TOUR_OFFER) nav.popBackStack() },
+                    )
+                }
+            }
+            composable(Routes.PRACTICE) {
+                // The practice workout (#97): its own database in memory; nothing is saved.
+                PracticeScreen(container, onExit = { if (nav.currentDestination?.route == Routes.PRACTICE) nav.popBackStack() })
             }
             composable(Routes.MATERIAL) { Box(Modifier.systemBarsPadding().imePadding()) { MaterialScreen(container) } }
             composable(Routes.SCHEMA, idArg) { e ->

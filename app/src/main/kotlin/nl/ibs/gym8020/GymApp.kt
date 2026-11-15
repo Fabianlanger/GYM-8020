@@ -28,16 +28,23 @@ import nl.ibs.gym8020.notify.Reminders
  * Simple manual dependency container. All data is local (D-02); the repository layer
  * is where a sync backend can be plugged in later (D-03).
  */
-class AppContainer(val app: Application) {
+class AppContainer(
+    val app: Application,
+    val db: AppDatabase = AppDatabase.create(app),
+    val settings: SettingsStore = SettingsStore(app),
+    /**
+     * The practice workout (#97): [db] is a database in memory and nothing runs after a training (no automatic
+     * backup). The settings are only read there.
+     */
+    val isPractice: Boolean = false,
+) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    val db: AppDatabase = AppDatabase.create(app)
-    val settings = SettingsStore(app)
     private val dutch = AppLanguage.get(app) == AppLanguage.DUTCH
     /** Gyms and their plate stock (A-4). */
     val gyms = Gyms(db, settings)
     val backup = BackupService(db, settings, dutch)
     val autoBackup = AutoBackup(app, backup, settings, appScope)
-    val training = TrainingRepository(db, settings, onFinished = { autoBackup.runSoon() })
+    val training = TrainingRepository(db, settings, onFinished = { if (!isPractice) autoBackup.runSoon() })
     val seeder = Seeder(db, settings, dutch = dutch)
     /** One-time steps after the move to schema v3 (#11). */
     val upgrade = V3Upgrade(app, db, settings, gyms, dutch)
@@ -45,6 +52,15 @@ class AppContainer(val app: Application) {
     val bodyweightTargets = BodyweightTargets(db, settings)
     /** Body weight measurements, several per day (#94). */
     val bodyweights = BodyweightRepository(db)
+
+    /**
+     * The practice workout with the tour (#97): the same screens on a database in memory, so it never touches your
+     * targets, log, statistics or backups. One for the app's lifetime; each practice workout starts by emptying it.
+     */
+    val practice: AppContainer by lazy {
+        check(!isPractice) { "no practice inside the practice workout" }
+        AppContainer(app, AppDatabase.createInMemory(app), settings, isPractice = true)
+    }
 }
 
 class GymApp : Application() {

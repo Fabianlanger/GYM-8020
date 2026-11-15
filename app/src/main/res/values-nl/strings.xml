@@ -407,4 +407,35 @@
     <string name="fc_skip">%1$s, %2$s: leeg, wordt overgeslagen</string>
     <string name="fc_target_weight">%1$s, volgend doel %2$s: geen gewicht, het standaard-doel geldt</string>
     <string name="fc_finish_anyway">Toch afronden</string>
+    <!-- Oefentraining met rondleiding (#97) -->
+    <string name="practice_name">Oefentraining</string>
+    <string name="practice_banner">Oefentraining · wordt niet opgeslagen</string>
+    <string name="practice_warmup_note">Lege stang, rustig, voor je houding</string>
+    <string name="practice_offer_eyebrow">Je eerste workout</string>
+    <string name="practice_offer_title">Eerst even oefenen?</string>
+    <string name="practice_offer_body">Eén oefening, een paar minuten. De app laat stap voor stap zien hoe een training werkt: je doel, de schijven, de warming-up, GO, je reps invullen en je volgende doel. Er wordt niets opgeslagen.</string>
+    <string name="practice_offer_later">Je kunt hem altijd opnieuw starten via Instellingen.</string>
+    <string name="practice_offer_start">Oefentraining doen</string>
+    <string name="practice_offer_skip">Overslaan</string>
+    <string name="practice_open">Oefentraining met rondleiding</string>
+    <string name="practice_done_title">Klaar met oefenen</string>
+    <string name="practice_done_body">Zo gaat een training. Er is niets opgeslagen: je doelen, logboek en statistieken zijn zoals ze waren.</string>
+    <string name="practice_done_sets">Je sets</string>
+    <string name="practice_done_again">Opnieuw oefenen kan via Instellingen.</string>
+    <string name="tour_skip">Overslaan</string>
+    <string name="tour_next">Verder ›</string>
+    <string name="tour_done">Begrepen</string>
+    <string name="tour_count">%1$d / %2$d</string>
+    <string name="tour_goal_title">Je doel voor vandaag.</string>
+    <string name="tour_goal_body">Per oefening een zware set (± %1$d reps) en een lichte (± %2$d), allebei tot je niet meer kunt. Hier staat het gewicht en welke schijven erop gaan.</string>
+    <string name="tour_stacking_title">Tussen sets haal je alleen af.</string>
+    <string name="tour_stacking_body">Je legt alles op voor de zware set; voor de lichte haal je de buitenste schijven eraf. De app zegt welke.</string>
+    <string name="tour_warmup_title">Warming-up (mag).</string>
+    <string name="tour_warmup_body">Zo licht mogelijk, voor je houding. De knop vult je standaard-warming-up in. Telt nergens mee; overslaan mag ook.</string>
+    <string name="tour_go_title">GO start het aftellen en de timer.</string>
+    <string name="tour_go_body">Daarna train je je zware set tot je niet meer kunt. In deze oefening is het aftellen kort en is er geen rust.</string>
+    <string name="tour_reps_title">Vul je reps in.</string>
+    <string name="tour_reps_body">De app zegt meteen of het te licht, goed of te zwaar was.</string>
+    <string name="tour_next_goal_title">Jij bepaalt je volgende doel.</string>
+    <string name="tour_next_goal_body">Standaard is het wat je deed. In blauw staat het advies van de app; overnemen is één tik.</string>
 </resources>

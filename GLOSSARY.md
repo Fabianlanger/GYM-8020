@@ -70,6 +70,15 @@ gewicht komt erbuiten.
 **Nog over** (EN: Reps in reserve, RIR):
 Hoeveel herhalingen je bij een set nog had gekund. Leeg betekent tot falen, zoals de methode vraagt.
 
+**Oefentraining** (EN: Practice workout):
+Een korte training met één oefening om de app te leren of te laten zien. Er wordt niets opgeslagen: geen
+invloed op doelen, logboek, statistieken of back-up.
+_Vermijd_: demo-workout, voorbeeldtraining
+
+**Rondleiding** (EN: Tour):
+De uitleg in de oefentraining: het scherm dimt, één onderdeel licht op met een ballon met korte uitleg. Altijd over
+te slaan; nooit bij echte trainingen.
+
 **Overgeslagen** (EN: Skipped):
 Een oefening of set die je in een sessie niet deed: zelf overgeslagen, of als lege set zo gemarkeerd bij
 afronden. Telt niet als prestatie.
