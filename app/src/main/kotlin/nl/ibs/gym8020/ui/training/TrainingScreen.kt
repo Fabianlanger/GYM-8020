@@ -546,6 +546,8 @@ private fun ExercisePage(
                     repsModifier = demoReps(set.role)?.let { t ->
                         Modifier.demoTarget(
                             t, active = !beforeGo,
+                            // The set is open already: a tap only shows the finger there.
+                            onTap = {},
                             onType = { typed -> firstInput(); vm.updateSet(set.copy(reps = typed.toIntOrNull())) },
                         )
                     } ?: Modifier,

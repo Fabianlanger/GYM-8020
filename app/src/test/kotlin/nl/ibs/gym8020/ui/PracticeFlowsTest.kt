@@ -3,9 +3,14 @@ package nl.ibs.gym8020.ui
 import android.content.Context
 import android.os.Looper
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.filter
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -14,6 +19,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.printToString
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -128,15 +134,55 @@ class PracticeFlowsTest {
         }
     }
 
-    /** Plays the demo until [condition], at most [limitMs] of demo time. */
+    /**
+     * Plays the demo until [condition], at most [limitMs] of demo time. When it does not come, the message says where
+     * the demo was: the steps it showed on the way (with the practice sessions then), the practice database and the
+     * screen at the end.
+     */
     private fun playUntil(what: String, limitMs: Long = 90_000, condition: () -> Boolean) {
         var played = 0L
         while (!condition()) {
-            assertTrue("$what within $limitMs ms of demo time", played < limitMs)
+            val now = demoState()
+            if (trace.lastOrNull()?.substringAfter(": ") != now) trace += "$what +${played}ms: $now"
+            if (played >= limitMs) throw AssertionError("$what within $limitMs ms of demo time\n" + diagnosis())
             play(100)
             played += 100
         }
     }
+
+    /** What the demo showed on the way ([playUntil]), each change once. */
+    private val trace = mutableListOf<String>()
+
+    /** Where the demo went and where it is: the trace, the practice database and the screen. */
+    private fun diagnosis(): String {
+        val screen = runCatching { rule.onAllNodes(isRoot()).printToString() }.getOrElse { "(no dump: $it)" }
+        return "-- on the way:\n" + trace.takeLast(60).joinToString("\n") +
+            "\n-- the practice workout now:\n" + practiceState() +
+            "\n-- the screen now:\n" + screen
+    }
+
+    /**
+     * What the demo shows: the balloon's texts (its step number and title), countdown, summary, and the practice
+     * exercises (id@session, W warm-up, G GO, I first input): a new session id means the practice was built again.
+     */
+    private fun demoState(): String = runCatching {
+        val balloon = rule.onAllNodes(hasAnyAncestor(hasTestTag(DEMO_BALLOON_TAG)), useUnmergedTree = true).fetchSemanticsNodes()
+            .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.map { it.text }
+        val tags = listOf(COUNTDOWN_TAG, PRACTICE_DONE_TAG, PRACTICE_BANNER_TAG, DEMO_FINGER_TAG).filter { rule.hasTag(it) }
+        val exercises = runBlocking { container.practice.db.sessions().allExercises() }
+            .map { "${it.id}@${it.sessionId}" + (if (it.warmupAt != null) "W" else "") + (if (it.goAt != null) "G" else "") + (if (it.firstInputAt != null) "I" else "") }
+        "balloon=${balloon.take(2)} tags=$tags exercises=$exercises"
+    }.getOrElse { "(no state: $it)" }
+
+    /** The practice database: sessions, exercises with their timestamps, sets with role and reps. */
+    private fun practiceState(): String = runCatching {
+        runBlocking {
+            val db = container.practice.db.sessions()
+            "sessions=" + db.all().map { "${it.id}(ended=${it.endedAt != null})" } +
+                "\nexercises=" + db.allExercises().map { "${it.id}@${it.sessionId}(warmup=${it.warmupAt} go=${it.goAt} input=${it.firstInputAt})" } +
+                "\nsets=" + db.allSets().map { "${it.id}@${it.sessionExerciseId} ${it.role} reps=${it.reps}" }
+        }
+    }.getOrElse { "(no state: $it)" }
 
     /** The practice workout's one exercise and its sets, in the practice database in memory. */
     private fun practiceExercise() = runBlocking { container.practice.db.sessions().allExercises().singleOrNull() }
@@ -262,7 +308,7 @@ class PracticeFlowsTest {
 
             // It plays on by itself to the summary; Done closes it.
             playUntil("the summary") { rule.hasTag(PRACTICE_DONE_TAG) }
-            assertEquals(8, practiceReps(SetRole.HEAVY))
+            assertEquals(diagnosis(), 8, practiceReps(SetRole.HEAVY))
             rule.clickTag(PRACTICE_CLOSE_TAG)
             rule.mainClock.autoAdvance = true
             rule.waitForText("Weight today")
