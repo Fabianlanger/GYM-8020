@@ -4,7 +4,14 @@ Android app for strength training with a fixed method: per exercise a **heavy** 
 
 Made by [Fabian Langer](https://fabianlanger.nl), with a nod to [Isatis Business Solutions](https://i-b-s.nl) in the logo.
 
-> **Status: preview before 1.0.** The app is in daily use, but still changing. Make an export now and then (Settings → Export all data).
+> **Version 1.0.** The first public version. Make an export now and then (Settings → Export all data); what changed per version is in [CHANGELOG.md](CHANGELOG.md).
+
+<p>
+  <img src="docs/screenshots/en_02_home.png" width="200" alt="Home screen with today's workout">
+  <img src="docs/screenshots/en_08_training.png" width="200" alt="Training: target block and warm-up">
+  <img src="docs/screenshots/en_23_demo_heavy.png" width="200" alt="Practice workout: the heavy set">
+  <img src="docs/screenshots/en_16_older_summary.png" width="200" alt="Summary of an earlier training">
+</p>
 
 ## Features
 
@@ -26,7 +33,7 @@ Made by [Fabian Langer](https://fabianlanger.nl), with a nod to [Isatis Business
 
 ## Installing
 
-1. Download the newest build: **https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk** (always the latest; versions get their own release, see [CHANGELOG.md](CHANGELOG.md)).
+1. Download the newest version from **[Releases](https://github.com/Fabianlanger/GYM-8020/releases/latest)** (`gym-8020-v1.0.0.apk`). Want the newest work in progress? The dev build is always at https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk (same key, installs over a version).
 2. On your phone, allow installing apps from unknown sources for your browser or file manager.
 3. Open the APK. Updates install over the previous version and keep your data.
 

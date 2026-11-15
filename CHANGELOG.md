@@ -8,7 +8,12 @@ toont de sectie van die versie (kop `## 1.2.0`). Hoe een versie gemaakt wordt: `
 
 ## Unreleased / Nog niet uitgebracht
 
-Changes since 0.6.1, in the dev build. / Veranderingen sinds 0.6.1, in de dev-build.
+Nothing yet. / Nog niets.
+
+## 1.0.0 (2026-11-16)
+
+The first public version. Changes since the private test version 0.6.1. / De eerste openbare versie.
+Veranderingen sinds de privé-testversie 0.6.1.
 
 ### English
 
@@ -19,12 +24,18 @@ to the old one. Move your data once: in the old app **Settings → Export all da
 - **English and clearer words.** English is the default language; Dutch can be chosen in Settings. Names
   follow the fitness world: Workout, Program, Session, Next target, Equipment.
 - **Body weight.** A "Weight today" card on the home screen, and a daily or weekly reminder to weigh yourself.
+- **Weigh more than once a day.** Every measurement is kept; a training uses the last one before it started.
+  Change or delete a measurement, and the chart shows each day from low to high.
+- **Default warm-up.** Each exercise has a default warm-up (an empty bar, the lightest pin, assistance or
+  mini-reps) that a warm-up set starts from; save a new one straight from the training screen.
 - **Easier input.** Type a number straight away; small -/+ buttons inside the field.
 - **Statistics.** Body weight at the top; charts with clear axes, units and dates.
 - **Targets per set.** With two heavy or light sets, the target, the advice and "last time" belong to the right
   set (second heavy set with second heavy set). "Last time" shows the training date and comes from any workout.
 - **Your target stays yours.** A target you set is saved right away and never replaced by advice. The advice
   appears as a chip next to your target; you can take it over and undo that.
+- **Set by you, per set.** Changing one set or taking over its advice keeps only that set yours; the other
+  sets keep following the default target. An extra heavy or light set aims at the target of its role.
 - **Default target from what you did.** Without your own target, next time's target is what you did today,
   an extra set included.
 - **Exercises on reps.** For exercises where you progress on reps you can set your own reps target. The
@@ -57,12 +68,18 @@ de nieuwe app **Instellingen → Back-up importeren**.
   volgen de fitnesswereld: Workout, Programma, Training, Volgend doel, Materiaal.
 - **Lichaamsgewicht.** Een kaart "Gewicht vandaag" op het beginscherm, en een dagelijkse of wekelijkse
   herinnering om je te wegen.
+- **Vaker per dag wegen.** Elke meting blijft bewaard; een training gebruikt de laatste van vóór de start.
+  Wijzig of verwijder een meting, en de grafiek toont per dag van laag tot hoog.
+- **Standaard warming-up.** Elke oefening heeft een standaard warming-up (lege stang, lichtste pin,
+  ondersteuning of mini-reps) waar een warming-up-set mee begint; sla een nieuwe op vanuit het trainingsscherm.
 - **Makkelijker invullen.** Meteen een getal typen; kleine -/+ knoppen in het veld.
 - **Statistieken.** Lichaamsgewicht bovenaan; grafieken met duidelijke assen, eenheden en datums.
 - **Doelen per set.** Bij twee zware of lichte sets horen het doel, het advies en "laatste keer" bij de juiste
   set (tweede zware set bij tweede zware set). "Laatste keer" toont de trainingsdatum en komt uit elke training.
 - **Je doel blijft van jou.** Een doel dat je zelf zet, wordt meteen bewaard en nooit vervangen door advies. Het
   advies staat als knopje naast je doel; je kunt het overnemen en dat ongedaan maken.
+- **Per set van jou.** Pas je één set aan of neem je het advies over, dan wordt alleen die set van jou; de
+  andere sets volgen het standaard-doel. Een extra zware of lichte set mikt op het doel van zijn rol.
 - **Standaard-doel uit wat je deed.** Zonder eigen doel is het doel voor de volgende keer wat je vandaag deed,
   een extra set inbegrepen.
 - **Oefeningen op reps.** Bij oefeningen waar je op reps vooruitgaat, zet je je eigen reps-doel. De samenvatting
@@ -89,5 +106,4 @@ de nieuwe app **Instellingen → Back-up importeren**.
 
 ## 0.6.1
 
-Earlier versions: see the [GitHub releases](https://github.com/Fabianlanger/GYM-8020/releases).
-Eerdere versies: zie de [GitHub-releases](https://github.com/Fabianlanger/GYM-8020/releases).
+Earlier versions were private test builds. / Eerdere versies waren privé-testbuilds.

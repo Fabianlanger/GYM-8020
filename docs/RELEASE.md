@@ -59,14 +59,33 @@ warns.
 5. CI builds, tests and publishes the release `GYM-8020 v1.2.0` with `gym-8020-v1.2.0.apk` and the changelog text.
    Claude checks the release page and the version under "About".
 
-## Switching from a dev build to a signed release
+## Last check before a version (#98)
 
-Android only installs an update when it is signed with the same key. The dev builds use the debug key,
-the releases your own key, so the first switch needs a one-time move of your data:
+Before the owner says "go", the owner tests the dev build of the release commit on their own phone. Seven
+checks, about ten minutes:
+
+1. **Install over the old version.** Install the dev build over the one on the phone; Android asks "update",
+   not "install".
+2. **Data still there.** The log, the workouts and your body weight are all there.
+3. **Start and finish a training.** Fill in at least one exercise, finish it via the overview.
+4. **Summary.** The summary appears after finishing; then open an older training from the log, it shows as a
+   summary too.
+5. **Body weight.** Add a measurement on the home screen; it shows in the list and the chart.
+6. **Practice workout.** Settings → practice workout: it plays to the end by itself.
+7. **Backup.** Settings → Export all data, then Import that file: everything is still there.
+
+All seven fine: "go". Something wrong: a ticket, no version.
+
+The screenshots that CI makes (branch `ci-screenshots`) are the reference for the screens (#85); four of them
+are in the README (`docs/screenshots/`).
+
+## Moving from a version before 1.0
+
+Versions up to 0.6.1 had another package name and key, so 1.0 installs as a new app next to the old one. Move
+your data once:
 
 1. In the old app: **Settings → Export all data**; keep the JSON file somewhere safe.
-2. Uninstall the old app.
-3. Install the signed release.
-4. **Settings → Import** and choose the JSON file.
+2. Install 1.0, then **Settings → Import backup** and choose the JSON file.
+3. Check that everything is there, then uninstall the old app.
 
-After that, every signed release installs over the previous one.
+After that, every version and every dev build installs over the previous one (same key).
