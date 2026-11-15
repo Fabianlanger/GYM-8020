@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
+import nl.ibs.gym8020.core.backup.Backup
 import nl.ibs.gym8020.core.backup.BackupJson
 import nl.ibs.gym8020.core.logic.PlannedSet
 import nl.ibs.gym8020.core.material.PlateStock
@@ -198,7 +199,7 @@ class V3UpgradeTest {
         db.bodyweights().insert(manualMeasurement(80.4, measuredAt = 1_000_000 + 3_600_000))
         val service = BackupService(db, settings)
         val text = service.export()
-        assertEquals(3, BackupJson.decode(text).version)
+        assertEquals(Backup.VERSION, BackupJson.decode(text).version)
 
         service.import(text)
 
