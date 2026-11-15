@@ -21,7 +21,7 @@ Made by [Fabian Langer](https://fabianlanger.nl), with a nod to [Isatis Business
 - **Log**: all finished trainings; correct sets, exercises, date and duration afterwards
 - **Reminders** (optional, local): training day, week target, training still open, body weight
 - **Backup**: Android backup via your Google account, an automatic backup after each training to a folder you choose, and export/import of all data as one file
-- **Practice workout with a tour** for new users: one short exercise in which the app shows each part step by step; nothing is saved. Start it again any time from Settings
+- **Practice workout that plays itself** for new users: in about a minute the app taps and types through one short exercise while a balloon explains each part; you only watch, nothing is saved. Start it again any time from Settings
 - Introduction for new users, an in-app explanation of the method; English and Dutch
 
 ## Installing

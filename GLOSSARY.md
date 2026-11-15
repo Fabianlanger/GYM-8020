@@ -76,8 +76,9 @@ invloed op doelen, logboek, statistieken of back-up.
 _Vermijd_: demo-workout, voorbeeldtraining
 
 **Rondleiding** (EN: Tour):
-De uitleg in de oefentraining: het scherm dimt, één onderdeel licht op met een ballon met korte uitleg. Altijd over
-te slaan; nooit bij echte trainingen.
+De uitleg in de oefentraining, die zichzelf afspeelt: een vinger tikt op de knoppen en typt de reps, het scherm dimt
+rond het onderdeel waar hij wijst, met een ballon met korte uitleg. Je hoeft niets te doen; pauzeren, een stap terug
+en overslaan kan altijd. Nooit bij echte trainingen.
 
 **Overgeslagen** (EN: Skipped):
 Een oefening of set die je in een sessie niet deed: zelf overgeslagen, of als lege set zo gemarkeerd bij
