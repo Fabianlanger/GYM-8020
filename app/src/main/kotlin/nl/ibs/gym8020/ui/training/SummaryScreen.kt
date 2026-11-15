@@ -43,7 +43,6 @@ import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.logic.GoalAdvisor
 import nl.ibs.gym8020.core.logic.PerformanceWeight
 import nl.ibs.gym8020.core.logic.RepsRecord
-import nl.ibs.gym8020.core.logic.Strength
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.model.LoadType
@@ -54,6 +53,8 @@ import nl.ibs.gym8020.core.stats.ExerciseComparison
 import nl.ibs.gym8020.core.stats.Measure
 import nl.ibs.gym8020.core.stats.MuscleComparison
 import nl.ibs.gym8020.core.stats.MuscleMap
+import nl.ibs.gym8020.core.stats.SummaryHistory
+import nl.ibs.gym8020.core.stats.TrainingRef
 import nl.ibs.gym8020.core.stats.Trend
 import nl.ibs.gym8020.core.stats.WorkoutComparison
 import nl.ibs.gym8020.data.db.ExerciseEntity
@@ -70,6 +71,7 @@ import nl.ibs.gym8020.ui.deco.Sunburst
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -103,6 +105,12 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
     val ses = c.db.sessions().exercises(sessionId)
     val sets = c.db.sessions().sets(sessionId).groupBy { it.sessionExerciseId }
     val unit = c.settings.current().unit
+    // Everything is measured against the trainings before this one only (#100): right after finishing that is all
+    // history, for an older training from the log it is what you saw then, with the records as they held then.
+    val stats = loadStats(c.db)
+    val history = SummaryHistory.of(
+        sessionId, stats.sessions.map { TrainingRef(it.id, it.startedAt, it.schemaName) }, stats.sets,
+    )
     var work = 0
     var reached = 0
     var total = 0
@@ -112,7 +120,8 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
         val list = sets[se.id].orEmpty()
         val done = list.filter { it.role.isWork && it.reps != null }
         work += done.size
-        val previousReps = c.training.lastPerformance(ex.id, sessionId)?.sets
+        // The training before this one, not a later one (#100: an older training opened from the log).
+        val previousReps = history?.lastSets(ex.id)
         // With session targets in reps, an extra set without one does not count (#92).
         val withRepsTargets = list.any { it.goalReps != null }
         for (s in done) {
@@ -126,55 +135,49 @@ suspend fun buildSummary(c: AppContainer, sessionId: Long): Summary? {
         }
     }
     // Everything below uses the strength model on the statistics' sets (effective weight, skipped exercises left out).
-    val stats = loadStats(c.db)
-    val bySession = stats.sets.groupBy { it.sessionId }
-    val current = bySession[sessionId].orEmpty()
-    val currentByExercise = current.groupBy { it.exerciseId }
-    val startedAt = session.startedAt
-    val earlier = stats.sessions.filter { it.id != sessionId && it.startedAt < startedAt }.sortedByDescending { it.startedAt }
+    if (history == null) return Summary(session, work, reached, total, emptyList(), unit, exerciseById = stats.exercises)
+    val current = history.today
     // Last time per exercise (#66, as "Laatste keer"): the newest earlier training from any workout, skipped ones not counting.
-    val earlierSets = earlier.map { bySession[it.id].orEmpty() }
-    val previous = currentByExercise.keys.mapNotNull { exId -> Comparison.lastTime(exId, earlierSets)?.let { exId to it } }.toMap()
+    val previous = current.map { it.exerciseId }.distinct().mapNotNull { exId -> history.lastTime(exId)?.let { exId to it } }.toMap()
 
     val records = mutableListOf<RecordLine>()
     val lines = mutableListOf<ExerciseLine>()
     for (exId in ses.filter { !it.skipped }.map { it.exerciseId }.distinct()) {
         val ex = stats.exercises[exId] ?: continue
-        val today = currentByExercise[exId].orEmpty()
+        val today = history.today(exId)
         Comparison.exercise(today, previous[exId])?.let { lines += ExerciseLine(ex, it) }
         // With reps progression (#73): the most reps in a work set, at a load at least as heavy as the record's.
         if (ex.progression == Progression.REPS) {
-            val before = earlier.reversed().map { s -> bySession[s.id].orEmpty().filter { it.exerciseId == exId } }
-            RepsRecord.of(today, before)?.let { records += RecordLine(ex, it.effectiveKg ?: it.loadKg, it.reps, onReps = it) }
+            history.repsRecord(exId)?.let { records += RecordLine(ex, it.effectiveKg ?: it.loadKg, it.reps, onReps = it) }
             continue
         }
-        // Record: best heavy-set e1RM higher than in any other session of this exercise.
-        val best = Strength.bestSet(today) ?: continue
-        val bestNow = Strength.e1rm(best) ?: continue
-        val before = stats.sets.filter { it.exerciseId == exId && it.sessionId != sessionId }
-            .groupBy { it.sessionId }.values.mapNotNull { Strength.of(it) }.maxOrNull()
-        if (before != null && bestNow > before + 1e-6) {
-            records += RecordLine(ex, best.weightKg ?: 0.0, best.reps ?: 0)
-        }
+        // Record: best heavy-set e1RM higher than in any earlier session of this exercise.
+        history.weightRecord(exId)?.let { best -> records += RecordLine(ex, best.weightKg ?: 0.0, best.reps ?: 0) }
     }
 
     // Per workout (#66): against the previous session of the same workout; skipped exercises count as 0.
-    val previousSession = earlier.firstOrNull { it.schemaName == session.schemaName }
+    val previousSession = history.previousOfWorkout
     val workout = previousSession?.let { p ->
-        Comparison.workout(current, bySession[p.id].orEmpty(), p.startedAt.toLocalDate(), ses.count { it.skipped })
+        Comparison.workout(current, history.setsOf(p.id), p.startedAt.toLocalDate(), ses.count { it.skipped })
     }
 
     // Muscle map (#67): strength of what you did vs. the last time, volume vs. the previous session of this
     // workout, and the muscles you would only have trained with skipped exercises.
     val muscles = MuscleComparison.of(
-        current, ses.map { it.exerciseId }, previous, previousSession?.let { bySession[it.id].orEmpty() }, stats.muscles,
+        current, ses.map { it.exerciseId }, previous, previousSession?.let { history.setsOf(it.id) }, stats.muscles,
     ).takeIf { it.breakdown.isNotEmpty() }
     return Summary(session, work, reached, total, records, unit, workout, lines, muscles, stats.exercises)
 }
 
+/**
+ * The summary of a training: right after finishing it, or ([review], #100) an older training opened from the log.
+ * Building it only reads: no backup, no goals saved, nothing written (finishing did that once, in the repository).
+ * In [review] the heading is the training's date instead of "Done for today", and [onDone] goes back to the log.
+ */
 @Composable
-fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, onEdit: () -> Unit) {
+fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, onEdit: () -> Unit, review: Boolean = false) {
     var summary by remember { mutableStateOf<Summary?>(null) }
+    // Rebuilt each time the screen comes back (after editing too): it is a fresh composition then.
     LaunchedEffect(sessionId) { summary = buildSummary(container, sessionId) }
     val s = summary
 
@@ -187,7 +190,9 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, 
             Sunburst(Modifier.fillMaxSize().alpha(.55f))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Eyebrow(s?.session?.schemaName ?: "")
-                Text(stringResource(R.string.home_done_for_today), style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
+                val title = if (!review) stringResource(R.string.home_done_for_today)
+                else s?.session?.startedAt?.toLocalDate()?.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)) ?: "" // e.g. "12 October 2026"
+                Text(title, style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
             }
         }
         FlourishDivider()
@@ -216,7 +221,7 @@ fun SummaryScreen(container: AppContainer, sessionId: Long, onDone: () -> Unit, 
             s.muscles?.let { MuscleMapCard(it, s.exerciseById, s.unit) }
         }
         Spacer(Modifier.height(4.dp))
-        GoButton(stringResource(R.string.sum_back_home), onClick = onDone)
+        GoButton(stringResource(if (review) R.string.sum_back_log else R.string.sum_back_home), onClick = onDone)
         LineButton(stringResource(R.string.log_edit_title), onClick = onEdit, icon = Icons.Filled.Edit, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
     }

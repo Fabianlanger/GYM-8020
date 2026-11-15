@@ -42,6 +42,8 @@ to the old one. Move your data once: in the old app **Settings → Export all da
   stops after the intro. The rest timer keeps running when you turn the phone. Fewer warnings about equipment.
 - **Practice workout with a tour.** After the introduction the app offers a short practice workout (one
   exercise) with a tour of the training screen; it can be started again in Settings. Nothing is saved.
+- **Look back at a session.** Tap a session in the log to see its summary as it was then: compared with the
+  session before it, with the records of that moment, and a button to edit it.
 - **Look.** New app icon; tab names no longer cut off; "About" tells who made the app.
 
 ### Nederlands
@@ -78,6 +80,8 @@ de nieuwe app **Instellingen → Back-up importeren**.
   waarschuwingen over materiaal.
 - **Oefentraining met rondleiding.** Na de introductie biedt de app een korte oefentraining aan (één oefening)
   met een rondleiding over het trainingsscherm; opnieuw te starten via Instellingen. Er wordt niets opgeslagen.
+- **Terugkijken naar een training.** Tik op een training in het logboek en je ziet de samenvatting zoals die
+  toen was: vergeleken met de training daarvoor, met de records van dat moment, en een knop om hem te bewerken.
 - **Uiterlijk.** Nieuw app-icoon; tabnamen worden niet meer afgekapt; "Over" vertelt wie de app maakte.
 
 ## 0.6.1

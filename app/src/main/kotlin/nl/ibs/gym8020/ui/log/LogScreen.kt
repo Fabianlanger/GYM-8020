@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,7 +31,7 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** All finished trainings, newest first, grouped per month; tap one to correct it. */
+/** All finished trainings, newest first, grouped per month; tap one to see its summary (#100), with Edit there. */
 @Composable
 fun LogScreen(container: AppContainer, onOpen: (Long) -> Unit) {
     val sessions by container.db.sessions().observeFinished().collectAsStateWithLifecycle(emptyList())
@@ -70,6 +70,6 @@ fun SessionRow(session: SessionEntity, workSets: Int, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall, color = Gym.Muted,
             )
         }
-        Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.log_edit_title), tint = Gym.Muted)
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Gym.Muted)
     }
 }

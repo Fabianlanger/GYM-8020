@@ -125,6 +125,8 @@ private object Routes {
     const val EXERCISE = "exercise/{id}"
     const val TRAINING = "training/{id}"
     const val SUMMARY = "summary/{id}"
+    /** An older training opened from the log (#100): the same summary, as it was then, with Edit. */
+    const val RECAP = "recap/{id}"
     const val MATERIAL = "material"
     const val METHOD = "method"
     const val INTRO = "intro"
@@ -198,7 +200,7 @@ private fun GymNavHost(container: AppContainer) {
         // Each area has its own art deco pattern: lattice at home, fan scales while training, arches elsewhere.
         val pattern = when {
             route == Routes.HOME -> DecoPattern.LATTICE
-            route == Routes.TRAINING || route == Routes.SUMMARY || route == Routes.INTRO ||
+            route == Routes.TRAINING || route == Routes.SUMMARY || route == Routes.RECAP || route == Routes.INTRO ||
                 route == Routes.TOUR_OFFER || route == Routes.PRACTICE -> DecoPattern.FANS
             else -> DecoPattern.ARCHES
         }
@@ -225,10 +227,10 @@ private fun GymNavHost(container: AppContainer) {
                     container,
                     onOpenBodyweight = { nav.navigate(Routes.BODY) },
                     onOpenLog = { nav.navigate(Routes.LOG) },
-                    onOpenSession = { nav.navigate("session/$it") },
+                    onOpenSession = { nav.navigate("recap/$it") },
                 )
             }
-            composable(Routes.LOG) { Box(Modifier.systemBarsPadding()) { LogScreen(container, onOpen = { nav.navigate("session/$it") }) } }
+            composable(Routes.LOG) { Box(Modifier.systemBarsPadding()) { LogScreen(container, onOpen = { nav.navigate("recap/$it") }) } }
             composable(Routes.SESSION, idArg) { e ->
                 Box(Modifier.systemBarsPadding().imePadding()) {
                     SessionEditScreen(
@@ -237,7 +239,8 @@ private fun GymNavHost(container: AppContainer) {
                         onDeleted = {
                             // The summary of a deleted training has nothing left to show.
                             nav.popBackStack()
-                            if (nav.currentDestination?.route == Routes.SUMMARY) nav.popBackStack()
+                            val under = nav.currentDestination?.route
+                            if (under == Routes.SUMMARY || under == Routes.RECAP) nav.popBackStack()
                         },
                     )
                 }
@@ -307,6 +310,15 @@ private fun GymNavHost(container: AppContainer) {
             composable(Routes.SUMMARY, idArg) { e ->
                 val id = e.arguments?.getLong("id") ?: 0L
                 SummaryScreen(container, id, onDone = { nav.popBackStack(Routes.HOME, inclusive = false) }, onEdit = { nav.navigate("session/$id") })
+            }
+            composable(Routes.RECAP, idArg) { e ->
+                val id = e.arguments?.getLong("id") ?: 0L
+                SummaryScreen(
+                    container, id,
+                    onDone = { if (nav.currentDestination?.route == Routes.RECAP) nav.popBackStack() },
+                    onEdit = { nav.navigate("session/$id") },
+                    review = true,
+                )
             }
         }
         }

@@ -81,6 +81,7 @@ zijn. Nieuwe features voegen hun flow hier toe.
 | F-10 | Training achteraf invoeren → telt mee op de juiste datum; oudere datum verandert het doel niet | – | open (V-4) |
 | F-11 | Oefentraining met rondleiding (#97): één keer aangeboden na de introductie, niet bij bestaande gebruikers, opnieuw te starten via Instellingen; de rondleiding vindt elke stap en is over te slaan; de oefentraining laat geen data achter | TourTest (stappenvolgorde, wanneer een stap verschijnt, aanbieden), PracticeFlowsTest (`F-11 …`: drie schermroutes met screenshots) | gedekt (eerste run in CI nog af te wachten) |
 | F-12 | Taal wisselen: teksten en bibliotheeknamen wisselen mee, eigen namen niet | – | open (V-8) |
+| F-13 | Oude training openen (#100): logboek → samenvatting zoals toen (vergelijking met de training daarvóór, records van toen; een latere betere training telt niet) → Bewerken | SummaryHistoryTest (core: vergelijking, records, vorige van de workout tot en met die training), AppFlowsTest (`F-13 log, older training as summary, edit`, met screenshots) | gedekt (eerste run in CI nog af te wachten) |
 
 **Mutatietesten** (T-3, met PIT op `core/`): een tool verandert bewust kleine dingen in de code, bijv. `>` in
 `>=` of `+` in `-`, en kijkt of een test dat opmerkt. Het resultaat is het percentage **gevangen** fouten.

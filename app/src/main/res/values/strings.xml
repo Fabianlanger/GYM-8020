@@ -140,6 +140,7 @@
     <string name="sum_vs_previous">Compared to previous %1$s (%2$s)</string>
     <string name="sum_volume">Volume %1$s</string>
     <string name="sum_back_home">Back to home</string>
+    <string name="sum_back_log">Back to sessions</string>
     <string name="sum_duration">Duration</string>
     <string name="sum_goals">Targets</string>
     <string name="sum_record">New record</string>
