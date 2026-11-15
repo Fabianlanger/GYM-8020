@@ -6,6 +6,9 @@ import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -37,6 +40,9 @@ private class Placed(val owner: Any, val bounds: Rect, val actions: TargetAction
 @Stable
 class DemoTargets {
     private val placed = mutableStateMapOf<DemoTarget, Placed>()
+
+    /** True while the countdown after GO covers the screen: the demo waits with the next part until it is gone. */
+    var countdownShown by mutableStateOf(false)
 
     /** Where [target] is, in the root; null while it is not on the screen. */
     fun boundsOf(target: DemoTarget): Rect? = placed[target]?.bounds?.takeIf { it.width > 0f && it.height > 0f }

@@ -140,6 +140,7 @@ import nl.ibs.gym8020.ui.deco.drawRibbon
 import nl.ibs.gym8020.ui.exercises.ExercisePickerDialog
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
+import nl.ibs.gym8020.ui.tour.LocalDemo
 import nl.ibs.gym8020.ui.tour.demoTarget
 import nl.ibs.gym8020.core.logic.DemoTarget
 import java.time.format.DateTimeFormatter
@@ -1148,6 +1149,12 @@ private fun CountdownOverlay(startedAt: Long, seconds: Int = 3, onDone: () -> Un
     var count by remember { mutableIntStateOf(remaining().coerceAtLeast(1)) }
     val tone = remember { runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90) }.getOrNull() }
     DisposableEffect(Unit) { onDispose { tone?.release() } }
+    // The practice demo waits with the reps until the countdown is gone (#99).
+    val demo = LocalDemo.current
+    DisposableEffect(demo) {
+        demo?.countdownShown = true
+        onDispose { demo?.countdownShown = false }
+    }
     LaunchedEffect(startedAt) {
         var shown = -1
         while (true) {

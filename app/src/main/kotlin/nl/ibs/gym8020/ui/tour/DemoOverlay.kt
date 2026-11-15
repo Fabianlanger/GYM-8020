@@ -168,8 +168,18 @@ class DemoView {
             }
         }
 
+        /** The countdown after GO covers the screen: nothing to show or tap until it is gone (at most a minute). */
+        suspend fun afterCountdown() {
+            var waited = 0L
+            while (targets.countdownShown && waited < 60_000L) {
+                hold(STEP_MS)
+                waited += STEP_MS
+            }
+        }
+
         for (action in scene.actions) {
             awaitPlaying()
+            if (action !is DemoAction.Wait) afterCountdown()
             when (action) {
                 is DemoAction.MoveTo -> {
                     var waited = 0L
