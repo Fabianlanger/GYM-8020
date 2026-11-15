@@ -139,6 +139,7 @@
     <string name="sum_vs_previous">Tegenover vorige %1$s (%2$s)</string>
     <string name="sum_volume">Volume %1$s</string>
     <string name="sum_back_home">Terug naar home</string>
+    <string name="sum_back_log">Terug naar trainingen</string>
     <string name="sum_duration">Duur</string>
     <string name="sum_goals">Doelen</string>
     <string name="sum_record">Nieuw record</string>

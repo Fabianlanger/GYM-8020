@@ -32,6 +32,13 @@ import nl.ibs.gym8020.data.AppLanguage
 import nl.ibs.gym8020.data.AppSettings
 import nl.ibs.gym8020.data.Seeder
 import nl.ibs.gym8020.data.manualMeasurement
+import nl.ibs.gym8020.data.db.SessionEntity
+import nl.ibs.gym8020.data.db.SessionExerciseEntity
+import nl.ibs.gym8020.data.db.SetEntity
+import nl.ibs.gym8020.core.logic.Strength
+import nl.ibs.gym8020.core.logic.WeightUnit
+import nl.ibs.gym8020.core.model.SetRole
+import nl.ibs.gym8020.core.stats.ComparisonFormat
 import nl.ibs.gym8020.ui.training.COUNTDOWN_TAG
 import nl.ibs.gym8020.ui.training.EXERCISE_TIMER_TAG
 import nl.ibs.gym8020.ui.tour.TOUR_OFFER_SKIP_TAG
@@ -43,6 +50,10 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.time.Duration
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 /**
  * UI flows and screenshots (TESTING.md: T-4, T-5). Runs on the JVM with Robolectric; the screenshots land in
@@ -209,6 +220,69 @@ class AppFlowsTest {
             assertTrue("GO after the warm-up", goAt >= warmupAt)
             // Order only: Robolectric's wall clock does not follow the test clock closely enough for exact durations.
             assertTrue("first input after GO", firstInputAt >= goAt)
+        }
+    }
+
+    /** Click without a touch (runs the node's click action), also when the node is scrolled out of view. */
+    private fun ComposeTestRule.click(text: String) =
+        onAllNodesWithText(text, ignoreCase = true).onFirst().performSemanticsAction(SemanticsActions.OnClick)
+
+    /** A finished "Full body" training on [date] with one heavy back squat set (example data, D-06a). */
+    private suspend fun finishedSquat(date: LocalDate, kg: Double, reps: Int) {
+        val db = (context as GymApp).container.db
+        val squat = db.exercises().all().single { it.name == "Back squat" }
+        val start = date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val sessionId = db.sessions().insert(SessionEntity(schemaName = "Full body", startedAt = start, endedAt = start + 3_600_000L))
+        val seId = db.sessions().insertExercise(SessionExerciseEntity(sessionId = sessionId, exerciseId = squat.id, position = 0))
+        db.sessions().insertSet(SetEntity(sessionExerciseId = seId, position = 0, role = SetRole.HEAVY, weightKg = kg, reps = reps))
+    }
+
+    /**
+     * F-13 (#100): log → an older training opens as its summary → Edit. The summary compares with the training
+     * before it and keeps its record as it held then, although a later training was better. No windows (T-7).
+     */
+    @Test
+    fun `F-13 log, older training as summary, edit`() {
+        freshInstall()
+        val older = LocalDate.of(2026, 10, 8)
+        runBlocking {
+            val container = (context as GymApp).container
+            // An existing user: no introduction, no practice offer.
+            container.settings.update { it.copy(onboarded = true, tourOffered = true) }
+            finishedSquat(LocalDate.of(2026, 10, 1), 90.0, 6) // e1RM 108
+            finishedSquat(older, 100.0, 4) // e1RM 113,3: the one we open, a record then
+            finishedSquat(LocalDate.of(2026, 10, 15), 120.0, 5) // e1RM 140: later and better, must not count
+        }
+        ActivityScenario.launch(MainActivity::class.java).use {
+            rule.waitForText("Weight today")
+            rule.waitForSplash()
+            rule.tap("Dashboard")
+            rule.waitForText("All")
+            rule.click("All")
+            // The log replaced the dashboard (which shows the same rows, so wait until it is gone).
+            rule.waitUntil(20_000) { !rule.has("Body weight") }
+            rule.waitUntil(20_000) { rule.onAllNodesWithText("Full body").fetchSemanticsNodes().size == 3 }
+            rule.shot("en_15_log")
+
+            // Newest first: the middle row is the training of 8 October.
+            rule.onAllNodesWithText("Full body")[1].performSemanticsAction(SemanticsActions.OnClick)
+
+            // Its summary: the date as heading, against 1 October (not the 15th), and the record as it held then.
+            rule.waitForText("Back to sessions")
+            val change = ComparisonFormat.weight(Strength.e1rm(100.0, 4) - Strength.e1rm(90.0, 6), WeightUnit.KG)
+            rule.waitUntil(20_000) { rule.onAllNodesWithText(change, substring = true).fetchSemanticsNodes().isNotEmpty() }
+            assertTrue("heading shows the date", rule.has(older.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))))
+            assertTrue("not the heading of a training just finished", !rule.has("Done for today"))
+            assertTrue("the record of then still counts", rule.has("New record"))
+            rule.shot("en_16_older_summary")
+
+            // Edit: the correction screen of that training, and back to its summary.
+            rule.click("Edit session")
+            rule.waitForText("Duration (minutes)")
+            assertTrue("edit screen shows the exercise", rule.has("Back squat"))
+            rule.shot("en_17_older_edit")
+            rule.click("Done")
+            rule.waitForText("Back to sessions")
         }
     }
 
