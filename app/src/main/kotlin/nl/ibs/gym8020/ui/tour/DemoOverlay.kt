@@ -52,8 +52,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import nl.ibs.gym8020.R
@@ -141,6 +144,30 @@ class DemoView {
             ring.animateTo(1f, tween(PracticeDemo.TAP_MS.toInt(), easing = LinearOutSlowInEasing))
         }
 
+        /**
+         * A scroll into view or a finger move that something else cancels (a layout change, another animation) does
+         * not stop the scene: without this the scene would end silently and the demo would stay on this step.
+         */
+        suspend fun tolerant(block: suspend () -> Unit) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                currentCoroutineContext().ensureActive()
+            }
+        }
+
+        /**
+         * Taps or types once the part takes it: right after a tap that opens a set the part can still be the closed
+         * line for a moment (it takes no typing yet). At most [PracticeDemo.TARGET_WAIT_MS], so the demo never hangs.
+         */
+        suspend fun untilDone(action: () -> Boolean) {
+            var waited = 0L
+            while (!action() && waited < PracticeDemo.TARGET_WAIT_MS) {
+                hold(STEP_MS)
+                waited += STEP_MS
+            }
+        }
+
         for (action in scene.actions) {
             awaitPlaying()
             when (action) {
@@ -151,7 +178,7 @@ class DemoView {
                         waited += STEP_MS
                     }
                     if (!targets.has(action.target)) continue
-                    targets.bringIntoView(action.target)
+                    tolerant { targets.bringIntoView(action.target) }
                     // The layout after scrolling reports the new place.
                     delay(STEP_MS)
                     focus = action.target
@@ -163,20 +190,20 @@ class DemoView {
                             finger.snapTo(from)
                             fingerShown = true
                         }
-                        finger.animateTo(to, tween(PracticeDemo.MOVE_MS.toInt(), easing = Glide))
+                        tolerant { finger.animateTo(to, tween(PracticeDemo.MOVE_MS.toInt(), easing = Glide)) }
                     }
                     elapsedMs += PracticeDemo.MOVE_MS
                 }
                 is DemoAction.Tap -> {
                     tapRing()
-                    targets.tap(action.target)
+                    untilDone { targets.tap(action.target) }
                     hold(action.millis)
                 }
                 is DemoAction.Type -> {
                     for (k in 1..action.text.length) {
                         awaitPlaying()
                         tapRing()
-                        targets.type(action.target, action.text.take(k))
+                        untilDone { targets.type(action.target, action.text.take(k)) }
                         hold(PracticeDemo.KEY_MS)
                     }
                 }
