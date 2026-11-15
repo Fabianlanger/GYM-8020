@@ -79,7 +79,7 @@ zijn. Nieuwe features voegen hun flow hier toe.
 | F-8 | Gewichten en schijven: haalbare gewichten, minimale wissels, materiaal beperkt nooit | MaterialTest, MaterialRulesTest | gedekt |
 | F-9 | Introductie bij eerste start; bestaande gebruikers slaan hem over | – | open (T-4) |
 | F-10 | Training achteraf invoeren → telt mee op de juiste datum; oudere datum verandert het doel niet | – | open (V-4) |
-| F-11 | Oefentraining met rondleiding (#97): één keer aangeboden na de introductie, niet bij bestaande gebruikers, opnieuw te starten via Instellingen; de rondleiding vindt elke stap en is over te slaan; de oefentraining laat geen data achter | TourTest (stappenvolgorde, wanneer een stap verschijnt, aanbieden), PracticeFlowsTest (`F-11 …`: drie schermroutes met screenshots) | gedekt (eerste run in CI nog af te wachten) |
+| F-11 | Oefentraining die zichzelf afspeelt (#97, #99): één keer aangeboden na de introductie, niet bij bestaande gebruikers, opnieuw te starten via Instellingen; de demo tikt en typt zonder invoer tot de samenvatting (warming-up, GO, zware en lichte set, volgend doel, afronden), tikken op het scherm doet niets, Pauze houdt hem stil, ‹ toont een stap opnieuw, Overslaan stopt; de oefentraining laat geen data achter | PracticeDemoTest (stappen, acties en waarden, tijden, terug/pauze/overslaan), TourTest (aanbieden), PracticeFlowsTest (`F-11 …`: vier schermroutes op de testklok, met screenshots) | gedekt (eerste run in CI nog af te wachten) |
 | F-12 | Taal wisselen: teksten en bibliotheeknamen wisselen mee, eigen namen niet | – | open (V-8) |
 
 **Mutatietesten** (T-3, met PIT op `core/`): een tool verandert bewust kleine dingen in de code, bijv. `>` in

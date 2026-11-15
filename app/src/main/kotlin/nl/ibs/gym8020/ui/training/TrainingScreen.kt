@@ -140,8 +140,8 @@ import nl.ibs.gym8020.ui.deco.drawRibbon
 import nl.ibs.gym8020.ui.exercises.ExercisePickerDialog
 import nl.ibs.gym8020.ui.theme.Gym
 import nl.ibs.gym8020.ui.theme.Poppins
-import nl.ibs.gym8020.ui.tour.tourTarget
-import nl.ibs.gym8020.core.logic.TourStep
+import nl.ibs.gym8020.ui.tour.demoTarget
+import nl.ibs.gym8020.core.logic.DemoTarget
 import java.time.format.DateTimeFormatter
 
 /** Test tags for the UI tests of F-2 (TESTING.md): the exercise timer and the 3-2-1 countdown. */
@@ -297,6 +297,8 @@ fun TrainingScreen(
                             isLast = page == items.lastIndex,
                             onGo = { dropFocus(); countdownStart = System.currentTimeMillis(); countdownFor = item.se.id },
                             onFinish = { askFinish() },
+                            // The demo of the practice workout finishes without the confirmation (#99).
+                            onFinishNow = { vm.finish { onFinished(sessionId) } },
                             focus = focus?.takeIf { it.first.sessionExerciseId == item.se.id },
                             onEditExercise = { onEditExercise(item.exercise.id) },
                         )
@@ -446,6 +448,8 @@ private fun ExercisePage(
     onFinish: () -> Unit,
     focus: Pair<Finding, Int>? = null,
     onEditExercise: () -> Unit = {},
+    /** Finishing without the confirmation: only the demo of the practice workout taps this (#99). */
+    onFinishNow: () -> Unit = onFinish,
 ) {
     val ex = item.exercise
     val se = item.se
@@ -496,7 +500,7 @@ private fun ExercisePage(
 
         when {
             running -> RunningTimer(now - (se.goAt ?: now))
-            beforeGo -> Box(Modifier.tourTarget(TourStep.GOAL)) { GoalCard(item, unit, targetOf) }
+            beforeGo -> Box(Modifier.demoTarget(DemoTarget.GOAL)) { GoalCard(item, unit, targetOf) }
             else -> {}
         }
 
@@ -505,9 +509,11 @@ private fun ExercisePage(
                 Text(stringResource(R.string.tr_warmup_running, formatDuration(now - (se.warmupAt ?: now))), color = Gym.Gold, style = MaterialTheme.typography.bodyMedium)
             } else if (se.warmupAt == null) {
                 // Your default warm-up on the button (#93); not tapped = skipped, no warning.
-                Box(Modifier.tourTarget(TourStep.WARMUP)) { WarmupButton(item, unit, assistPercent, onClick = { vm.startWarmup(se.id) }) }
+                Box(Modifier.demoTarget(DemoTarget.WARMUP, onTap = { vm.startWarmup(se.id) })) {
+                    WarmupButton(item, unit, assistPercent, onClick = { vm.startWarmup(se.id) })
+                }
             }
-            GoButton(stringResource(R.string.tr_go), onClick = onGo, modifier = Modifier.tourTarget(TourStep.GO))
+            GoButton(stringResource(R.string.tr_go), onClick = onGo, modifier = Modifier.demoTarget(DemoTarget.GO, onTap = onGo))
         }
 
         DecoDivider()
@@ -536,11 +542,27 @@ private fun ExercisePage(
                         val i = item.sets.indexOfFirst { it.id == set.id }
                         openSet = item.sets.drop(i + 1).firstOrNull { it.reps == null }?.id
                     },
-                    // The tour points at the reps once GO was tapped (#97).
-                    repsModifier = Modifier.tourTarget(TourStep.REPS, active = !beforeGo && set.role.isWork),
+                    // The demo types the reps once GO was tapped (#97, #99).
+                    repsModifier = demoReps(set.role)?.let { t ->
+                        Modifier.demoTarget(
+                            t, active = !beforeGo,
+                            onType = { typed -> firstInput(); vm.updateSet(set.copy(reps = typed.toIntOrNull())) },
+                        )
+                    } ?: Modifier,
+                    doneModifier = Modifier.demoTarget(
+                        DemoTarget.SET_DONE,
+                        onTap = {
+                            val i = item.sets.indexOfFirst { it.id == set.id }
+                            openSet = item.sets.drop(i + 1).firstOrNull { it.reps == null }?.id
+                        },
+                    ),
                 )
             } else {
-                SetLine(set, ex, unit, target, goodMargin, prevReps, isReps, onClick = { openSet = set.id })
+                // The demo opens a closed set by tapping its line (#99).
+                val lineTarget = demoReps(set.role)?.let { t -> Modifier.demoTarget(t, active = !beforeGo, onTap = { openSet = set.id }) }
+                Box(lineTarget ?: Modifier) {
+                    SetLine(set, ex, unit, target, goodMargin, prevReps, isReps, onClick = { openSet = set.id })
+                }
             }
             // The note of your default warm-up, and "Bewaar … als standaard" when you entered something else (#93).
             if (set.role == SetRole.WARMUP) WarmupSetFooter(item, set, unit, onSave = { vm.saveDefaultWarmup(ex.id, it) })
@@ -551,12 +573,12 @@ private fun ExercisePage(
         }
 
         item.plan?.let { plan ->
-            Box(Modifier.tourTarget(TourStep.NEXT_GOAL)) { NextTimePlanner(item, plan, unit, step, targetOf, goodMargin, vm, assistPercent, focus) }
+            Box(Modifier.demoTarget(DemoTarget.NEXT_GOAL)) { NextTimePlanner(item, plan, unit, step, targetOf, goodMargin, vm, assistPercent, focus) }
         }
 
         Spacer(Modifier.height(4.dp))
         if (isLast) {
-            GoButton(stringResource(R.string.tr_finish), onClick = onFinish)
+            GoButton(stringResource(R.string.tr_finish), onClick = onFinish, modifier = Modifier.demoTarget(DemoTarget.FINISH, onTap = onFinishNow))
         } else {
             Text(stringResource(R.string.tr_swipe_hint), color = Gym.Muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
@@ -566,6 +588,13 @@ private fun ExercisePage(
     if (picker) {
         ExercisePickerDialog(allExercises, onPick = { vm.addExercise(it.id); picker = false }, onDismiss = { picker = false })
     }
+}
+
+/** The part the demo of the practice workout types the reps of [role] into (#99); none for a warm-up set. */
+private fun demoReps(role: SetRole): DemoTarget? = when (role) {
+    SetRole.HEAVY -> DemoTarget.HEAVY_REPS
+    SetRole.LIGHT -> DemoTarget.LIGHT_REPS
+    SetRole.WARMUP -> null
 }
 
 /** Short training date in "Laatste keer", e.g. "2 okt" (#65). */
@@ -694,10 +723,10 @@ private fun GoalCard(item: TrainingItem, unit: WeightUnit, targetOf: (SetRole) -
                     )
                 }
                 loadText(weights[i], item.calc, plan?.getOrNull(i), i == 0, unit)?.let {
-                    // The tour explains stacking at what comes off for the second set (#97).
+                    // The demo explains stacking at what comes off for the second set (#97).
                     Text(
                         it, style = MaterialTheme.typography.bodySmall, color = Gym.Muted,
-                        modifier = Modifier.tourTarget(TourStep.STACKING, active = i == 1 && plan?.getOrNull(i)?.remove?.isNotEmpty() == true),
+                        modifier = Modifier.demoTarget(DemoTarget.STACKING, active = i == 1 && plan?.getOrNull(i)?.remove?.isNotEmpty() == true),
                     )
                 }
             }
@@ -817,6 +846,7 @@ private fun SetEditor(
     onDelete: () -> Unit,
     onDone: () -> Unit,
     repsModifier: Modifier = Modifier,
+    doneModifier: Modifier = Modifier,
 ) {
     val signed = ex.loadType == LoadType.BODYWEIGHT
     var showWeight by remember(set.id) { mutableStateOf(!isReps || (set.weightKg ?: 0.0) != 0.0) }
@@ -894,7 +924,7 @@ private fun SetEditor(
             info?.let { Text(it, color = Gym.Muted, style = MaterialTheme.typography.bodySmall) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onDone) {
+            TextButton(onClick = onDone, modifier = doneModifier) {
                 Icon(Icons.Filled.Check, contentDescription = null, tint = Gym.Yellow, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.action_done), color = Gym.Yellow)

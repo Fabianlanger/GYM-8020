@@ -40,8 +40,9 @@ to the old one. Move your data once: in the old app **Settings → Export all da
   takes plates off.
 - **Fixes.** A set skipped last time no longer shifts the reps target of the sets after it. The app no longer
   stops after the intro. The rest timer keeps running when you turn the phone. Fewer warnings about equipment.
-- **Practice workout with a tour.** After the introduction the app offers a short practice workout (one
-  exercise) with a tour of the training screen; it can be started again in Settings. Nothing is saved.
+- **Practice workout that plays itself.** After the introduction the app offers a short practice workout (one
+  exercise, about a minute): a finger taps and types through a whole training while a balloon explains each step.
+  You only watch; Pause, back and Skip are always there. It can be started again in Settings. Nothing is saved.
 - **Look.** New app icon; tab names no longer cut off; "About" tells who made the app.
 
 ### Nederlands
@@ -76,8 +77,10 @@ de nieuwe app **Instellingen → Back-up importeren**.
 - **Reparaties.** Een set die vorige keer overgeslagen was, verschuift het reps-doel van de sets erna niet meer.
   Het scherm stopt niet meer na de introductie. De rusttimer loopt door als je de telefoon draait. Minder
   waarschuwingen over materiaal.
-- **Oefentraining met rondleiding.** Na de introductie biedt de app een korte oefentraining aan (één oefening)
-  met een rondleiding over het trainingsscherm; opnieuw te starten via Instellingen. Er wordt niets opgeslagen.
+- **Oefentraining die zichzelf afspeelt.** Na de introductie biedt de app een korte oefentraining aan (één
+  oefening, ongeveer een minuut): een vinger tikt en typt een hele training door, een ballon legt elke stap uit.
+  Jij kijkt alleen; Pauze, terug en Overslaan kan altijd. Opnieuw te starten via Instellingen. Er wordt niets
+  opgeslagen.
 - **Uiterlijk.** Nieuw app-icoon; tabnamen worden niet meer afgekapt; "Over" vertelt wie de app maakte.
 
 ## 0.6.1

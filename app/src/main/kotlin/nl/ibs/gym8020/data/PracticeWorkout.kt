@@ -6,6 +6,7 @@ import kotlinx.coroutines.withContext
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
 import nl.ibs.gym8020.core.library.DefaultLibrary
+import nl.ibs.gym8020.core.logic.DemoProgress
 import nl.ibs.gym8020.core.model.Progression
 import nl.ibs.gym8020.core.model.SetRole
 import nl.ibs.gym8020.data.db.ExerciseEntity
@@ -31,9 +32,10 @@ object PracticeWorkout {
 
     /**
      * Empties the practice database and fills it for a new practice workout; returns its session. [real] is the app's
-     * own container (read only).
+     * own container (read only). [progress] is what the demo did before the step it starts at (#99): the warm-up and GO
+     * tapped, reps typed, as if the app had done it.
      */
-    suspend fun start(real: AppContainer, now: Long = System.currentTimeMillis()): Long {
+    suspend fun start(real: AppContainer, progress: DemoProgress = DemoProgress(), now: Long = System.currentTimeMillis()): Long {
         check(!real.isPractice)
         val practice = real.practice
         val db = practice.db
@@ -83,9 +85,24 @@ object PracticeWorkout {
         }
         // The heavy and the light set, aiming at the target above.
         practice.training.addExercise(sessionId, db.exercises().all().single().id)
-        // Quick to fill in: the weights are already there, only the reps are left.
+        // Quick to fill in: the weights are already there, only the reps are left (the demo types them).
         val sets = db.sessions().sets(sessionId)
-        db.sessions().updateSets(sets.map { it.copy(weightKg = it.goalWeightKg) })
+        db.sessions().updateSets(
+            sets.map { set ->
+                val reps = when (set.role) {
+                    SetRole.HEAVY -> progress.heavyReps
+                    SetRole.LIGHT -> progress.lightReps
+                    SetRole.WARMUP -> null
+                }
+                set.copy(weightKg = set.goalWeightKg, reps = reps ?: set.reps)
+            },
+        )
+        // Where the demo starts (#99): the warm-up and GO already tapped, the reps typed. The warm-up set the button
+        // adds is left out, so the first empty work set is the open one, as when the demo got there itself.
+        val se = db.sessions().exercises(sessionId).single()
+        if (progress.warmup) practice.training.markWarmup(se.id, now)
+        if (progress.go) practice.training.markGo(se.id, now)
+        if (progress.heavyReps != null || progress.lightReps != null) practice.training.markFirstInput(se.id, now)
         return sessionId
     }
 }
