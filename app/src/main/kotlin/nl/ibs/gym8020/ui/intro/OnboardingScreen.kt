@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.ibs.gym8020.AppContainer
 import nl.ibs.gym8020.R
+import nl.ibs.gym8020.core.logic.TourOffer
 import nl.ibs.gym8020.core.logic.WeightFormat
 import nl.ibs.gym8020.core.logic.WeightUnit
 import nl.ibs.gym8020.core.material.PlateStock
@@ -64,10 +65,11 @@ private val PLATE_SIZES = listOf(25.0, 20.0, 15.0, 10.0, 5.0, 2.5, 1.25)
 
 /**
  * Introduction for new users (G-2): the method, body weight (optional), bar and plates, and a week plan.
- * Everything can be changed later in the settings; [onDone] also marks the introduction as finished.
+ * Everything can be changed later in the settings; [onDone] also marks the introduction as finished. Its argument says
+ * whether to offer the practice workout with the tour now (#97): once, after the first introduction.
  */
 @Composable
-fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: () -> Unit) {
+fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: (offerPractice: Boolean) -> Unit) {
     val scope = rememberCoroutineScope()
     val settings by container.settings.settings.collectAsStateWithLifecycle(AppSettings())
     val stock by container.gyms.stock.collectAsStateWithLifecycle(settings.plateStock)
@@ -79,8 +81,9 @@ fun OnboardingScreen(container: AppContainer, onOpenMethod: () -> Unit, onDone: 
 
     fun finish() = scope.launch {
         bodyweight?.takeIf { it > 0 }?.let { container.bodyweights.add(it) }
-        container.settings.update { it.copy(onboarded = true) }
-        withContext(Dispatchers.Main) { onDone() } // navigation on the main thread
+        val offer = TourOffer.offerAfterIntro(container.settings.current().tourOffered)
+        container.settings.update { it.copy(onboarded = true, tourOffered = true) }
+        withContext(Dispatchers.Main) { onDone(offer) } // navigation on the main thread
 
     }
 

@@ -2,6 +2,7 @@ package nl.ibs.gym8020.ui
 
 import android.content.Context
 import android.os.Looper
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.filter
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -32,6 +34,7 @@ import nl.ibs.gym8020.data.Seeder
 import nl.ibs.gym8020.data.manualMeasurement
 import nl.ibs.gym8020.ui.training.COUNTDOWN_TAG
 import nl.ibs.gym8020.ui.training.EXERCISE_TIMER_TAG
+import nl.ibs.gym8020.ui.tour.TOUR_OFFER_SKIP_TAG
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -75,12 +78,19 @@ class AppFlowsTest {
 
     private fun ComposeTestRule.has(text: String) = onAllNodesWithText(text, ignoreCase = true).fetchSemanticsNodes().isNotEmpty()
 
-    /** Skips the introduction, then waits for the home screen. */
+    /** Skips the introduction and the practice workout offered after it (#97), then waits for the home screen. */
     private fun ComposeTestRule.toHome(skip: String, home: String) {
         waitForText(skip)
         tap(skip)
+        skipPracticeOffer()
         waitForText(home)
         waitForSplash()
+    }
+
+    /** After the first introduction the app offers a practice workout once (#97, F-11); skip it. */
+    private fun ComposeTestRule.skipPracticeOffer() {
+        waitUntil(20_000) { onAllNodesWithTag(TOUR_OFFER_SKIP_TAG).fetchSemanticsNodes().isNotEmpty() }
+        onAllNodesWithTag(TOUR_OFFER_SKIP_TAG).onFirst().performSemanticsAction(SemanticsActions.OnClick)
     }
 
     /** The opening screen lies over the app for a moment; screenshots should show what is under it. */
@@ -100,6 +110,7 @@ class AppFlowsTest {
             rule.waitForText("Skip")
             rule.shot("en_01_intro")
             rule.tap("Skip")
+            rule.skipPracticeOffer()
             rule.waitForText("Weight today")
             rule.waitForSplash()
             rule.shot("en_02_home")

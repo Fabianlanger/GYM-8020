@@ -43,6 +43,13 @@ abstract class AppDatabase : RoomDatabase() {
                 .build()
         }
 
+        /**
+         * A database in memory with the same tables, for the practice workout (#97): gone when the app stops, never in
+         * a backup, and apart from your own data.
+         */
+        fun createInMemory(context: Context): AppDatabase =
+            Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+
         /** v0.2: material profiles, and material + movement per exercise. Keeps all data. */
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
