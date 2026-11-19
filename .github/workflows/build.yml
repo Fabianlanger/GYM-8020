@@ -142,7 +142,8 @@ jobs:
           else
             apk=$(ls app/build/outputs/apk/debug/*.apk | head -1)
           fi
-          cp "$apk" "gym-8020-${RELEASE_TAG}.apk"
+          # Same file name for every version, so releases/latest/download/gym-8020.apk is always the newest.
+          cp "$apk" gym-8020.apk
           # Release notes: the section of this version in CHANGELOG.md (a heading "## 1.2.0" or "## v1.2.0",
           # up to the next "## "); without that section GitHub's generated notes (#88).
           awk -v v="${RELEASE_TAG#v}" '
@@ -155,7 +156,7 @@ jobs:
             echo "::warning::No section for ${RELEASE_TAG} in CHANGELOG.md; using generated release notes."
             notes=(--generate-notes)
           fi
-          gh release create "$RELEASE_TAG" "gym-8020-${RELEASE_TAG}.apk" \
+          gh release create "$RELEASE_TAG" gym-8020.apk \
             --target "$GITHUB_SHA" --title "GYM-8020 ${RELEASE_TAG}" "${notes[@]}"
 
       - name: Upload reports

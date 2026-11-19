@@ -63,7 +63,7 @@ warns.
      The owner starts this run; Claude may start it when it has the rights to (the GitHub tools can trigger a
      workflow run).
    - Or push a tag: `git tag v1.2.0 && git push origin v1.2.0`.
-5. CI builds, tests and publishes the release `GYM-8020 v1.2.0` with `gym-8020-v1.2.0.apk` and the changelog text.
+5. CI builds, tests and publishes the release `GYM-8020 v1.2.0` with `gym-8020.apk` (the same file name for every version) and the changelog text.
    Claude checks the release page and the version under "About".
 
 ## Last check before a version (#98)
