@@ -33,7 +33,7 @@ Made by [Fabian Langer](https://fabianlanger.nl), with a nod to [Isatis Business
 
 ## Installing
 
-1. Download the newest version from **[Releases](https://github.com/Fabianlanger/GYM-8020/releases/latest)** (`gym-8020-v1.0.0.apk`). Want the newest work in progress? The dev build is always at https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk (same key, installs over a version).
+1. Download the newest version from **[Releases](https://github.com/Fabianlanger/GYM-8020/releases/latest)** (`gym-8020.apk`, always at https://github.com/Fabianlanger/GYM-8020/releases/latest/download/gym-8020.apk). Want the newest work in progress? The dev build is always at https://github.com/Fabianlanger/GYM-8020/releases/download/dev/gym-8020.apk (same key, installs over a version).
 2. On your phone, allow installing apps from unknown sources for your browser or file manager.
 3. Open the APK. Updates install over the previous version and keep your data.
 
