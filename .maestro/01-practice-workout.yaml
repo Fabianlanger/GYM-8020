@@ -1,0 +1,17 @@
+# Smoke test 1 (T-6, #39): onboarding, then the practice workout plays to the end by itself.
+appId: nl.fabianlanger.gym8020
+name: Practice workout plays itself
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome to GYM-8020"
+- tapOn: "NEXT"
+- tapOn: "NEXT"
+- tapOn: "NEXT"
+- tapOn: "LET'S GO"
+- tapOn: "WATCH THE PRACTICE WORKOUT"
+- extendedWaitUntil:
+    visible: "Practice done"
+    timeout: 120000
+- tapOn: "DONE"
+- assertVisible: "Log your weight"

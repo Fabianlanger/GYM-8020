@@ -109,6 +109,19 @@ Het nadeel: ongeveer 10 minuten per run, en gevoeliger voor haperingen. Als we h
 rooktests (starten → training → afronden → samenvatting), alleen bij een versierelease (T-6). Besloten in
 #84: niet in 1.0 (daar volstaat de handmatige controle uit `docs/RELEASE.md`), wel in release 1.1.
 
+**Voorwerk (19 nov 2026, #39):** drie Maestro-rooktests staan in `.maestro/` en draaien lokaal groen op een
+emulator (Android 15, Pixel 7) tegen v1.0.0:
+
+| Flow | Wat |
+|---|---|
+| `01-practice-workout.yaml` | introductie, dan speelt de oefentraining vanzelf tot het einde |
+| `02-training-summary.yaml` | training starten, zware set invullen, afronden, samenvatting; daarna uit het logboek weer openen |
+| `03-backup-roundtrip.yaml` | gewicht invoeren, alles exporteren, app leeg, importeren: gewicht is terug |
+
+Lokaal draaien: emulator starten, de APK installeren, dan `maestro test .maestro` (Maestro CLI, Java 17). De
+flows gaan uit van een Engelstalige emulator. Nog te doen voor 1.1: dezelfde flows in GitHub Actions bij een
+versierelease.
+
 ## 6. Bugs versus nieuwe features — *afgesproken*
 
 | | Bug | Nieuwe feature |

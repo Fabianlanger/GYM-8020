@@ -1,0 +1,8 @@
+# Shared: a fresh install, onboarding skipped, practice workout skipped. Lands on Home.
+appId: nl.fabianlanger.gym8020
+---
+- launchApp:
+    clearState: true
+- tapOn: "Skip"
+- tapOn: "Skip"
+- assertVisible: "Log your weight"

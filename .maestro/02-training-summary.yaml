@@ -1,0 +1,30 @@
+# Smoke test 2 (T-6, #39): start a training, log one heavy set, finish, see the summary,
+# then open it again from the log as a summary.
+appId: nl.fabianlanger.gym8020
+name: Training to summary
+---
+- runFlow: common/fresh-start.yaml
+- tapOn: "Train anyway|Start|TRAIN ANYWAY|START"
+# With bodyweight exercises in the program, a fresh install first asks for today's weight.
+- runFlow:
+    when:
+      visible: "What do you weigh today?"
+    commands:
+      - tapOn: "Skip"
+- assertVisible: "HEAVY.*TARGET 6"
+- tapOn:
+    text: "More"
+    index: 0
+    repeat: 3
+- tapOn:
+    text: "More"
+    index: 1
+    repeat: 6
+- tapOn: "Done"
+- tapOn: "Finish workout"
+- tapOn: "Finish anyway"
+- assertVisible: "Done for today"
+- back
+- tapOn: "Dashboard"
+- tapOn: ".*1 set.*"
+- assertVisible: "COMPARED TO LAST TIME"

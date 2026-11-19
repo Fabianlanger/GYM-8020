@@ -1,0 +1,29 @@
+# Smoke test 3 (T-6, #39): log a body weight, export all data, wipe the app, import, data is back.
+appId: nl.fabianlanger.gym8020
+name: Backup export and import
+---
+- runFlow: common/fresh-start.yaml
+- tapOn: "Log your weight"
+- tapOn: "kg"
+- inputText: "81.5"
+- tapOn: "Save"
+- assertVisible: "81,5 kg|81.5 kg"
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "Export all data"
+- tapOn: "Export all data"
+- tapOn: "SAVE|Save"
+- assertVisible: "Backup saved"
+- runFlow: common/fresh-start.yaml
+- tapOn: "Settings"
+- scrollUntilVisible:
+    element: "Import backup"
+- tapOn: "Import backup"
+# The picker lists the newest file first; older exports in Downloads are harmless.
+- tapOn: 'gym-8020-.*\.json'
+- tapOn:
+    text: "Import backup"
+    index: 1
+- assertVisible: "Backup imported"
+- tapOn: "Home"
+- assertVisible: "81,5 kg|81.5 kg"
