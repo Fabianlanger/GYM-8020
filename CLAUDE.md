@@ -10,7 +10,7 @@ tussenweg bij testen.
 Snel:
 - `core/` = pure Kotlin-logica met tests: `./gradlew -PcoreOnly :core:test`.
 - `app/` = Android; bouwt alleen in GitHub Actions (Google Maven is hier niet bereikbaar).
-- Tot 1.0 alleen dev-builds (vaste dev-link); versiereleases pas bij 1.0.
+- Sinds 1.0 versiereleases van `main` (tag `vX.Y.Z`, na go van de eigenaar); werk op een werkbranch; dev-link blijft.
 - Geen persoonlijke trainingsdata in de repo.
 - Ondertekening is eenmalig ingericht (`docs/RELEASE.md`): nooit een nieuwe sleutel maken of om sleutels vragen; de sleutel staat alleen in GitHub Secrets en in de privéback-up van de eigenaar.
 

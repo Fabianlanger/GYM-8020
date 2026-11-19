@@ -69,11 +69,12 @@ Voor deze repo:
 - Strings altijd in het Engels én Nederlands (`values/` en `values-nl/`).
 - Geen persoonlijke trainingsdata in de repo, tests of screenshots (D-06a).
 - Na een databasewijziging: migratietest, schema-JSON committen en het back-upformaat bijwerken.
-- Tot 1.0 alleen dev-builds; vanaf 1.0 wordt elke release een versierelease.
+- Sinds 1.0 (19 nov 2026) wordt elke release een versierelease; de dev-link blijft voor tussendoor.
 
 ## Opleveren
 
-Klaar is: core-tests groen, gepusht naar de werkbranch, CI groen. Rood is oorzaak zoeken en fixen.
+Klaar is: core-tests groen, gepusht naar de werkbranch (`claude/...`), CI groen. Rood is oorzaak zoeken en fixen.
+`main` is de hoofdbranch: de werkbranch gaat er bij een release in, en daar komt de tag op (`docs/RELEASE.md`, #89).
 Daarna:
 1. Het issue sluiten met een reactie (wat is gebouwd, wat getest); de epic en `docs/TESTING.md` bijwerken.
 2. Melding aan de eigenaar in gewone taal: wat er veranderd is, wat de eigenaar handmatig moet nalopen, en de open

@@ -10,6 +10,13 @@
 The debug key is public on purpose: it only makes sure every dev build installs over the previous one.
 Anyone could sign an APK with it, so a public version should use your own key.
 
+## Branches (#89)
+
+- `main` is the default branch and the home of the versions: every version tag sits on a commit of `main`.
+- Work happens on a work branch (`claude/...`). At a release the work branch is merged into `main`; the tag is
+  made on that commit of `main`. Docs-only commits may go to `main` directly.
+- CI builds every push to `main` and `claude/**`; both update the dev link.
+
 ## Your own key (set up once, November 2026)
 
 The key is set up and stays: **never create a new one**. It lives only in two places, both private:
